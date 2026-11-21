@@ -47,6 +47,8 @@ pub fn run() {
             commands::get_settings,
             commands::update_settings,
             commands::get_album_scan_keywords,
+            commands::list_known_slip_media_ids,
+            commands::remember_scanned_media,
             commands::import_slip_candidates,
             commands::reparse_all_slips,
             commands::get_backfill_targets,

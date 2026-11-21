@@ -16,7 +16,8 @@ use crate::categorizer::{
 };
 use crate::db::{
     fetch_tags_for_record, list_accounts, list_categories, list_tags,
-    load_settings, normalize_payee, record_activity_synced, save_settings, upsert_record, Account,
+    list_known_media_ids, load_settings, normalize_payee, record_activity_synced,
+    remember_scanned_media as remember_scanned_media_rows, save_settings, upsert_record, Account,
     AppSettings, Category, DbState, RecordInput, RecordItem, Tag,
 };
 use crate::slip_parser::{call_akson_ocr, parse_slip_qr, parse_slip_text};
@@ -391,6 +392,18 @@ pub fn get_album_scan_keywords(state: State<'_, DbState>) -> Result<Vec<String>,
         }
     }
     Ok(keywords)
+}
+
+#[tauri::command]
+pub fn list_known_slip_media_ids(state: State<'_, DbState>) -> Result<Vec<String>, String> {
+    let conn = state.0.lock().map_err(|_| "db lock poisoned".to_string())?;
+    list_known_media_ids(&conn)
+}
+
+#[tauri::command]
+pub fn remember_scanned_media(state: State<'_, DbState>, ids: Vec<String>) -> Result<(), String> {
+    let conn = state.0.lock().map_err(|_| "db lock poisoned".to_string())?;
+    remember_scanned_media_rows(&conn, &ids)
 }
 
 #[tauri::command]

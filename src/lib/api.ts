@@ -25,8 +25,8 @@ declare global {
       scanBankSlips(
         keywordsJson: string,
         includeShared: boolean,
-        limit: number,
-        includeBase64: boolean
+        sinceSec: number,
+        skipIdsJson: string
       ): void;
       pickSlipPhoto(includeBase64: boolean): void;
       backfillExistingSlips(itemsJson: string): void;
@@ -118,6 +118,11 @@ export const api = {
     invoke<void>("update_settings", { settings }),
 
   getAlbumScanKeywords: () => invoke<string[]>("get_album_scan_keywords"),
+
+  listKnownSlipMediaIds: () => invoke<string[]>("list_known_slip_media_ids"),
+
+  rememberScannedMedia: (ids: string[]) =>
+    invoke<void>("remember_scanned_media", { ids }),
 
   importSlipCandidates: (candidates: SlipScanCandidate[]) =>
     invoke<SlipScanReport>("import_slip_candidates", { candidates }),

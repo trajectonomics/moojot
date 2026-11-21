@@ -12,7 +12,6 @@
     Plus,
     ScanLine,
     ImagePlus,
-    Flame,
     X,
     Repeat,
     PenLine,
@@ -99,6 +98,7 @@
   let pdfPrompt = $state<{ pdfBase64: string; wrong: boolean } | null>(null);
   let pdfPassword = $state("");
   let pdfBusy = $state(false);
+  let scanStartPrompt = $state(false);
   let undoDelete = $state<{
     recordId: string;
     home: HomePayload;
@@ -107,6 +107,7 @@
     timer: ReturnType<typeof setTimeout>;
   } | null>(null);
   let deleteChain: Promise<void> = Promise.resolve();
+  let scanChain: Promise<void> = Promise.resolve();
 
   // Interactive Mascot state
   let mascotMood = $state<MascotMood>("idle");
@@ -123,7 +124,12 @@
 
   const lang = $derived(settings.language);
   const anyModalOpen = $derived(
-    showRecordSheet || showRulesModal || showSearch || showFilterSheet || pdfPrompt !== null
+    showRecordSheet ||
+    showRulesModal ||
+    showSearch ||
+    showFilterSheet ||
+    pdfPrompt !== null ||
+    scanStartPrompt
   );
 
   // Apply theme attribute & sync Android status bar icon contrast cleanly per screen!
@@ -136,8 +142,7 @@
       showRulesModal ||
       showSearch ||
       recordLightboxOpen;
-    const isLightStatusBar =
-      theme === "pink-white" && !hasColoredTopBar && !(activeTab === "home" && stickyVisible);
+    const isLightStatusBar = theme === "pink-white" && !hasColoredTopBar;
     window.MooJotAndroid?.setStatusBarLight?.(isLightStatusBar);
   });
 
@@ -320,6 +325,39 @@
     }
   }
 
+  function threeMonthsAgoSec(): number {
+    const start = new Date();
+    start.setMonth(start.getMonth() - 3);
+    start.setHours(0, 0, 0, 0);
+    return Math.floor(start.getTime() / 1000);
+  }
+
+  function monthStartSec(offset: number): number {
+    const start = new Date();
+    start.setDate(1);
+    start.setMonth(start.getMonth() + offset);
+    start.setHours(0, 0, 0, 0);
+    return Math.floor(start.getTime() / 1000);
+  }
+
+  function monthLabel(offset: number): string {
+    const start = new Date();
+    start.setDate(1);
+    start.setMonth(start.getMonth() + offset);
+    return start.toLocaleDateString(lang === "th" ? "th-TH" : "en-US", {
+      month: "short",
+      year: "2-digit",
+    });
+  }
+
+  function viewedMonthIsOlder(): boolean {
+    const boundary = threeMonthsAgoSec();
+    const start = home?.period.startDate;
+    if (!start) return periodOffset <= -3;
+    const ms = Date.parse(`${start}T00:00:00`);
+    return Number.isFinite(ms) && ms / 1000 < boundary;
+  }
+
   async function triggerSlipScan() {
     showFabMenu = false;
     if (!hasAndroidBridge() || !window.MooJotAndroid) {
@@ -334,14 +372,58 @@
       window.MooJotAndroid.requestGalleryPermission();
       return;
     }
+    if (viewedMonthIsOlder()) {
+      scanStartPrompt = true;
+      return;
+    }
+    await startSlipScan(threeMonthsAgoSec());
+  }
+
+  async function startSlipScan(sinceSec: number) {
+    if (!window.MooJotAndroid) return;
+    scanStartPrompt = false;
     isScanning = true;
-    const keywords = await api.getAlbumScanKeywords();
+    scanBanner = lang === "th" ? "กำลังสแกนสลิปใหม่..." : "Scanning new slips...";
+    const [keywords, knownIds] = await Promise.all([
+      api.getAlbumScanKeywords(),
+      api.listKnownSlipMediaIds(),
+    ]);
     window.MooJotAndroid.scanBankSlips(
       JSON.stringify(keywords),
       settings.allowSharedAlbum,
-      40,
-      false
+      sinceSec,
+      JSON.stringify(knownIds)
     );
+  }
+
+  let heroSwipe: { x: number; y: number; axis: "undecided" | "h" | "v" } | null = null;
+
+  function onHeroTouchStart(event: TouchEvent) {
+    if (event.touches.length !== 1 || anyModalOpen) return;
+    heroSwipe = {
+      x: event.touches[0].clientX,
+      y: event.touches[0].clientY,
+      axis: "undecided",
+    };
+  }
+
+  function onHeroTouchMove(event: TouchEvent) {
+    if (!heroSwipe || event.touches.length !== 1) return;
+    const dx = event.touches[0].clientX - heroSwipe.x;
+    const dy = event.touches[0].clientY - heroSwipe.y;
+    if (heroSwipe.axis === "undecided") {
+      if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+      heroSwipe.axis = Math.abs(dx) > Math.abs(dy) ? "h" : "v";
+    }
+  }
+
+  function onHeroTouchEnd(event: TouchEvent) {
+    if (heroSwipe?.axis === "h") {
+      const dx = event.changedTouches[0].clientX - heroSwipe.x;
+      if (dx <= -56) void changePeriod(1);
+      else if (dx >= 56) void changePeriod(-1);
+    }
+    heroSwipe = null;
   }
 
   function triggerPickPhoto() {
@@ -375,6 +457,10 @@
   // Wire Android hardware/gesture Back button handler
   $effect(() => {
     window.__moojotHandleBack = () => {
+      if (scanStartPrompt) {
+        scanStartPrompt = false;
+        return "handled";
+      }
       if (pdfPrompt) {
         pdfPrompt = null;
         pdfPassword = "";
@@ -462,6 +548,47 @@
       setTimeout(() => (scanBanner = null), 5000);
     };
 
+    const onScanBatch = (ev: Event) => {
+      const detail = (
+        ev as CustomEvent<{
+          candidates?: SlipScanCandidate[];
+          seenIds?: string[];
+          done?: boolean;
+        }>
+      ).detail;
+      scanChain = scanChain
+        .then(async () => {
+          const seen = detail?.seenIds ?? [];
+          if (seen.length > 0) await api.rememberScannedMedia(seen);
+          const candidates = detail?.candidates ?? [];
+          if (candidates.length > 0) {
+            const report = await api.importSlipCandidates(candidates);
+            scanBanner =
+              lang === "th"
+                ? `นำเข้า ${report.imported} · ซ้ำ ${report.duplicates}`
+                : `Imported ${report.imported} · duplicates ${report.duplicates}`;
+            await refreshPeriodData();
+            if (report.imported > 0) {
+              celebrateMascot(
+                `Imported ${report.imported} new slip(s)!`,
+                `นำเข้าสลิปใหม่ ${report.imported} รายการแล้ว!`
+              );
+            }
+          }
+          if (detail?.done) {
+            isScanning = false;
+            if (!candidates.length) {
+              scanBanner = lang === "th" ? "ไม่มีสลิปใหม่" : "No new slips";
+            }
+            setTimeout(() => (scanBanner = null), 4000);
+          }
+        })
+        .catch((error) => {
+          isScanning = false;
+          scanBanner = String(error);
+        });
+    };
+
     const onSharedPdf = (ev: Event) => {
       const detail = (ev as CustomEvent<{ pdfBase64?: string }>).detail;
       const pdfBase64 = detail?.pdfBase64;
@@ -469,6 +596,7 @@
     };
 
     window.addEventListener("moojot:scan-candidates", onCandidates);
+    window.addEventListener("moojot:scan-batch", onScanBatch);
     window.addEventListener("moojot:shared-slips", onSharedSlips);
     window.addEventListener("moojot:permission", onPerm);
     window.addEventListener("moojot:scan-error", onErr);
@@ -476,6 +604,7 @@
     window.addEventListener("moojot:shared-pdf", onSharedPdf);
     return () => {
       window.removeEventListener("moojot:scan-candidates", onCandidates);
+      window.removeEventListener("moojot:scan-batch", onScanBatch);
       window.removeEventListener("moojot:shared-slips", onSharedSlips);
       window.removeEventListener("moojot:permission", onPerm);
       window.removeEventListener("moojot:scan-error", onErr);
@@ -604,77 +733,34 @@
 <div class="min-h-screen bg-[var(--bg-canvas)] text-[var(--text-primary)] flex flex-col">
   {#if activeTab === "home"}
     <header
-      class="fixed top-0 inset-x-0 z-40 text-white shadow-lg transition-transform duration-200 ease-out {stickyVisible
+      class="fixed inset-x-0 top-0 z-40 px-3 transition-transform duration-200 ease-out {stickyVisible
         ? 'translate-y-0'
         : '-translate-y-full pointer-events-none'}"
-      style="background: linear-gradient(135deg, var(--hero-from), var(--hero-to)); padding-top: env(safe-area-inset-top);"
+      style="padding-top: max(env(safe-area-inset-top), 8px);"
       aria-hidden={!stickyVisible}
     >
-      <div class="px-3 pt-2 pb-1 flex items-center justify-between gap-2">
-        <div class="flex items-center gap-0.5 min-w-0 font-bold">
-          <span class="inline-flex items-center gap-1 pl-1 pr-1 text-xs font-bold text-white">
-            <Flame class="size-4 shrink-0" />
-            <span>{Math.max(home?.syncStreakDays ?? 0, home?.categorizeStreakDays ?? 0)}</span>
-          </span>
-          <button
-            type="button"
-            onclick={() => changePeriod(-1)}
-            class="size-7 rounded-full flex items-center justify-center active:bg-black/15"
-            aria-label="Previous period"
-          >
-            <ChevronLeft class="size-5" />
-          </button>
-          <span class="text-sm font-extrabold truncate">{home?.period.label ?? "..."}</span>
-          <button
-            type="button"
-            onclick={() => changePeriod(1)}
-            class="size-7 rounded-full flex items-center justify-center active:bg-black/15"
-            aria-label="Next period"
-          >
-            <ChevronRight class="size-5" />
-          </button>
-        </div>
-        <div class="flex items-center gap-1 shrink-0">
-          <button
-            type="button"
-            onclick={() => {
-              showSearch = true;
-              searchQuery = "";
-              searchResults = [];
-            }}
-            class="size-8 rounded-full flex items-center justify-center text-white active:bg-black/15"
-            aria-label={t(lang, "search")}
-          >
-            <Search class="size-4" />
-          </button>
-          <button
-            type="button"
-            onclick={() => (showFilterSheet = true)}
-            class="relative size-8 rounded-full flex items-center justify-center text-white active:bg-black/15"
-            aria-label={t(lang, "filterRecords")}
-          >
-            <Wallet class="size-4" />
-            {#if filterAccountIds.length > 0}
-              <span class="absolute top-0.5 right-0.5 size-2 rounded-full bg-white"></span>
-            {/if}
-          </button>
-        </div>
-      </div>
-      <div class="px-4 pb-3 flex items-end justify-between gap-3">
-        <div class="min-w-0">
-          <div class="text-[11px] font-semibold text-white/85">{t(lang, "totalSpending")}</div>
-          <div class="text-xl font-extrabold tracking-tight leading-tight">
+      <div class="flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-card)] py-1 pl-1 pr-2 shadow-lg">
+        <MooMascot
+          mood={isScanning ? "scan" : "idle"}
+          size="sm"
+          interactive={false}
+          alt="MooJot"
+        />
+        <div class="min-w-0 flex-1">
+          <div class="truncate text-xs font-extrabold text-[var(--text-primary)]">
+            {home?.period.label ?? "..."}
+          </div>
+          <div class="truncate text-[11px] font-semibold text-[var(--text-muted)]">
             {formatBaht(home?.totalSpendingSatang ?? 0, true)}
           </div>
         </div>
         <button
           type="button"
-          onclick={() => (activeTab = "summary")}
-          class="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-extrabold shadow-md active:scale-95 transition-transform"
-          style="background-color: var(--hero-btn-bg); color: var(--hero-btn-text);"
+          class="flex size-9 items-center justify-center rounded-full bg-[var(--brand-soft)] text-[var(--brand-text)]"
+          aria-label={t(lang, "backToTop")}
+          onclick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         >
-          <PieChart class="size-3.5" />
-          <span>{t(lang, "summary")}</span>
+          <ChevronDown class="size-5" />
         </button>
       </div>
     </header>
@@ -708,148 +794,108 @@
         </div>
       {/if}
 
-      <!-- Top Bar seamlessly matching canvas status bar -->
-      <div
-        class="px-4 pb-2 flex items-center justify-between bg-[var(--bg-canvas)]"
-        style="padding-top: {pullDistance > 6 && !isScanning ? '10px' : 'max(env(safe-area-inset-top), 38px)'};"
-      >
-        <div
-          class="inline-flex items-center gap-2 rounded-full bg-[var(--bg-card)] border border-[var(--border-subtle)] px-3 py-1.5 text-xs font-bold text-[var(--brand-text)] shadow-xs"
-        >
-          <Flame class="size-4 text-[var(--brand)]" />
-          <span>
-            {Math.max(home?.syncStreakDays ?? 0, home?.categorizeStreakDays ?? 0)}
-            {t(lang, "days")}
-          </span>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <button
-            type="button"
-            onclick={() => {
-              showSearch = true;
-              searchQuery = "";
-              searchResults = [];
-            }}
-            class="size-9 rounded-full bg-[var(--bg-card)] border border-[var(--border-subtle)] flex items-center justify-center text-[var(--text-primary)] shadow-xs active:scale-95 transition-transform"
-            aria-label={t(lang, "search")}
-          >
-            <Search class="size-4" />
-          </button>
-          <button
-            type="button"
-            onclick={() => (showFilterSheet = true)}
-            class="relative size-9 rounded-full bg-[var(--bg-card)] border border-[var(--border-subtle)] flex items-center justify-center text-[var(--text-primary)] shadow-xs active:scale-95 transition-transform"
-            aria-label={t(lang, "filterRecords")}
-          >
-            <Wallet class="size-4" />
-            {#if filterAccountIds.length > 0}
-              <span class="absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-[var(--brand)]"></span>
-            {/if}
-          </button>
-        </div>
-      </div>
-
-      <!-- Compact Mascot Speech Bubble (single source of status, points toward big piggy!) -->
-      <div class="px-4 mt-1 flex justify-end">
-        <div class="relative w-full rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] px-4 py-2.5 shadow-xs">
-          {#if isScanning}
-            <div class="text-xs font-bold text-[var(--brand-text)] flex items-center gap-2">
-              <Loader2 class="size-3.5 animate-spin shrink-0 text-[var(--brand)]" />
-              <span>{lang === "th" ? "กำลังสแกนสลิปในเครื่อง..." : "Scanning slips locally..."}</span>
-            </div>
-          {:else if scanBanner}
-            <div class="text-xs font-semibold text-emerald-500">{scanBanner}</div>
-          {:else if mascotSpeech}
-            <div class="text-xs font-semibold text-[var(--brand-text)]">{mascotSpeech}</div>
-          {:else}
-            <div class="flex items-center justify-between gap-2">
-              <div class="text-xs font-bold text-[var(--text-primary)] truncate">
-                {(home?.todayJottedCount ?? 0) > 0
-                  ? `${t(lang, "jottedToday")}: ${home?.todayJottedCount}`
-                  : lang === "th"
-                    ? "พร้อมจดสลิปอัตโนมัติแล้ว!"
-                    : "Ready to jot your Thai e-slips!"}
-              </div>
-              {#if (home?.needsReviewCount ?? 0) > 0}
-                <span class="text-[11px] text-[var(--text-muted)] shrink-0">
-                  {lang === "th"
-                    ? `รอตรวจ ${home?.needsReviewCount} รายการ`
-                    : `${home?.needsReviewCount} to review`}
-                </span>
-              {/if}
-            </div>
-          {/if}
-          <!-- Little speech tail pointing down-right toward the mascot -->
-          <span
-            class="absolute -bottom-1.5 right-16 size-3 rotate-45 bg-[var(--bg-card)] border-r border-b border-[var(--border-subtle)]"
-          ></span>
-        </div>
-      </div>
-
-      <!-- Signature Monthly Hero Card with BIG animated MooJot piggy overflowing the bottom right! -->
       <div
         bind:this={heroEl}
-        class="mx-4 mt-3 rounded-3xl text-white px-4 pt-4 pb-4 shadow-xl overflow-visible relative"
-        style="background: linear-gradient(135deg, var(--hero-from), var(--hero-to)); box-shadow: 0 14px 32px -12px var(--hero-shadow);"
+        role="group"
+        class="relative mx-3 overflow-hidden rounded-[28px] shadow-xl"
+        style="margin-top: {pullDistance > 6 && !isScanning ? '8px' : 'max(env(safe-area-inset-top), 12px)'}; background: {theme === 'pink-white' ? '#f3fff6' : '#141417'}; min-height: 228px;"
+        ontouchstart={onHeroTouchStart}
+        ontouchmove={onHeroTouchMove}
+        ontouchend={onHeroTouchEnd}
+        ontouchcancel={onHeroTouchEnd}
       >
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-1 font-bold text-white">
-            <button
-              type="button"
-              onclick={() => changePeriod(-1)}
-              class="size-7 rounded-full flex items-center justify-center active:bg-black/15"
-              aria-label="Previous period"
-            >
-              <ChevronLeft class="size-5" />
-            </button>
-            <span class="text-sm font-extrabold">{home?.period.label ?? "..."}</span>
-            <button
-              type="button"
-              onclick={() => changePeriod(1)}
-              class="size-7 rounded-full flex items-center justify-center active:bg-black/15"
-              aria-label="Next period"
-            >
-              <ChevronRight class="size-5" />
-            </button>
+        <svg class="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 360 228" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+          <ellipse cx="70" cy="78" rx="46" ry="18" fill={theme === "pink-white" ? "#ffffff" : "#1f1f24"} opacity="0.9" />
+          <ellipse cx="250" cy="64" rx="62" ry="22" fill={theme === "pink-white" ? "#ffffff" : "#1f1f24"} opacity="0.85" />
+          <ellipse cx="180" cy="96" rx="40" ry="14" fill={theme === "pink-white" ? "#ffffff" : "#26262c"} opacity="0.7" />
+          <path d="M0 168 C70 132 120 188 190 156 C250 130 300 170 360 142 L360 228 L0 228 Z" fill={theme === "pink-white" ? "#b7ebc6" : "#3f2a22"} />
+          <path d="M0 188 C80 160 140 210 220 184 C280 166 320 196 360 176 L360 228 L0 228 Z" fill={theme === "pink-white" ? "#86d59a" : "#7c3a12"} />
+        </svg>
+
+        <div class="relative z-10 flex min-h-[228px] flex-col px-3 pb-3 pt-3">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex min-w-0 items-center gap-1">
+              <button
+                type="button"
+                class="flex size-8 items-center justify-center rounded-full bg-white/90 text-[var(--text-primary)] shadow-sm"
+                aria-label="Previous period"
+                onclick={() => changePeriod(-1)}
+              >
+                <ChevronLeft class="size-4" />
+              </button>
+              <span class="truncate rounded-full bg-black/55 px-3 py-1 text-xs font-bold text-white">
+                {home?.period.label ?? "..."}
+              </span>
+              <button
+                type="button"
+                class="flex size-8 items-center justify-center rounded-full bg-white/90 text-[var(--text-primary)] shadow-sm"
+                aria-label="Next period"
+                onclick={() => changePeriod(1)}
+              >
+                <ChevronRight class="size-4" />
+              </button>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                class="flex size-9 items-center justify-center rounded-full bg-white text-[var(--text-primary)] shadow-sm"
+                aria-label={t(lang, "search")}
+                onclick={() => {
+                  showSearch = true;
+                  searchQuery = "";
+                  searchResults = [];
+                }}
+              >
+                <Search class="size-4" />
+              </button>
+              <button
+                type="button"
+                class="relative flex size-9 items-center justify-center rounded-full bg-white text-[var(--text-primary)] shadow-sm"
+                aria-label={t(lang, "filterRecords")}
+                onclick={() => (showFilterSheet = true)}
+              >
+                <Wallet class="size-4" />
+                {#if filterAccountIds.length > 0}
+                  <span class="absolute right-0.5 top-0.5 size-2 rounded-full bg-[var(--brand)]"></span>
+                {/if}
+              </button>
+            </div>
           </div>
 
-          <button
-            type="button"
-            onclick={() => (activeTab = "summary")}
-            class="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-extrabold shadow-md active:scale-95 transition-transform"
-            style="background-color: var(--hero-btn-bg); color: var(--hero-btn-text);"
-          >
-            <PieChart class="size-3.5" />
-            <span>{t(lang, "summary")}</span>
-          </button>
-        </div>
-
-        <!-- Total Spending (left) + BIG Interactive Animated Piggy overflowing past the bottom! -->
-        <div class="mt-2 flex items-end justify-between gap-2">
-          <div class="pb-1 min-w-0">
-            <div class="text-xs font-semibold text-white/85">
-              {t(lang, "totalSpending")}
+          <div class="mt-auto flex items-end justify-between gap-2">
+            <div class="min-w-0 pb-2 pl-1">
+              <div class="text-[11px] font-semibold text-[var(--text-secondary)]">
+                {t(lang, "totalSpending")}
+              </div>
+              <div class="text-2xl font-extrabold leading-tight text-[var(--text-primary)]">
+                {formatBaht(home?.totalSpendingSatang ?? 0, true)}
+              </div>
+              {#if isScanning}
+                <div class="mt-1 flex items-center gap-1 text-[11px] font-bold text-[var(--brand-text)]">
+                  <Loader2 class="size-3.5 animate-spin" />
+                  <span>{lang === "th" ? "กำลังสแกน..." : "Scanning..."}</span>
+                </div>
+              {:else if scanBanner || mascotSpeech}
+                <div class="mt-1 truncate text-[11px] font-semibold text-[var(--text-secondary)]">
+                  {scanBanner || mascotSpeech}
+                </div>
+              {/if}
             </div>
-            <div class="text-3xl font-extrabold tracking-tight text-white leading-tight mt-0.5">
-              {formatBaht(home?.totalSpendingSatang ?? 0, true)}
+            <div class="shrink-0">
+              <MooMascot
+                mood={isScanning || pullArmed ? "scan" : mascotMood}
+                size="hero"
+                onTap={handleMascotTap}
+                alt="MooJot mascot"
+              />
             </div>
-          </div>
-
-          <div class="relative z-10 -mb-10 -mr-2 shrink-0">
-            <MooMascot
-              mood={isScanning || pullArmed ? "scan" : mascotMood}
-              size="hero"
-              onTap={handleMascotTap}
-              alt="MooJot mascot"
-            />
           </div>
         </div>
       </div>
 
       <!-- Collapsible Future / Recurring Records Drawer -->
       {#if home && home.futureRecords.length > 0}
-        <div class="mx-4 mt-8 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] overflow-hidden shadow-xs">
+        <div class="mx-4 mt-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] overflow-hidden shadow-xs">
           <button
             type="button"
             onclick={() => (futureExpanded = !futureExpanded)}
@@ -920,7 +966,7 @@
       {/if}
 
       <!-- Daily Day-Gutter Timeline -->
-      <div class="{home && home.futureRecords.length > 0 ? 'mt-4' : 'mt-8'} space-y-3">
+      <div class="mt-4 space-y-3">
         {#if !home || home.dayGroups.length === 0}
           <div class="mx-4 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-8 text-center space-y-3 flex flex-col items-center shadow-xs">
             <EmptyMonthArt alt={t(lang, "noRecords")} />
@@ -1227,6 +1273,53 @@
       >
         {t(lang, "undo")}
       </button>
+    </div>
+  {/if}
+
+  {#if scanStartPrompt}
+    <div class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4">
+      <div class="w-full max-w-md rounded-3xl bg-[var(--bg-card)] p-5 shadow-xl">
+        <h2 class="text-base font-extrabold text-[var(--text-primary)]">{t(lang, "scanFrom")}</h2>
+        <p class="mt-1 text-xs text-[var(--text-muted)]">
+          {lang === "th"
+            ? "เดือนนี้เก่ากว่า 3 เดือน สลิปที่เคยสแกนแล้วจะถูกข้าม"
+            : "This month is older than 3 months. Slips already scanned are skipped."}
+        </p>
+        <div class="mt-4 flex flex-col gap-2">
+          {#if periodOffset < -3}
+            <button
+              type="button"
+              class="rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white"
+              onclick={() => startSlipScan(monthStartSec(periodOffset))}
+            >
+              {home?.period.label ?? monthLabel(periodOffset)}
+            </button>
+          {/if}
+          <button
+            type="button"
+            class="rounded-xl bg-[var(--brand-soft)] py-2.5 text-sm font-bold text-[var(--brand-text)]"
+            onclick={() => startSlipScan(threeMonthsAgoSec())}
+          >
+            {t(lang, "lastThreeMonths")}
+          </button>
+          {#each [-3, -2, -1, 0] as offset}
+            <button
+              type="button"
+              class="rounded-xl border border-[var(--border-subtle)] py-2.5 text-sm font-bold text-[var(--text-primary)]"
+              onclick={() => startSlipScan(monthStartSec(offset))}
+            >
+              {monthLabel(offset)}
+            </button>
+          {/each}
+          <button
+            type="button"
+            class="py-2 text-sm font-semibold text-[var(--text-muted)]"
+            onclick={() => (scanStartPrompt = false)}
+          >
+            {t(lang, "cancel")}
+          </button>
+        </div>
+      </div>
     </div>
   {/if}
 

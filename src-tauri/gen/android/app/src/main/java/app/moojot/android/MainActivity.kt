@@ -203,7 +203,7 @@ class MainActivity : TauriActivity() {
         }
 
         @JavascriptInterface
-        fun scanBankSlips(keywordsJson: String, includeShared: Boolean, limit: Int, _unused: Boolean) {
+        fun scanBankSlips(keywordsJson: String, includeShared: Boolean, sinceSec: Long, skipIdsJson: String) {
             if (!hasGalleryAccess()) {
                 val payload = JSONObject().apply { put("error", "PERMISSION_REQUIRED") }
                 emitEvent("moojot:scan-error", payload.toString())
@@ -216,15 +216,31 @@ class MainActivity : TauriActivity() {
                     keywords.add(arr.getString(i))
                 }
             } catch (_: Throwable) {}
+            val skipIds = mutableSetOf<String>()
+            try {
+                val arr = JSONArray(skipIdsJson)
+                for (i in 0 until arr.length()) {
+                    skipIds.add(arr.getString(i))
+                }
+            } catch (_: Throwable) {}
 
             ioExecutor.execute {
-                val candidates = MooJotScanner.scanBankAlbums(
+                MooJotScanner.scanBankAlbums(
                     context = this@MainActivity,
                     albumKeywords = keywords,
                     includeSharedAlbum = includeShared,
-                    limit = limit.coerceIn(1, 100)
-                )
-                emitEvent("moojot:scan-candidates", candidates.toString())
+                    limit = 80,
+                    skipIds = skipIds,
+                    sinceSec = sinceSec,
+                    batchSize = 8
+                ) { candidates, seenIds, done ->
+                    val payload = JSONObject().apply {
+                        put("candidates", candidates)
+                        put("seenIds", seenIds)
+                        put("done", done)
+                    }
+                    emitEvent("moojot:scan-batch", payload.toString())
+                }
             }
         }
 

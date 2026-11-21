@@ -28,6 +28,9 @@ const en = {
   allRecords: "All Records",
   noRecords: "No records yet",
   emptyHint: "Pull down to scan a slip, or tap + to add one.",
+  scanFrom: "Start scanning from",
+  lastThreeMonths: "Last 3 months",
+  backToTop: "Back to top",
   noResults: "No results found",
 
   // Slips / OCR
@@ -212,6 +215,9 @@ const th: Record<I18nKey, string> = {
   allRecords: "รายการทั้งหมด",
   noRecords: "ยังไม่มีรายการ",
   emptyHint: "ดึงลงเพื่อสแกนสลิป หรือกด + เพื่อจดรายการ",
+  scanFrom: "เริ่มสแกนตั้งแต่",
+  lastThreeMonths: "3 เดือนล่าสุด",
+  backToTop: "กลับขึ้นบน",
   noResults: "ไม่พบผลลัพธ์",
 
   // Slips / OCR
