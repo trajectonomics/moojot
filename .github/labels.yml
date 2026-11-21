@@ -14,7 +14,7 @@
 - { name: "status:needs-info",    color: "f9d0c4", description: "Waiting for the REPORTER; closed after 14 days with no reply" }
 - { name: "status:waiting-owner", color: "e99695", description: "Waiting for the OWNER (/approve, /reject, /info ...)" }
 - { name: "status:spec",          color: "c5def5", description: "Bot: write the spec" }
-- { name: "status:ready",         color: "0e8a16", description: "Spec approved; waiting for a builder agent" }
+- { name: "status:ready",         color: "0e8a16", description: "Approved to build. Write access can add this label to send it to implementation" }
 - { name: "status:building",      color: "1d76db", description: "Builder agent is working on a PR" }
 - { name: "status:in-review",     color: "5319e7", description: "PR open; reviewer model + CI" }
 

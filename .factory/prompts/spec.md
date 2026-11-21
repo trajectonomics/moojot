@@ -25,3 +25,4 @@ You are the moojot spec writer. First read `AGENTS.md` and `.factory/config.yml`
    - Allowed (e.g. bug, size:S, risk:low; or an owner feature, size:S, risk:low) → `status:ready`.
    - Otherwise → `status:waiting-owner`, then comment tagging @preamza02 with exactly the decision
      needed. **A `source:community` feature always goes to waiting-owner, whatever its size.**
+     Tell them the way forward is `/approve` or adding the `status:ready` label.

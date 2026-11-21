@@ -16,7 +16,7 @@ flowchart TD
     SP --> D{"Auto allowed? (config.yml)"}
     D -->|"yes: S + low risk, and not a community feature"| R["status:ready"]
     D -->|no| O["status:waiting-owner: tag @preamza02"]
-    O -->|"/approve"| R
+    O -->|"/approve or status:ready"| R
     O -->|"/reject"| W["close: resolution:wontfix"]
     O -->|"/info"| NI
     R --> B["status:building: builder agent"]
@@ -31,6 +31,7 @@ flowchart TD
 |---|---|---|---|
 | Intake (labels, source, re-triage on reply) | issue/comment events | GitHub Actions, no AI | `.github/workflows/factory-intake.yml` |
 | Owner commands | owner comments `/…` | GitHub Actions, no AI | `.github/workflows/factory-commands.yml` |
+| Label move | write access adds a `status:*` label | GitHub Actions, no AI | `.github/workflows/factory-labels.yml` |
 | Stale needs-info | daily | GitHub Actions, no AI | `.github/workflows/factory-stale.yml` |
 | Triage | `status:triage` | AI agent | `prompts/triage.md` |
 | Spec | `status:spec` | AI agent | `prompts/spec.md` |
@@ -49,6 +50,8 @@ flowchart TD
 | `/size S\|M\|L`, `/risk low\|high` | Override the bot's estimate |
 | `/stop`, `/resume` | Add/remove `factory:hold` |
 | `/merge` | (PR) enable auto-merge once checks pass |
+
+Applying the `status:ready` label yourself does the same thing as `/approve`. That is the tag that sends an issue to implementation, including a community feature that stopped at spec. Anyone with write, maintain, or admin on the repo can do it. Other `status:*` labels you add become the only status, so the matching stage runs next. `type:security` never queues, and `factory:hold` still blocks the builder until `/resume`.
 
 ## Kill switch
 Set the repo variable `FACTORY_PAUSED=true` (Settings → Secrets and variables → Actions → Variables).

@@ -9,7 +9,7 @@ auto_merge:
   allowed:
     - { type: bug,     source: any }
     - { type: docs,    source: any }
-    - { type: feature, source: owner }   # community features ALWAYS stop at spec
+    - { type: feature, source: owner }   # community features stop at spec until /approve or status:ready
   requires:
     size: S
     risk: low

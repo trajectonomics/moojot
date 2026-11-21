@@ -1,0 +1,65 @@
+name: factory-labels
+# Deterministic (no AI): a person with write access moves an issue by applying
+# a status:* label. status:ready is approval to build, including a community
+# feature that stopped at spec. Slash commands stay in factory-commands.yml.
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  issues: write
+
+concurrency:
+  group: factory-issue-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  label:
+    if: ${{ github.event.sender.type != 'Bot' && github.event.issue.state == 'open' && startsWith(github.event.label.name, 'status:') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const issue = context.payload.issue;
+            const n = issue.number;
+            const added = context.payload.label.name;
+            const actor = context.payload.sender.login;
+            const labels = issue.labels.map(l => l.name);
+
+            const remove = (name) => github.rest.issues.removeLabel({ owner, repo, issue_number: n, name }).catch(() => {});
+            const note = (body) => github.rest.issues.createComment({ owner, repo, issue_number: n, body: `${body}\n<!-- factory:label -->` });
+
+            let perm = 'none';
+            try {
+              ({ data: { permission: perm } } = await github.rest.repos.getCollaboratorPermissionLevel({ owner, repo, username: actor }));
+            } catch {}
+            const editor = ['admin', 'maintain', 'write'].includes(perm);
+
+            if (added === 'status:ready' && labels.includes('type:security')) {
+              await remove('status:ready');
+              await note('Security issues stay with the maintainer. This one was not queued for implementation.');
+              return;
+            }
+
+            if (!editor) {
+              if (added === 'status:ready') {
+                await remove('status:ready');
+                await note('Only people with write access on this repo can send an issue to implementation.');
+              }
+              core.info(`ignored: ${actor} has ${perm}`);
+              return;
+            }
+
+            for (const l of labels) {
+              if (l.startsWith('status:') && l !== added) await remove(l);
+            }
+
+            if (added === 'status:ready') {
+              const held = labels.includes('factory:hold');
+              await note(held
+                ? 'Marked `status:ready`, but `factory:hold` is on, so a builder will skip it until `/resume`.'
+                : 'Queued for implementation. A builder will pick this up from `status:ready`.');
+            }
