@@ -182,10 +182,23 @@
   async function changePeriod(delta: number) {
     periodOffset += delta;
     stickyVisible = false;
+    monthDrag = 0;
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "instant" });
     }
-    await refreshPeriodData();
+    const request = ++periodRequest;
+    const offset = periodOffset;
+    const [h, sum, cmp, bdgs] = await Promise.all([
+      api.getHomeData(offset, filterAccountIds),
+      api.getSummaryData(offset, summaryKind, filterAccountIds),
+      api.getCompareData(offset, summaryKind, 6),
+      api.getBudgets(offset),
+    ]);
+    if (request !== periodRequest) return;
+    home = h;
+    summary = sum;
+    compare = cmp;
+    budgets = bdgs;
   }
 
   function celebrateMascot(msgEn: string, msgTh: string, durationMs = 3200) {
@@ -219,11 +232,11 @@
   let homeMain = $state<HTMLElement | null>(null);
   let monthDrag = $state(0);
   let monthDragging = $state(false);
-  let monthAnimating = $state(false);
   let gesture: { x: number; y: number; axis: "undecided" | "h" | "v" } | null = null;
+  let periodRequest = 0;
 
   function onHomeTouchStart(e: TouchEvent) {
-    if (activeTab !== "home" || anyModalOpen || isScanning || monthAnimating) return;
+    if (activeTab !== "home" || anyModalOpen || isScanning) return;
     const target = e.target;
     if (target instanceof Element && target.closest("[data-swipe-row], button, a, input")) return;
     if (e.touches.length !== 1) return;
@@ -239,7 +252,7 @@
   }
 
   function onHomeTouchMove(e: TouchEvent) {
-    if (!gesture || isScanning || anyModalOpen || monthAnimating || e.touches.length !== 1) return;
+    if (!gesture || isScanning || anyModalOpen || e.touches.length !== 1) return;
     const dx = e.touches[0].clientX - gesture.x;
     const dy = e.touches[0].clientY - gesture.y;
     if (gesture.axis === "undecided") {
@@ -248,7 +261,7 @@
     }
     if (gesture.axis === "h") {
       monthDragging = true;
-      monthDrag = Math.max(-160, Math.min(160, dx));
+      monthDrag = Math.max(-96, Math.min(96, dx));
       if (e.cancelable) e.preventDefault();
       return;
     }
@@ -268,9 +281,9 @@
       const dx = monthDrag;
       gesture = null;
       monthDragging = false;
-      if (dx <= -56) void slideMonth(1);
-      else if (dx >= 56) void slideMonth(-1);
-      else monthDrag = 0;
+      monthDrag = 0;
+      if (dx <= -48) void changePeriod(1);
+      else if (dx >= 48) void changePeriod(-1);
       return;
     }
     const shouldScan = pullArmed && !isScanning;
@@ -286,29 +299,6 @@
     monthDrag = 0;
     pullDistance = 0;
     pullArmed = false;
-  }
-
-  let slideToken = 0;
-
-  async function slideMonth(delta: number) {
-    const token = ++slideToken;
-    monthAnimating = true;
-    monthDragging = false;
-    monthDrag = delta > 0 ? -88 : 88;
-    await new Promise((resolve) => setTimeout(resolve, 160));
-    if (token !== slideToken) return;
-    monthDragging = true;
-    monthDrag = delta > 0 ? 88 : -88;
-    await changePeriod(delta);
-    if (token !== slideToken) return;
-    requestAnimationFrame(() => {
-      if (token !== slideToken) return;
-      monthDragging = false;
-      monthDrag = 0;
-    });
-    setTimeout(() => {
-      if (token === slideToken) monthAnimating = false;
-    }, 200);
   }
 
   async function refreshAll() {
@@ -794,6 +784,19 @@
             </div>
           {/if}
           <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="text-[11px] font-semibold text-white/85">
+                {t(lang, "totalSpending")}
+              </div>
+              <div class="text-2xl font-extrabold leading-tight text-white">
+                {formatBaht(home?.totalSpendingSatang ?? 0, true)}
+              </div>
+              {#if isScanning}
+                <div class="mt-1 text-[11px] font-bold text-white">
+                  {lang === "th" ? "กำลังสแกน..." : "Scanning..."}
+                </div>
+              {/if}
+            </div>
             <div class="flex items-center gap-2">
               <button
                 type="button"
@@ -819,22 +822,18 @@
                 {/if}
               </button>
             </div>
-            <div class="min-w-0 text-right">
-              <div class="text-[11px] font-semibold text-white/85">
-                {t(lang, "totalSpending")}
-              </div>
-              <div class="text-2xl font-extrabold leading-tight text-white">
-                {formatBaht(home?.totalSpendingSatang ?? 0, true)}
-              </div>
-              {#if isScanning}
-                <div class="mt-1 text-[11px] font-bold text-white">
-                  {lang === "th" ? "กำลังสแกน..." : "Scanning..."}
-                </div>
-              {/if}
-            </div>
           </div>
 
-          <div class="mt-auto flex items-end justify-between gap-2 pt-6">
+          {#if scanBanner || mascotSpeech}
+            <div class="flex shrink-0 justify-start py-2 pr-28">
+              <div class="relative max-w-[180px] rounded-2xl bg-white px-3 py-2 text-left text-[11px] font-bold leading-snug text-[#18181b] shadow-lg">
+                {scanBanner || mascotSpeech}
+                <span class="absolute -right-1.5 bottom-3 size-3 rotate-45 bg-white"></span>
+              </div>
+            </div>
+          {/if}
+
+          <div class="mt-auto flex items-end justify-between gap-2">
             <div class="flex min-w-0 items-center gap-1 pb-2">
               <button
                 type="button"
@@ -857,12 +856,6 @@
               </button>
             </div>
             <div class="relative shrink-0">
-              {#if scanBanner || mascotSpeech}
-                <div class="absolute bottom-[88%] right-2 z-20 w-max max-w-[168px] rounded-2xl bg-white px-3 py-2 text-left text-[11px] font-bold leading-snug text-[#18181b] shadow-lg">
-                  {scanBanner || mascotSpeech}
-                  <span class="absolute -bottom-1.5 right-7 size-3 rotate-45 bg-white"></span>
-                </div>
-              {/if}
               <MooMascot
                 mood={isScanning || pullArmed ? "scan" : mascotMood}
                 size="hero"
