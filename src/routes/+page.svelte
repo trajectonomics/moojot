@@ -32,7 +32,7 @@
   import { formatBaht } from "$lib/format";
   import { t } from "$lib/i18n";
   import { omitFromCompare, omitFromSummary, omitRecord } from "$lib/ledgerPatch";
-  import { loadSavedTheme, saveTheme, type AppTheme } from "$lib/theme";
+  import { loadSavedHand, loadSavedTheme, saveHand, saveTheme, type AppTheme, type HandMode } from "$lib/theme";
   import type {
     Account,
     AppSettings,
@@ -51,6 +51,7 @@
   } from "$lib/types";
 
   let theme = $state<AppTheme>(loadSavedTheme());
+  let hand = $state<HandMode>(loadSavedHand());
   let activeTab = $state<"home" | "summary" | "settings">("home");
   let settingsSubPage = $state<SettingsSubPage>(null);
   let periodOffset = $state<number>(0);
@@ -132,6 +133,7 @@
   // Apply theme attribute & sync Android status bar icon contrast cleanly per screen!
   $effect(() => {
     saveTheme(theme);
+    saveHand(hand);
     const hasColoredTopBar =
       activeTab === "summary" ||
       activeTab === "settings" ||
@@ -732,7 +734,7 @@
       style="padding-top: env(safe-area-inset-top); background: linear-gradient(180deg, var(--hero-from), var(--hero-to));"
       aria-hidden={!stickyVisible}
     >
-      <div class="flex items-center justify-between gap-3 px-4 py-3">
+      <div class="flex items-center justify-between gap-3 px-4 py-3 {hand === 'left' ? 'flex-row-reverse' : ''}">
         <div class="min-w-0">
           <div class="truncate text-sm font-extrabold">{home?.period.label ?? "..."}</div>
           <div class="truncate text-xs font-semibold text-white/85">
@@ -783,8 +785,8 @@
               </p>
             </div>
           {/if}
-          <div class="flex items-start justify-between gap-3">
-            <div class="min-w-0">
+          <div class="flex items-start justify-between gap-3 {hand === 'left' ? 'flex-row-reverse' : ''}">
+            <div class="min-w-0 {hand === 'left' ? 'text-right' : ''}">
               <div class="text-[11px] font-semibold text-white/85">
                 {t(lang, "totalSpending")}
               </div>
@@ -825,15 +827,19 @@
           </div>
 
           {#if scanBanner || mascotSpeech}
-            <div class="flex shrink-0 justify-start py-2 pr-28">
-              <div class="relative max-w-[180px] rounded-2xl bg-white px-3 py-2 text-left text-[11px] font-bold leading-snug text-[#18181b] shadow-lg">
+            <div
+              class="pointer-events-none absolute top-[40%] z-20 {hand === 'right' ? 'left-[34%] right-4' : 'left-4 right-[34%]'}"
+            >
+              <div class="relative mx-auto w-fit max-w-[168px] rounded-2xl bg-white px-3 py-1.5 text-left text-[11px] font-bold leading-snug text-[#18181b] shadow-lg">
                 {scanBanner || mascotSpeech}
-                <span class="absolute -right-1.5 bottom-3 size-3 rotate-45 bg-white"></span>
+                <span
+                  class="absolute -bottom-1 size-2.5 rotate-45 bg-white {hand === 'right' ? 'left-3' : 'right-3'}"
+                ></span>
               </div>
             </div>
           {/if}
 
-          <div class="mt-auto flex items-end justify-between gap-2">
+          <div class="mt-auto flex items-end justify-between gap-2 {hand === 'right' ? 'flex-row-reverse' : ''}">
             <div class="flex min-w-0 items-center gap-1 pb-2">
               <button
                 type="button"
@@ -1168,9 +1174,13 @@
       {isScanning}
       {mascotMood}
       {theme}
+      {hand}
       bind:subPage={settingsSubPage}
       onChangeTheme={(nextTheme) => {
         theme = nextTheme;
+      }}
+      onChangeHand={(nextHand) => {
+        hand = nextHand;
       }}
       onSaveSettings={async (next) => {
         await api.updateSettings(next);

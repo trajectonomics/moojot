@@ -22,7 +22,7 @@
   import CategoryIcon from "./CategoryIcon.svelte";
   import MooMascot, { type MascotMood } from "./MooMascot.svelte";
   import { t } from "$lib/i18n";
-  import type { AppTheme } from "$lib/theme";
+  import type { AppTheme, HandMode } from "$lib/theme";
   import type { Account, AppSettings, Category, Tag } from "$lib/types";
 
   export type SettingsSubPage =
@@ -41,8 +41,10 @@
     isScanning,
     mascotMood = "idle",
     theme = "pink-white",
+    hand = "right",
     subPage = $bindable<SettingsSubPage>(null),
     onChangeTheme,
+    onChangeHand,
     onSaveSettings,
     onToggleAccount,
     onScanNow,
@@ -64,8 +66,10 @@
     isScanning: boolean;
     mascotMood?: MascotMood;
     theme?: AppTheme;
+    hand?: HandMode;
     subPage?: SettingsSubPage;
     onChangeTheme: (next: AppTheme) => void;
+    onChangeHand: (next: HandMode) => void;
     onSaveSettings: (next: AppSettings) => Promise<void>;
     onToggleAccount: (id: string, enabled: boolean) => Promise<void>;
     onScanNow: () => Promise<void>;
@@ -517,6 +521,37 @@
                   {lang === "th" ? "โหมดมืด" : "Dark mode"}
                 </div>
               </div>
+            </button>
+          </div>
+        </section>
+
+        <section class="rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-4 space-y-3 shadow-xs">
+          <h3 class="text-sm font-bold text-[var(--text-primary)]">
+            {lang === "th" ? "มือที่ใช้" : "Hand"}
+          </h3>
+          <p class="text-[11px] text-[var(--text-muted)]">
+            {lang === "th"
+              ? "ปุ่มอยู่ฝั่งมือที่คุณใช้"
+              : "Buttons sit on the hand you use."}
+          </p>
+          <div class="grid grid-cols-2 gap-2.5">
+            <button
+              type="button"
+              onclick={() => onChangeHand("left")}
+              class="py-2.5 rounded-xl text-xs font-bold border {hand === 'left'
+                ? 'bg-[var(--brand)] text-white border-[var(--brand)]'
+                : 'bg-[var(--bg-input)] text-[var(--text-primary)] border-[var(--border-subtle)]'}"
+            >
+              {lang === "th" ? "มือซ้าย" : "Left hand"}
+            </button>
+            <button
+              type="button"
+              onclick={() => onChangeHand("right")}
+              class="py-2.5 rounded-xl text-xs font-bold border {hand === 'right'
+                ? 'bg-[var(--brand)] text-white border-[var(--brand)]'
+                : 'bg-[var(--bg-input)] text-[var(--text-primary)] border-[var(--border-subtle)]'}"
+            >
+              {lang === "th" ? "มือขวา" : "Right hand"}
             </button>
           </div>
         </section>

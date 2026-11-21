@@ -1,4 +1,5 @@
 export type AppTheme = "pink-white" | "orange-black";
+export type HandMode = "left" | "right";
 
 const STORAGE_KEY = "moojot_theme";
 
@@ -21,4 +22,26 @@ export function saveTheme(theme: AppTheme) {
     // ignore
   }
   document.documentElement.dataset.theme = theme;
+}
+
+const HAND_KEY = "moojot_hand";
+
+export function loadSavedHand(): HandMode {
+  if (typeof window === "undefined") return "right";
+  try {
+    const raw = window.localStorage.getItem(HAND_KEY);
+    if (raw === "left" || raw === "right") return raw;
+  } catch {
+    // ignore storage restrictions
+  }
+  return "right";
+}
+
+export function saveHand(hand: HandMode) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(HAND_KEY, hand);
+  } catch {
+    // ignore
+  }
 }
