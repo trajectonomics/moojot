@@ -24,6 +24,7 @@
   import SummaryView from "$lib/components/SummaryView.svelte";
   import SettingsView, { type SettingsSubPage } from "$lib/components/SettingsView.svelte";
   import RulesModal from "$lib/components/RulesModal.svelte";
+  import ThumbSheet from "$lib/components/ThumbSheet.svelte";
   import {
     api,
     hasAndroidBridge,
@@ -99,12 +100,11 @@
   let pdfBusy = $state(false);
   let scanStartPrompt = $state(false);
   let monthPicker = $state(false);
-  let monthSheetDrag = $state(0);
-  let monthSheetStartY = 0;
   let scannedMonths = $state<string[]>([]);
   let scanSinceSec = 0;
-  let sheetDrag = $state(0);
-  let sheetStartY = 0;
+  const monthSheet = { current: null as (() => void) | null };
+  const filterSheet = { current: null as (() => void) | null };
+  const scanSheet = { current: null as (() => void) | null };
   let undoDelete = $state<{
     recordId: string;
     home: HomePayload;
@@ -191,7 +191,6 @@
 
   async function goToPeriod(offset: number) {
     monthPicker = false;
-    monthSheetDrag = 0;
     if (offset === periodOffset) return;
     periodOffset = offset;
     stickyVisible = false;
@@ -218,26 +217,7 @@
   }
 
   function openMonthPicker() {
-    monthSheetDrag = 0;
     monthPicker = true;
-  }
-
-  function onMonthSheetStart(event: TouchEvent) {
-    if (event.touches.length !== 1) return;
-    monthSheetStartY = event.touches[0].clientY;
-    monthSheetDrag = 0;
-  }
-
-  function onMonthSheetMove(event: TouchEvent) {
-    if (event.touches.length !== 1) return;
-    const scroller = event.currentTarget as HTMLElement;
-    const dy = event.touches[0].clientY - monthSheetStartY;
-    monthSheetDrag = scroller.scrollTop <= 0 ? Math.max(0, dy) : 0;
-  }
-
-  function onMonthSheetEnd() {
-    if (monthSheetDrag > 72) monthPicker = false;
-    monthSheetDrag = 0;
   }
 
   function celebrateMascot(msgEn: string, msgTh: string, durationMs = 3200) {
@@ -437,22 +417,6 @@
     return keys;
   }
 
-  function onSheetStart(event: TouchEvent) {
-    if (event.touches.length !== 1) return;
-    sheetStartY = event.touches[0].clientY;
-    sheetDrag = 0;
-  }
-
-  function onSheetMove(event: TouchEvent) {
-    if (event.touches.length !== 1) return;
-    sheetDrag = Math.max(0, event.touches[0].clientY - sheetStartY);
-  }
-
-  function onSheetEnd() {
-    if (sheetDrag > 72) scanStartPrompt = false;
-    sheetDrag = 0;
-  }
-
   async function triggerSlipScan() {
     showFabMenu = false;
     if (!hasAndroidBridge() || !window.MooJotAndroid) {
@@ -468,7 +432,6 @@
       return;
     }
     if (!scannedMonths.includes(monthKey(periodOffset))) {
-      sheetDrag = 0;
       scanStartPrompt = true;
       return;
     }
@@ -479,7 +442,6 @@
     if (!window.MooJotAndroid) return;
     scanSinceSec = sinceSec;
     scanStartPrompt = false;
-    sheetDrag = 0;
     isScanning = true;
     scanBanner = lang === "th" ? "กำลังสแกนสลิปใหม่..." : "Scanning new slips...";
     const [keywords, knownIds] = await Promise.all([
@@ -526,11 +488,11 @@
   $effect(() => {
     window.__moojotHandleBack = () => {
       if (monthPicker) {
-        monthPicker = false;
+        monthSheet.current?.();
         return "handled";
       }
       if (scanStartPrompt) {
-        scanStartPrompt = false;
+        scanSheet.current?.();
         return "handled";
       }
       if (pdfPrompt) {
@@ -556,7 +518,7 @@
         return "handled";
       }
       if (showFilterSheet) {
-        showFilterSheet = false;
+        filterSheet.current?.();
         return "handled";
       }
       if (showFabMenu) {
@@ -808,7 +770,7 @@
   }
 </script>
 
-<div class="min-h-screen bg-[var(--bg-canvas)] text-[var(--text-primary)] flex flex-col">
+<div class="min-h-screen max-w-full overflow-x-clip bg-[var(--bg-canvas)] text-[var(--text-primary)] flex flex-col">
   {#if activeTab === "home"}
     <header
       class="fixed inset-x-0 top-0 z-40 text-white transition-transform duration-200 ease-out {stickyVisible
@@ -844,7 +806,7 @@
 
     <main
       bind:this={homeMain}
-      class="flex-1 pb-28"
+      class="flex-1 overflow-x-clip pb-28 touch-pan-y"
       ontouchstart={onHomeTouchStart}
       ontouchend={onHomeTouchEnd}
       ontouchcancel={onHomeTouchCancel}
@@ -968,8 +930,10 @@
         </div>
       </div>
 
+      <div class="overflow-x-clip">
       <div
-        style="transform: translateX({monthDrag}px); transition: {monthDragging ? 'none' : 'transform 180ms ease'};"
+        class="max-w-full"
+        style="transform: translate3d({monthDrag}px, 0, 0); transition: {monthDragging ? 'none' : 'transform 180ms ease'};"
       >
       <!-- Collapsible Future / Recurring Records Drawer -->
       {#if home && home.futureRecords.length > 0}
@@ -1161,6 +1125,7 @@
             </div>
           {/each}
         {/if}
+      </div>
       </div>
       </div>
     </main>
@@ -1360,72 +1325,45 @@
   {/if}
 
   {#if monthPicker}
-    <button
-      type="button"
-      class="fixed inset-0 z-50 bg-black/50"
-      aria-label={t(lang, "close")}
-      onclick={() => (monthPicker = false)}
-    ></button>
-    <div
-      role="dialog"
-      tabindex="-1"
-      class="fixed inset-x-0 bottom-0 z-50 max-h-[70vh] overflow-y-auto rounded-t-3xl bg-[var(--bg-card)] px-5 pt-3 shadow-xl"
-      style="transform: translateY({monthSheetDrag}px); padding-bottom: max(env(safe-area-inset-bottom), 20px); transition: {monthSheetDrag === 0 ? 'transform 180ms ease' : 'none'};"
-      ontouchstart={onMonthSheetStart}
-      ontouchmove={onMonthSheetMove}
-      ontouchend={onMonthSheetEnd}
-      ontouchcancel={onMonthSheetEnd}
+    <ThumbSheet
+      title={lang === "th" ? "ไปที่เดือน" : "Go to month"}
+      labelId="month-sheet-title"
+      closeLabel={t(lang, "close")}
+      close={monthSheet}
+      onClose={() => (monthPicker = false)}
     >
-      <div class="mx-auto mb-3 h-1.5 w-10 rounded-full bg-[var(--border-strong)]"></div>
-      <h2 class="text-base font-extrabold text-[var(--text-primary)]">
-        {lang === "th" ? "ไปที่เดือน" : "Go to month"}
-      </h2>
       <button
         type="button"
-        class="mt-3 w-full rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white"
+        class="w-full rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white"
         onclick={() => goToPeriod(0)}
       >
-        {lang === "th" ? "เดือนนี้" : "Current month"}
-        {periodOffset === 0 ? "" : ` · ${monthLabel(0)}`}
+        {lang === "th" ? "เดือนนี้" : "This month"}
       </button>
-      <div class="mt-3 flex flex-col gap-2">
-        {#each [1, 0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12] as offset (offset)}
+      <div class="mt-2 flex flex-col gap-2">
+        {#each [1, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12] as offset (offset)}
           <button
             type="button"
-            class="rounded-xl py-2.5 text-sm font-bold {offset === 0
-              ? 'bg-[var(--brand)] text-white'
-              : offset === periodOffset
-                ? 'border border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand-text)]'
-                : 'border border-[var(--border-subtle)] bg-[var(--bg-card)] text-[var(--text-primary)]'}"
+            class="rounded-xl py-2.5 text-sm font-bold {offset === periodOffset
+              ? 'border border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand-text)]'
+              : 'border border-[var(--border-subtle)] bg-[var(--bg-card)] text-[var(--text-primary)]'}"
             onclick={() => goToPeriod(offset)}
           >
             {monthLabel(offset)}
           </button>
         {/each}
       </div>
-    </div>
+    </ThumbSheet>
   {/if}
 
   {#if scanStartPrompt}
-    <button
-      type="button"
-      class="fixed inset-0 z-50 bg-black/50"
-      aria-label={t(lang, "close")}
-      onclick={() => (scanStartPrompt = false)}
-    ></button>
-    <div
-      role="dialog"
-      tabindex="-1"
-      class="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-[var(--bg-card)] px-5 pt-3 shadow-xl"
-      style="transform: translateY({sheetDrag}px); padding-bottom: max(env(safe-area-inset-bottom), 20px); transition: {sheetDrag === 0 ? 'transform 180ms ease' : 'none'};"
-      ontouchstart={onSheetStart}
-      ontouchmove={onSheetMove}
-      ontouchend={onSheetEnd}
-      ontouchcancel={onSheetEnd}
+    <ThumbSheet
+      title={t(lang, "scanFrom")}
+      labelId="scan-sheet-title"
+      closeLabel={t(lang, "close")}
+      close={scanSheet}
+      onClose={() => (scanStartPrompt = false)}
     >
-      <div class="mx-auto mb-3 h-1.5 w-10 rounded-full bg-[var(--border-strong)]"></div>
-      <h2 class="text-base font-extrabold text-[var(--text-primary)]">{t(lang, "scanFrom")}</h2>
-      <p class="mt-1 text-xs text-[var(--text-muted)]">
+      <p class="text-xs text-[var(--text-muted)]">
         {lang === "th"
           ? "แตะเดือนแรกที่จะรวม สลิปที่สแกนแล้วจะถูกข้าม"
           : "Tap the first month to include. Slips already scanned are skipped."}
@@ -1475,7 +1413,7 @@
           </div>
         {/if}
       </div>
-    </div>
+    </ThumbSheet>
   {/if}
 
   {#if pdfPrompt}
@@ -1660,68 +1598,64 @@
     </div>
   {/if}
 
-  <!-- Filter Records Bottom Sheet (All 20 Banks + Cash) -->
   {#if showFilterSheet}
-    <div class="fixed inset-0 z-50 bg-black/60 flex flex-col justify-end overscroll-contain">
-      <div class="bg-[var(--bg-card)] text-[var(--text-primary)] border-t border-[var(--border-subtle)] rounded-t-3xl max-h-[80vh] flex flex-col">
-        <div class="px-5 py-4 border-b border-[var(--border-subtle)] flex items-center justify-between shrink-0">
-          <h3 class="font-bold text-base">{t(lang, "filterRecords")}</h3>
-          <button
-            type="button"
-            onclick={async () => {
-              filterAccountIds = [];
-              await refreshPeriodData();
-              showFilterSheet = false;
-            }}
-            class="text-sm font-bold text-[var(--brand)]"
-          >
-            {t(lang, "reset")}
-          </button>
-        </div>
-        <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-3 space-y-2">
-          {#each accounts as acc}
-            {@const checked = filterAccountIds.includes(acc.id)}
-            <label class="flex items-center justify-between py-2">
-              <div class="flex items-center gap-3">
-                <span
-                  class="size-4 rounded-full"
-                  style="background-color: {acc.color};"
-                ></span>
-                <span class="text-sm font-medium text-[var(--text-primary)]">
-                  {lang === "th" ? acc.nameTh : acc.nameEn}
-                </span>
-              </div>
-              <input
-                type="checkbox"
-                {checked}
-                onchange={() => {
-                  if (checked) {
-                    filterAccountIds = filterAccountIds.filter((x) => x !== acc.id);
-                  } else {
-                    filterAccountIds = [...filterAccountIds, acc.id];
-                  }
-                }}
-                class="size-5 accent-[var(--brand)]"
-              />
-            </label>
-          {/each}
-        </div>
-        <div
-          class="p-4 border-t border-[var(--border-subtle)] shrink-0"
-          style="padding-bottom: max(env(safe-area-inset-bottom), 20px);"
+    <ThumbSheet
+      title={t(lang, "filterRecords")}
+      labelId="filter-sheet-title"
+      closeLabel={t(lang, "close")}
+      close={filterSheet}
+      onClose={() => (showFilterSheet = false)}
+    >
+      {#snippet actions()}
+        <button
+          type="button"
+          onclick={async () => {
+            filterAccountIds = [];
+            await refreshPeriodData();
+            filterSheet.current?.();
+          }}
+          class="text-sm font-bold text-[var(--brand)]"
         >
-          <button
-            type="button"
-            onclick={async () => {
-              await refreshPeriodData();
-              showFilterSheet = false;
-            }}
-            class="w-full py-3 rounded-full bg-[var(--brand)] text-white font-bold text-sm active:bg-[var(--brand-deep)]"
-          >
-            {t(lang, "apply")}
-          </button>
-        </div>
+          {t(lang, "reset")}
+        </button>
+      {/snippet}
+      <div class="space-y-1">
+        {#each accounts as acc}
+          {@const checked = filterAccountIds.includes(acc.id)}
+          <label class="flex items-center justify-between py-2">
+            <div class="flex items-center gap-3">
+              <span class="size-4 rounded-full" style="background-color: {acc.color};"></span>
+              <span class="text-sm font-medium text-[var(--text-primary)]">
+                {lang === "th" ? acc.nameTh : acc.nameEn}
+              </span>
+            </div>
+            <input
+              type="checkbox"
+              {checked}
+              onchange={() => {
+                if (checked) {
+                  filterAccountIds = filterAccountIds.filter((x) => x !== acc.id);
+                } else {
+                  filterAccountIds = [...filterAccountIds, acc.id];
+                }
+              }}
+              class="size-5 accent-[var(--brand)]"
+            />
+          </label>
+        {/each}
       </div>
-    </div>
+      {#snippet footer()}
+        <button
+          type="button"
+          onclick={async () => {
+            await refreshPeriodData();
+            filterSheet.current?.();
+          }}
+          class="w-full rounded-full bg-[var(--brand)] py-3 text-sm font-bold text-white active:bg-[var(--brand-deep)]"
+        >
+          {t(lang, "apply")}
+        </button>
+      {/snippet}
+    </ThumbSheet>
   {/if}
 </div>
