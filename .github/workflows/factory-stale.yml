@@ -1,0 +1,28 @@
+name: factory-stale
+# Deterministic (no AI): close issues that waited on the reporter for 14 days.
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          only-issue-labels: "status:needs-info"
+          days-before-issue-stale: 14
+          days-before-issue-close: 0
+          stale-issue-label: "resolution:stale"
+          labels-to-remove-when-stale: "status:needs-info"
+          close-issue-reason: not_planned
+          close-issue-message: >
+            Closing because we didn't get the info we needed within 14 days.
+            Reply with the details and the maintainer can reopen it. Thanks! 🐷
+          days-before-pr-stale: -1
+          days-before-pr-close: -1

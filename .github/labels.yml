@@ -1,0 +1,44 @@
+# Source of truth for repo labels. Sync with: scripts/sync-labels.sh [--prune]
+# Every open issue has exactly one type:* and exactly one status:* label.
+
+# --- Category -------------------------------------------------------------
+- { name: "type:bug",      color: "d73a4a", description: "Something is broken compared to expected behavior" }
+- { name: "type:feature",  color: "a2eeef", description: "New behavior or a change to existing behavior" }
+- { name: "type:docs",     color: "0075ca", description: "Documentation or copy only" }
+- { name: "type:question", color: "d876e3", description: "Support / how-do-I; bot answers and closes" }
+- { name: "type:security", color: "b60205", description: "Security issue; owner only, never automated" }
+- { name: "type:unclear",  color: "fbca04", description: "Bot could not categorize; waiting for owner" }
+
+# --- State (exactly one) ---------------------------------------------------
+- { name: "status:triage",        color: "ededed", description: "Bot: categorize and validate" }
+- { name: "status:needs-info",    color: "f9d0c4", description: "Waiting for the REPORTER; closed after 14 days with no reply" }
+- { name: "status:waiting-owner", color: "e99695", description: "Waiting for the OWNER (/approve, /reject, /info ...)" }
+- { name: "status:spec",          color: "c5def5", description: "Bot: write the spec" }
+- { name: "status:ready",         color: "0e8a16", description: "Spec approved; waiting for a builder agent" }
+- { name: "status:building",      color: "1d76db", description: "Builder agent is working on a PR" }
+- { name: "status:in-review",     color: "5319e7", description: "PR open; reviewer model + CI" }
+
+# --- Effort / risk (decide automation) -------------------------------------
+- { name: "size:S", color: "c2e0c6", description: "≤ ~3 files / ≤ ~150 changed lines" }
+- { name: "size:M", color: "fef2c0", description: "Bigger than S; owner approves the spec" }
+- { name: "size:L", color: "f9d0c4", description: "Large / multi-part; owner plans it" }
+- { name: "risk:low",  color: "c2e0c6", description: "No sensitive areas touched" }
+- { name: "risk:high", color: "b60205", description: "Touches money math, data, auth, deps, CI or agent rules" }
+
+# --- Who opened it ---------------------------------------------------------
+- { name: "source:owner",     color: "006b75", description: "Opened by a maintainer" }
+- { name: "source:community", color: "bfdadc", description: "Opened by someone else; features stop at spec" }
+
+# --- Factory controls ------------------------------------------------------
+- { name: "factory:hold", color: "000000", description: "Bots must not touch this issue/PR (/stop, /resume)" }
+- { name: "factory:bot",  color: "ffffff", description: "PR authored by a factory agent" }
+
+# --- How it ended ----------------------------------------------------------
+- { name: "resolution:duplicate", color: "cfd3d7", description: "Already reported elsewhere" }
+- { name: "resolution:invalid",   color: "e4e669", description: "Spam, off-topic, or not actionable" }
+- { name: "resolution:wontfix",   color: "ffffff", description: "Owner decided not to do this" }
+- { name: "resolution:stale",     color: "eeeeee", description: "No reply to needs-info within 14 days" }
+
+# --- Topic (optional) ------------------------------------------------------
+- { name: "accessibility", color: "f143ab", description: "Barrier affecting people with disabilities" }
+- { name: "good first issue", color: "7057ff", description: "Good for human newcomers" }
