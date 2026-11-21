@@ -650,14 +650,22 @@ fn run_reparse_slips_inner(
     let settings = load_settings(conn)?;
     let mut stmt = conn
         .prepare(
-            "SELECT r.id, r.local_date, r.category_id, s.qr_raw, s.ocr_text, r.is_reviewed
+            "SELECT r.id, r.local_date, r.category_id, s.qr_raw, s.ocr_text, r.is_reviewed, r.kind
              FROM records r
              JOIN slips s ON s.record_id = r.id
              WHERE r.source LIKE 'slip%'",
         )
         .map_err(|e| e.to_string())?;
 
-    type SlipRow = (String, String, Option<String>, Option<String>, Option<String>, bool);
+    type SlipRow = (
+        String,
+        String,
+        Option<String>,
+        Option<String>,
+        Option<String>,
+        bool,
+        String,
+    );
     let rows: Vec<SlipRow> = stmt
         .query_map([], |r| {
             Ok((
@@ -667,6 +675,7 @@ fn run_reparse_slips_inner(
                 r.get(3)?,
                 r.get(4)?,
                 r.get::<_, i32>(5)? != 0,
+                r.get(6)?,
             ))
         })
         .map_err(|e| e.to_string())?
@@ -679,12 +688,15 @@ fn run_reparse_slips_inner(
     let mut own_last4s: std::collections::HashSet<String> = std::collections::HashSet::new();
     let mut learned_owners: Vec<String> = settings.owner_names.clone();
 
-    for (rec_id, orig_date, orig_cat, qr_raw, ocr_text, reviewed) in rows {
+    for (rec_id, orig_date, orig_cat, qr_raw, ocr_text, reviewed, kind) in rows {
         let qr = qr_raw.as_deref().and_then(|raw| parse_slip_qr(raw).ok());
         let ocr = ocr_text.as_deref().unwrap_or("");
         let parsed = parse_slip_text(ocr, qr.as_ref(), &settings.owner_names, None);
 
-        if !parsed.is_non_slip {
+        // A slip the user marked as income was paid by someone else, so its sender is not
+        // one of the user's own names or accounts.
+        let user_said_income = reviewed && kind == "income";
+        if !parsed.is_non_slip && !user_said_income {
             if let Some(ref last4) = parsed.sender_acct_last4 {
                 own_last4s.insert(last4.clone());
             }
@@ -999,6 +1011,10 @@ Ref. 202611211728ABC12";
     }
 
     fn insert_slip_record(conn: &rusqlite::Connection, record_id: &str) {
+        insert_slip_record_with(conn, record_id, SLIP_OCR);
+    }
+
+    fn insert_slip_record_with(conn: &rusqlite::Connection, record_id: &str, ocr: &str) {
         conn.execute(
             "INSERT INTO records (id, kind, amount_satang, currency, local_date, source, parse_status,
                                   is_reviewed, created_at, updated_at)
@@ -1009,7 +1025,7 @@ Ref. 202611211728ABC12";
         conn.execute(
             "INSERT INTO slips (id, record_id, content_sha256, ocr_text, parsed_at)
              VALUES (?1, ?2, ?3, ?4, 'now')",
-            params![Uuid::new_v4().to_string(), record_id, Uuid::new_v4().to_string(), SLIP_OCR],
+            params![Uuid::new_v4().to_string(), record_id, Uuid::new_v4().to_string(), ocr],
         )
         .unwrap();
     }
@@ -1058,6 +1074,48 @@ Ref. 202611211728ABC12";
         assert_eq!(untouched.payee_raw.as_deref(), Some("MS. TEST RECEIVER"));
         assert_eq!(untouched.note.as_deref(), Some("Lunch"));
         assert_eq!(untouched.local_time.as_deref(), Some("17:28"));
+        cleanup(&path);
+    }
+
+    #[test]
+    fn reviewed_income_slip_does_not_teach_its_sender_as_an_owner() {
+        let (conn, path) = temp_db();
+        // Someone else paid the user; the user corrected the record to income.
+        let incoming = SLIP_OCR
+            .replace("MR. TEST SENDER\nXXX-X-X1234-X", "MR. TEST FRIEND\nXXX-X-X1111-X")
+            .replace("MS. TEST RECEIVER\nXXX-X-X5678-X", "MR. TEST SENDER\nXXX-X-X1234-X");
+        insert_slip_record_with(&conn, "rec-incoming", &incoming);
+        upsert_record(
+            &conn,
+            &RecordInput {
+                id: Some("rec-incoming".into()),
+                kind: "income".into(),
+                amount_satang: 292_250,
+                local_date: "2026-11-21".into(),
+                local_time: Some("17:28".into()),
+                account_id: None,
+                category_id: None,
+                payee_raw: Some("MR. TEST FRIEND".into()),
+                note: None,
+                tag_ids: Vec::new(),
+                recurring_frequency: None,
+            },
+        )
+        .unwrap();
+        // Later the user pays that friend back.
+        let outgoing = SLIP_OCR.replace(
+            "MS. TEST RECEIVER\nXXX-X-X5678-X",
+            "MR. TEST FRIEND\nXXX-X-X1111-X",
+        );
+        insert_slip_record_with(&conn, "rec-payback", &outgoing);
+
+        run_reparse_slips_inner(&conn, false).unwrap();
+
+        let payback = get_record_by_id(&conn, "rec-payback").unwrap().unwrap();
+        assert_eq!(
+            payback.kind, "spending",
+            "paying a friend is not a transfer to yourself"
+        );
         cleanup(&path);
     }
 }
