@@ -12,19 +12,19 @@
     Plus,
     ScanLine,
     ImagePlus,
-    Flame,
     X,
     Repeat,
     PenLine,
-    ArrowDown,
-    Loader2,
   } from "@lucide/svelte";
   import CategoryIcon from "$lib/components/CategoryIcon.svelte";
+  import EmptyMonthArt from "$lib/components/EmptyMonthArt.svelte";
   import MooMascot, { type MascotMood } from "$lib/components/MooMascot.svelte";
+  import SwipeRecordRow from "$lib/components/SwipeRecordRow.svelte";
   import RecordSheet from "$lib/components/RecordSheet.svelte";
   import SummaryView from "$lib/components/SummaryView.svelte";
   import SettingsView, { type SettingsSubPage } from "$lib/components/SettingsView.svelte";
   import RulesModal from "$lib/components/RulesModal.svelte";
+  import ThumbSheet from "$lib/components/ThumbSheet.svelte";
   import {
     api,
     hasAndroidBridge,
@@ -32,7 +32,8 @@
   } from "$lib/api";
   import { formatBaht } from "$lib/format";
   import { t } from "$lib/i18n";
-  import { loadSavedTheme, saveTheme, type AppTheme } from "$lib/theme";
+  import { omitFromCompare, omitFromSummary, omitRecord } from "$lib/ledgerPatch";
+  import { loadSavedHand, loadSavedTheme, saveHand, saveTheme, type AppTheme, type HandMode } from "$lib/theme";
   import type {
     Account,
     AppSettings,
@@ -51,6 +52,7 @@
   } from "$lib/types";
 
   let theme = $state<AppTheme>(loadSavedTheme());
+  let hand = $state<HandMode>(loadSavedHand());
   let activeTab = $state<"home" | "summary" | "settings">("home");
   let settingsSubPage = $state<SettingsSubPage>(null);
   let periodOffset = $state<number>(0);
@@ -90,6 +92,28 @@
 
   let isScanning = $state<boolean>(false);
   let scanBanner = $state<string | null>(null);
+  let stickyVisible = $state(false);
+  let heroEl = $state<HTMLDivElement | null>(null);
+  let openSwipeId = $state<string | null>(null);
+  let pdfPrompt = $state<{ pdfBase64: string; wrong: boolean } | null>(null);
+  let pdfPassword = $state("");
+  let pdfBusy = $state(false);
+  let scanStartPrompt = $state(false);
+  let monthPicker = $state(false);
+  let scannedMonths = $state<string[]>([]);
+  let scanSinceSec = 0;
+  const monthSheet = { current: null as (() => void) | null };
+  const filterSheet = { current: null as (() => void) | null };
+  const scanSheet = { current: null as (() => void) | null };
+  let undoDelete = $state<{
+    recordId: string;
+    home: HomePayload;
+    summary: SummaryPayload | null;
+    compare: ComparePayload | null;
+    timer: ReturnType<typeof setTimeout>;
+  } | null>(null);
+  let deleteChain: Promise<void> = Promise.resolve();
+  let scanChain: Promise<void> = Promise.resolve();
 
   // Interactive Mascot state
   let mascotMood = $state<MascotMood>("idle");
@@ -101,17 +125,23 @@
   let pullStartY = $state<number | null>(null);
   let pullDistance = $state<number>(0);
   let pullArmed = $state<boolean>(false);
-  let holdTimer: ReturnType<typeof setTimeout> | null = null;
   const PULL_THRESHOLD = 68;
 
   const lang = $derived(settings.language);
   const anyModalOpen = $derived(
-    showRecordSheet || showRulesModal || showSearch || showFilterSheet
+    showRecordSheet ||
+    showRulesModal ||
+    showSearch ||
+    showFilterSheet ||
+    pdfPrompt !== null ||
+    scanStartPrompt ||
+    monthPicker
   );
 
   // Apply theme attribute & sync Android status bar icon contrast cleanly per screen!
   $effect(() => {
     saveTheme(theme);
+    saveHand(hand);
     const hasColoredTopBar =
       activeTab === "summary" ||
       activeTab === "settings" ||
@@ -119,9 +149,76 @@
       showRulesModal ||
       showSearch ||
       recordLightboxOpen;
-    const isLightStatusBar = theme === "pink-white" && !hasColoredTopBar;
+    const isLightStatusBar =
+      theme === "pink-white" && !hasColoredTopBar && activeTab !== "home";
     window.MooJotAndroid?.setStatusBarLight?.(isLightStatusBar);
   });
+
+  // Pin the compact header once the monthly hero has left the viewport.
+  // At scrollY === 0 the hero is on screen, so pull-to-refresh keeps the top.
+  $effect(() => {
+    if (activeTab !== "home") {
+      stickyVisible = false;
+      return;
+    }
+    const el = heroEl;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        stickyVisible = !!entry && !entry.isIntersecting && window.scrollY > 8;
+      },
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    const onScroll = () => {
+      if (window.scrollY <= 2) stickyVisible = false;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", onScroll);
+    };
+  });
+
+  $effect(() => {
+    const el = homeMain;
+    if (!el) return;
+    const move = (event: TouchEvent) => onHomeTouchMove(event);
+    el.addEventListener("touchmove", move, { passive: false });
+    return () => el.removeEventListener("touchmove", move);
+  });
+
+  async function goToPeriod(offset: number) {
+    monthPicker = false;
+    if (offset === periodOffset) return;
+    periodOffset = offset;
+    stickyVisible = false;
+    monthDrag = 0;
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
+    const request = ++periodRequest;
+    const [h, sum, cmp, bdgs] = await Promise.all([
+      api.getHomeData(offset, filterAccountIds),
+      api.getSummaryData(offset, summaryKind, filterAccountIds),
+      api.getCompareData(offset, summaryKind, 6),
+      api.getBudgets(offset),
+    ]);
+    if (request !== periodRequest) return;
+    home = h;
+    summary = sum;
+    compare = cmp;
+    budgets = bdgs;
+  }
+
+  function changePeriod(delta: number) {
+    void goToPeriod(periodOffset + delta);
+  }
+
+  function openMonthPicker() {
+    monthPicker = true;
+  }
 
   function celebrateMascot(msgEn: string, msgTh: string, durationMs = 3200) {
     mascotMood = "happy";
@@ -151,68 +248,74 @@
     celebrateMascot(linesEn[idx], linesTh[idx], 2800);
   }
 
-  function clearHoldTimer() {
-    if (holdTimer) {
-      clearTimeout(holdTimer);
-      holdTimer = null;
-    }
-  }
+  let homeMain = $state<HTMLElement | null>(null);
+  let monthDrag = $state(0);
+  let monthDragging = $state(false);
+  let gesture: { x: number; y: number; axis: "undecided" | "h" | "v" } | null = null;
+  let periodRequest = 0;
 
   function onHomeTouchStart(e: TouchEvent) {
     if (activeTab !== "home" || anyModalOpen || isScanning) return;
-    if (window.scrollY <= 2 && e.touches.length === 1) {
-      pullStartY = e.touches[0].clientY;
-      pullDistance = 0;
-      pullArmed = false;
-    }
+    const target = e.target;
+    if (target instanceof Element && target.closest("[data-swipe-row], button, a, input")) return;
+    if (e.touches.length !== 1) return;
+    gesture = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+      axis: "undecided",
+    };
+    pullDistance = 0;
+    pullArmed = false;
+    monthDrag = 0;
+    monthDragging = false;
   }
 
   function onHomeTouchMove(e: TouchEvent) {
-    if (pullStartY === null || isScanning || anyModalOpen) return;
-    if (window.scrollY > 2) {
-      pullStartY = null;
-      pullDistance = 0;
-      pullArmed = false;
-      clearHoldTimer();
+    if (!gesture || isScanning || anyModalOpen || e.touches.length !== 1) return;
+    const dx = e.touches[0].clientX - gesture.x;
+    const dy = e.touches[0].clientY - gesture.y;
+    if (gesture.axis === "undecided") {
+      if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+      gesture.axis = Math.abs(dx) > Math.abs(dy) ? "h" : "v";
+    }
+    if (gesture.axis === "h") {
+      monthDragging = true;
+      monthDrag = Math.max(-96, Math.min(96, dx));
+      if (e.cancelable) e.preventDefault();
       return;
     }
-    const delta = e.touches[0].clientY - pullStartY;
-    if (delta <= 0) {
+    if (window.scrollY > 4 && pullDistance === 0) return;
+    if (dy <= 8) {
       pullDistance = 0;
       pullArmed = false;
-      clearHoldTimer();
       return;
     }
-    const damped = Math.min(104, delta * 0.52);
-    pullDistance = damped;
-    if (damped >= PULL_THRESHOLD && !pullArmed) {
-      pullArmed = true;
-      clearHoldTimer();
-      // Hold at top past threshold for 550ms -> auto-trigger scan!
-      holdTimer = setTimeout(() => {
-        if (pullArmed && !isScanning) {
-          pullStartY = null;
-          pullDistance = 0;
-          pullArmed = false;
-          void triggerSlipScan();
-        }
-      }, 550);
-    } else if (damped < PULL_THRESHOLD && pullArmed) {
-      pullArmed = false;
-      clearHoldTimer();
-    }
+    pullDistance = Math.min(148, (dy - 8) * 0.5);
+    pullArmed = pullDistance >= PULL_THRESHOLD;
+    if (e.cancelable) e.preventDefault();
   }
 
   function onHomeTouchEnd() {
-    clearHoldTimer();
-    if (pullArmed && !isScanning) {
-      pullStartY = null;
-      pullDistance = 0;
-      pullArmed = false;
-      void triggerSlipScan();
+    if (gesture?.axis === "h") {
+      const dx = monthDrag;
+      gesture = null;
+      monthDragging = false;
+      monthDrag = 0;
+      if (dx <= -48) void changePeriod(1);
+      else if (dx >= 48) void changePeriod(-1);
       return;
     }
-    pullStartY = null;
+    const shouldScan = pullArmed && !isScanning;
+    gesture = null;
+    pullDistance = 0;
+    pullArmed = false;
+    if (shouldScan) void triggerSlipScan();
+  }
+
+  function onHomeTouchCancel() {
+    gesture = null;
+    monthDragging = false;
+    monthDrag = 0;
     pullDistance = 0;
     pullArmed = false;
   }
@@ -228,6 +331,7 @@
     accounts = accs;
     categories = cats;
     tags = tgs;
+    scannedMonths = await api.listScannedMonths();
     await refreshPeriodData();
   }
 
@@ -264,6 +368,55 @@
     }
   }
 
+  function monthStartSec(offset: number): number {
+    const start = new Date();
+    start.setDate(1);
+    start.setMonth(start.getMonth() + offset);
+    start.setHours(0, 0, 0, 0);
+    return Math.floor(start.getTime() / 1000);
+  }
+
+  function monthLabel(offset: number): string {
+    const start = new Date();
+    start.setDate(1);
+    start.setMonth(start.getMonth() + offset);
+    return start.toLocaleDateString(lang === "th" ? "th-TH" : "en-US", {
+      month: "short",
+      year: "2-digit",
+    });
+  }
+
+  function monthKey(offset: number): string {
+    const start = new Date();
+    start.setDate(1);
+    start.setMonth(start.getMonth() + offset);
+    return `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`;
+  }
+
+  function formatMonthKey(key: string): string {
+    const [year, month] = key.split("-").map(Number);
+    if (!year || !month) return key;
+    return new Date(year, month - 1, 1).toLocaleDateString(lang === "th" ? "th-TH" : "en-US", {
+      month: "short",
+      year: "2-digit",
+    });
+  }
+
+  function monthKeysFromSince(sinceSec: number): string[] {
+    const cursor = new Date(sinceSec * 1000);
+    cursor.setDate(1);
+    cursor.setHours(0, 0, 0, 0);
+    const end = new Date();
+    end.setDate(1);
+    end.setHours(0, 0, 0, 0);
+    const keys: string[] = [];
+    while (cursor <= end && keys.length < 36) {
+      keys.push(`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`);
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+    return keys;
+  }
+
   async function triggerSlipScan() {
     showFabMenu = false;
     if (!hasAndroidBridge() || !window.MooJotAndroid) {
@@ -278,13 +431,28 @@
       window.MooJotAndroid.requestGalleryPermission();
       return;
     }
+    if (!scannedMonths.includes(monthKey(periodOffset))) {
+      scanStartPrompt = true;
+      return;
+    }
+    await startSlipScan(monthStartSec(periodOffset));
+  }
+
+  async function startSlipScan(sinceSec: number) {
+    if (!window.MooJotAndroid) return;
+    scanSinceSec = sinceSec;
+    scanStartPrompt = false;
     isScanning = true;
-    const keywords = await api.getAlbumScanKeywords();
+    scanBanner = lang === "th" ? "กำลังสแกนสลิปใหม่..." : "Scanning new slips...";
+    const [keywords, knownIds] = await Promise.all([
+      api.getAlbumScanKeywords(),
+      api.listKnownSlipMediaIds(),
+    ]);
     window.MooJotAndroid.scanBankSlips(
       JSON.stringify(keywords),
       settings.allowSharedAlbum,
-      40,
-      false
+      sinceSec,
+      JSON.stringify(knownIds)
     );
   }
 
@@ -319,6 +487,19 @@
   // Wire Android hardware/gesture Back button handler
   $effect(() => {
     window.__moojotHandleBack = () => {
+      if (monthPicker) {
+        monthSheet.current?.();
+        return "handled";
+      }
+      if (scanStartPrompt) {
+        scanSheet.current?.();
+        return "handled";
+      }
+      if (pdfPrompt) {
+        pdfPrompt = null;
+        pdfPassword = "";
+        return "handled";
+      }
       if (recordLightboxOpen) {
         recordLightboxOpen = false;
         return "handled";
@@ -337,7 +518,7 @@
         return "handled";
       }
       if (showFilterSheet) {
-        showFilterSheet = false;
+        filterSheet.current?.();
         return "handled";
       }
       if (showFabMenu) {
@@ -345,7 +526,8 @@
         return "handled";
       }
       if (activeTab === "settings" && settingsSubPage !== null) {
-        settingsSubPage = null;
+        settingsSubPage =
+          settingsSubPage === "terms" || settingsSubPage === "privacy" ? "about" : null;
         return "handled";
       }
       if (activeTab !== "home") {
@@ -401,17 +583,73 @@
       setTimeout(() => (scanBanner = null), 5000);
     };
 
+    const onScanBatch = (ev: Event) => {
+      const detail = (
+        ev as CustomEvent<{
+          candidates?: SlipScanCandidate[];
+          seenIds?: string[];
+          done?: boolean;
+        }>
+      ).detail;
+      scanChain = scanChain
+        .then(async () => {
+          const seen = detail?.seenIds ?? [];
+          if (seen.length > 0) await api.rememberScannedMedia(seen);
+          const candidates = detail?.candidates ?? [];
+          if (candidates.length > 0) {
+            const report = await api.importSlipCandidates(candidates);
+            scanBanner =
+              lang === "th"
+                ? `นำเข้า ${report.imported} · ซ้ำ ${report.duplicates}`
+                : `Imported ${report.imported} · duplicates ${report.duplicates}`;
+            await refreshPeriodData();
+            if (report.imported > 0) {
+              celebrateMascot(
+                `Imported ${report.imported} new slip(s)!`,
+                `นำเข้าสลิปใหม่ ${report.imported} รายการแล้ว!`
+              );
+            }
+          }
+          if (detail?.done) {
+            const covered = monthKeysFromSince(scanSinceSec);
+            if (covered.length > 0) {
+              await api.rememberScannedMonths(covered);
+              scannedMonths = [...new Set([...covered, ...scannedMonths])].sort().reverse();
+            }
+            isScanning = false;
+            if (!candidates.length) {
+              scanBanner = lang === "th" ? "ไม่มีสลิปใหม่" : "No new slips";
+            }
+            setTimeout(() => (scanBanner = null), 4000);
+          }
+        })
+        .catch((error) => {
+          isScanning = false;
+          scanBanner = String(error);
+        });
+    };
+
+    const onSharedPdf = (ev: Event) => {
+      const detail = (ev as CustomEvent<{ pdfBase64?: string }>).detail;
+      const pdfBase64 = detail?.pdfBase64;
+      if (pdfBase64) void importPdfBase64(pdfBase64, null);
+    };
+
     window.addEventListener("moojot:scan-candidates", onCandidates);
+    window.addEventListener("moojot:scan-batch", onScanBatch);
     window.addEventListener("moojot:shared-slips", onSharedSlips);
     window.addEventListener("moojot:permission", onPerm);
     window.addEventListener("moojot:scan-error", onErr);
     window.addEventListener("moojot:backfill-done", onBackfill);
+    window.addEventListener("moojot:shared-pdf", onSharedPdf);
     return () => {
       window.removeEventListener("moojot:scan-candidates", onCandidates);
+      window.removeEventListener("moojot:scan-batch", onScanBatch);
       window.removeEventListener("moojot:shared-slips", onSharedSlips);
       window.removeEventListener("moojot:permission", onPerm);
       window.removeEventListener("moojot:scan-error", onErr);
       window.removeEventListener("moojot:backfill-done", onBackfill);
+      window.removeEventListener("moojot:shared-pdf", onSharedPdf);
     };
   });
 
@@ -448,186 +686,258 @@
     editingRecord = null;
     await refreshPeriodData();
   }
+
+  function commitQueuedDelete(id: string) {
+    deleteChain = deleteChain
+      .then(async () => {
+        await api.deleteRecord(id);
+      })
+      .catch(() => {});
+  }
+
+  async function flushDeletes() {
+    await deleteChain;
+    if (undoDelete === null) await refreshPeriodData();
+  }
+
+  function queueSwipeDelete(rec: RecordItem) {
+    if (!home) return;
+    if (undoDelete) {
+      clearTimeout(undoDelete.timer);
+      commitQueuedDelete(undoDelete.recordId);
+      undoDelete = null;
+    }
+    const snapshot = {
+      home: $state.snapshot(home),
+      summary: summary ? $state.snapshot(summary) : null,
+      compare: compare ? $state.snapshot(compare) : null,
+    };
+    home = omitRecord(home, rec.id);
+    if (summary) summary = omitFromSummary(summary, rec, summaryKind);
+    if (compare && rec.kind === summaryKind) {
+      compare = omitFromCompare(compare, rec.amountSatang);
+    }
+    openSwipeId = null;
+    const timer = setTimeout(() => {
+      undoDelete = null;
+      commitQueuedDelete(rec.id);
+      void flushDeletes();
+    }, 4500);
+    undoDelete = {
+      recordId: rec.id,
+      home: snapshot.home,
+      summary: snapshot.summary,
+      compare: snapshot.compare,
+      timer,
+    };
+  }
+
+  function undoSwipeDelete() {
+    if (!undoDelete) return;
+    clearTimeout(undoDelete.timer);
+    home = undoDelete.home;
+    summary = undoDelete.summary;
+    compare = undoDelete.compare;
+    undoDelete = null;
+  }
+
+  async function importPdfBase64(pdfBase64: string, password: string | null) {
+    pdfBusy = true;
+    try {
+      const report = await api.importStatementPdf(pdfBase64, password);
+      if (report.needsPassword || report.wrongPassword) {
+        pdfPrompt = { pdfBase64, wrong: report.wrongPassword };
+        pdfPassword = "";
+        return;
+      }
+      pdfPrompt = null;
+      pdfPassword = "";
+      await refreshPeriodData();
+      activeTab = "home";
+      scanBanner =
+        report.imported === 0 && report.message
+          ? report.message
+          : lang === "th"
+            ? `นำเข้า ${report.imported} รายการ · ซ้ำ ${report.duplicates}`
+            : `Imported ${report.imported} · duplicates ${report.duplicates}`;
+      setTimeout(() => (scanBanner = null), 5000);
+    } catch (error) {
+      scanBanner = error instanceof Error ? error.message : t(lang, "error");
+      setTimeout(() => (scanBanner = null), 4000);
+    } finally {
+      pdfBusy = false;
+    }
+  }
 </script>
 
-<div class="min-h-screen bg-[var(--bg-canvas)] text-[var(--text-primary)] flex flex-col">
+<div class="min-h-screen max-w-full overflow-x-clip bg-[var(--bg-canvas)] text-[var(--text-primary)] flex flex-col">
   {#if activeTab === "home"}
-    <main
-      class="flex-1 pb-28"
-      ontouchstart={onHomeTouchStart}
-      ontouchmove={onHomeTouchMove}
-      ontouchend={onHomeTouchEnd}
-      ontouchcancel={onHomeTouchEnd}
+    <header
+      class="fixed inset-x-0 top-0 z-40 text-white transition-transform duration-200 ease-out {stickyVisible
+        ? 'translate-y-0'
+        : '-translate-y-full pointer-events-none'}"
+      style="padding-top: env(safe-area-inset-top); background: linear-gradient(180deg, var(--hero-from), var(--hero-to));"
+      aria-hidden={!stickyVisible}
     >
-      <!-- Pull-to-refresh hint ONLY while dragging down (never duplicates scanning banner!) -->
-      {#if pullDistance > 6 && !isScanning}
-        <div
-          class="overflow-hidden flex items-end justify-center bg-[var(--bg-canvas)] transition-[height] duration-150"
-          style="height: {Math.round(pullDistance + 24)}px; padding-top: max(env(safe-area-inset-top), 36px);"
-        >
-          <div class="flex items-center gap-2 pb-2 px-4 rounded-full bg-[var(--bg-card)] border border-[var(--brand-border)] shadow-sm">
-            {#if pullArmed}
-              <ScanLine class="size-4 text-[var(--brand)] animate-pulse" />
-              <span class="text-xs font-bold text-[var(--brand-text)]">
-                {lang === "th" ? "ค้างไว้หรือปล่อยเพื่อสแกน!" : "Hold or release to scan!"}
-              </span>
-            {:else}
-              <ArrowDown class="size-4 text-[var(--text-muted)]" />
-              <span class="text-xs font-medium text-[var(--text-secondary)]">
-                {lang === "th" ? "ดึงลงค้างไว้เพื่อสแกนสลิป" : "Pull down & hold to scan slips"}
-              </span>
-            {/if}
+      <div class="flex items-center justify-between gap-3 px-4 py-3 {hand === 'left' ? 'flex-row-reverse' : ''}">
+        <div class="min-w-0">
+          <button
+            type="button"
+            class="truncate text-left text-sm font-extrabold"
+            onclick={openMonthPicker}
+          >
+            {home?.period.label ?? "..."}
+          </button>
+          <div class="truncate text-xs font-semibold text-white/85">
+            {t(lang, "totalSpending")} {formatBaht(home?.totalSpendingSatang ?? 0, true)}
           </div>
         </div>
-      {/if}
-
-      <!-- Top Bar seamlessly matching canvas status bar -->
-      <div
-        class="px-4 pb-2 flex items-center justify-between bg-[var(--bg-canvas)]"
-        style="padding-top: {pullDistance > 6 && !isScanning ? '10px' : 'max(env(safe-area-inset-top), 38px)'};"
-      >
-        <div
-          class="inline-flex items-center gap-2 rounded-full bg-[var(--bg-card)] border border-[var(--border-subtle)] px-3 py-1.5 text-xs font-bold text-[var(--brand-text)] shadow-xs"
+        <button
+          type="button"
+          class="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-extrabold"
+          style="background-color: var(--hero-btn-bg); color: var(--hero-btn-text);"
+          onclick={() => (activeTab = "summary")}
         >
-          <Flame class="size-4 text-[var(--brand)]" />
-          <span>
-            {Math.max(home?.syncStreakDays ?? 0, home?.categorizeStreakDays ?? 0)}
-            {t(lang, "days")}
-          </span>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <button
-            type="button"
-            onclick={() => {
-              showSearch = true;
-              searchQuery = "";
-              searchResults = [];
-            }}
-            class="size-9 rounded-full bg-[var(--bg-card)] border border-[var(--border-subtle)] flex items-center justify-center text-[var(--text-primary)] shadow-xs active:scale-95 transition-transform"
-            aria-label={t(lang, "search")}
-          >
-            <Search class="size-4" />
-          </button>
-          <button
-            type="button"
-            onclick={() => (showFilterSheet = true)}
-            class="relative size-9 rounded-full bg-[var(--bg-card)] border border-[var(--border-subtle)] flex items-center justify-center text-[var(--text-primary)] shadow-xs active:scale-95 transition-transform"
-            aria-label={t(lang, "filterRecords")}
-          >
-            <Wallet class="size-4" />
-            {#if filterAccountIds.length > 0}
-              <span class="absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-[var(--brand)]"></span>
-            {/if}
-          </button>
-        </div>
+          <PieChart class="size-3.5" />
+          <span>{t(lang, "summary")}</span>
+        </button>
       </div>
+    </header>
 
-      <!-- Compact Mascot Speech Bubble (single source of status, points toward big piggy!) -->
-      <div class="px-4 mt-1 flex justify-end">
-        <div class="relative w-full rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] px-4 py-2.5 shadow-xs">
-          {#if isScanning}
-            <div class="text-xs font-bold text-[var(--brand-text)] flex items-center gap-2">
-              <Loader2 class="size-3.5 animate-spin shrink-0 text-[var(--brand)]" />
-              <span>{lang === "th" ? "กำลังสแกนสลิปในเครื่อง..." : "Scanning slips locally..."}</span>
-            </div>
-          {:else if scanBanner}
-            <div class="text-xs font-semibold text-emerald-500">{scanBanner}</div>
-          {:else if mascotSpeech}
-            <div class="text-xs font-semibold text-[var(--brand-text)]">{mascotSpeech}</div>
-          {:else}
-            <div class="flex items-center justify-between gap-2">
-              <div class="text-xs font-bold text-[var(--text-primary)] truncate">
-                {(home?.todayJottedCount ?? 0) > 0
-                  ? `${t(lang, "jottedToday")}: ${home?.todayJottedCount}`
+    <main
+      bind:this={homeMain}
+      class="flex-1 overflow-x-clip pb-28 touch-pan-y"
+      ontouchstart={onHomeTouchStart}
+      ontouchend={onHomeTouchEnd}
+      ontouchcancel={onHomeTouchCancel}
+    >
+      <div
+        bind:this={heroEl}
+        role="group"
+        class="relative overflow-hidden shadow-xl"
+        style="background: linear-gradient(180deg, var(--hero-from), var(--hero-to)); border-radius: 0 0 28px 28px;"
+      >
+        <svg class="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 360 228" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+          <path d="M0 150 C90 118 150 176 230 146 C290 126 330 160 360 140 L360 228 L0 228 Z" fill="#ffffff" opacity="0.2" />
+          <path d="M0 184 C100 158 170 206 250 178 C300 160 330 186 360 172 L360 228 L0 228 Z" fill="#ffffff" opacity="0.34" />
+        </svg>
+
+        <div class="relative z-10 flex min-h-[228px] flex-col px-4 pb-3" style="padding-top: max(env(safe-area-inset-top), 28px);">
+          {#if pullDistance > 8 && !isScanning}
+            <div class="flex items-end justify-center overflow-hidden" style="height: {Math.round(pullDistance)}px;">
+              <p class="pb-2 text-center text-xs font-bold text-white">
+                {pullArmed
+                  ? lang === "th"
+                    ? "ปล่อยเพื่อสแกน · เลื่อนขึ้นเพื่อยกเลิก"
+                    : "Release to scan · slide up to cancel"
                   : lang === "th"
-                    ? "พร้อมจดสลิปอัตโนมัติแล้ว!"
-                    : "Ready to jot your Thai e-slips!"}
-              </div>
-              {#if (home?.needsReviewCount ?? 0) > 0}
-                <span class="text-[11px] text-[var(--text-muted)] shrink-0">
-                  {lang === "th"
-                    ? `รอตรวจ ${home?.needsReviewCount} รายการ`
-                    : `${home?.needsReviewCount} to review`}
-                </span>
-              {/if}
+                    ? "ดึงค้างไว้เพื่อสแกนสลิป"
+                    : "Pull and hold to scan slips"}
+              </p>
             </div>
           {/if}
-          <!-- Little speech tail pointing down-right toward the mascot -->
-          <span
-            class="absolute -bottom-1.5 right-16 size-3 rotate-45 bg-[var(--bg-card)] border-r border-b border-[var(--border-subtle)]"
-          ></span>
+          <div class="flex items-start justify-between gap-3 {hand === 'left' ? 'flex-row-reverse' : ''}">
+            <div class="min-w-0 {hand === 'left' ? 'text-right' : ''}">
+              <div class="text-[11px] font-semibold text-white/85">
+                {t(lang, "totalSpending")}
+              </div>
+              <div class="text-2xl font-extrabold leading-tight text-white">
+                {formatBaht(home?.totalSpendingSatang ?? 0, true)}
+              </div>
+              {#if isScanning}
+                <div class="mt-1 text-[11px] font-bold text-white">
+                  {lang === "th" ? "กำลังสแกน..." : "Scanning..."}
+                </div>
+              {/if}
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                class="flex size-9 items-center justify-center rounded-full bg-white text-[#18181b] shadow-sm"
+                aria-label={t(lang, "search")}
+                onclick={() => {
+                  showSearch = true;
+                  searchQuery = "";
+                  searchResults = [];
+                }}
+              >
+                <Search class="size-4" />
+              </button>
+              <button
+                type="button"
+                class="relative flex size-9 items-center justify-center rounded-full bg-white text-[#18181b] shadow-sm"
+                aria-label={t(lang, "filterRecords")}
+                onclick={() => (showFilterSheet = true)}
+              >
+                <Wallet class="size-4" />
+                {#if filterAccountIds.length > 0}
+                  <span class="absolute right-0.5 top-0.5 size-2 rounded-full bg-[var(--brand)]"></span>
+                {/if}
+              </button>
+            </div>
+          </div>
+
+          {#if scanBanner || mascotSpeech}
+            <div
+              class="pointer-events-none absolute top-[40%] z-20 {hand === 'right' ? 'left-[34%] right-4' : 'left-4 right-[34%]'}"
+            >
+              <div class="relative mx-auto w-fit max-w-[168px] rounded-2xl bg-white px-3 py-1.5 text-left text-[11px] font-bold leading-snug text-[#18181b] shadow-lg">
+                {scanBanner || mascotSpeech}
+                <span
+                  class="absolute -bottom-1 size-2.5 rotate-45 bg-white {hand === 'right' ? 'left-3' : 'right-3'}"
+                ></span>
+              </div>
+            </div>
+          {/if}
+
+          <div class="mt-auto flex items-end justify-between gap-2 {hand === 'right' ? 'flex-row-reverse' : ''}">
+            <div class="flex min-w-0 items-center gap-1 pb-2">
+              <button
+                type="button"
+                class="flex size-8 items-center justify-center rounded-full bg-white text-[#18181b] shadow-sm"
+                aria-label="Previous period"
+                onclick={() => changePeriod(-1)}
+              >
+                <ChevronLeft class="size-4" />
+              </button>
+              <button
+                type="button"
+                class="truncate rounded-full px-3 py-1 text-xs font-bold {periodOffset === 0
+                  ? 'bg-[var(--brand)] text-white'
+                  : 'bg-white text-[#18181b]'}"
+                onclick={openMonthPicker}
+              >
+                {home?.period.label ?? "..."}
+              </button>
+              <button
+                type="button"
+                class="flex size-8 items-center justify-center rounded-full bg-white text-[#18181b] shadow-sm"
+                aria-label="Next period"
+                onclick={() => changePeriod(1)}
+              >
+                <ChevronRight class="size-4" />
+              </button>
+            </div>
+            <div class="relative shrink-0">
+              <MooMascot
+                mood={isScanning || pullArmed ? "scan" : mascotMood}
+                size="hero"
+                onTap={handleMascotTap}
+                alt="MooJot mascot"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Signature Monthly Hero Card with BIG animated MooJot piggy overflowing the bottom right! -->
+      <div class="overflow-x-clip">
       <div
-        class="mx-4 mt-3 rounded-3xl text-white px-4 pt-4 pb-4 shadow-xl overflow-visible relative"
-        style="background: linear-gradient(135deg, var(--hero-from), var(--hero-to)); box-shadow: 0 14px 32px -12px var(--hero-shadow);"
+        class="max-w-full"
+        style="transform: translate3d({monthDrag}px, 0, 0); transition: {monthDragging ? 'none' : 'transform 180ms ease'};"
       >
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-1 font-bold text-white">
-            <button
-              type="button"
-              onclick={async () => {
-                periodOffset -= 1;
-                await refreshPeriodData();
-              }}
-              class="size-7 rounded-full flex items-center justify-center active:bg-black/15"
-              aria-label="Prev month"
-            >
-              <ChevronLeft class="size-5" />
-            </button>
-            <span class="text-sm font-extrabold">{home?.period.label ?? "..."}</span>
-            <button
-              type="button"
-              onclick={async () => {
-                periodOffset += 1;
-                await refreshPeriodData();
-              }}
-              class="size-7 rounded-full flex items-center justify-center active:bg-black/15"
-              aria-label="Next month"
-            >
-              <ChevronRight class="size-5" />
-            </button>
-          </div>
-
-          <button
-            type="button"
-            onclick={() => (activeTab = "summary")}
-            class="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-extrabold shadow-md active:scale-95 transition-transform"
-            style="background-color: var(--hero-btn-bg); color: var(--hero-btn-text);"
-          >
-            <PieChart class="size-3.5" />
-            <span>{t(lang, "summary")}</span>
-          </button>
-        </div>
-
-        <!-- Total Spending (left) + BIG Interactive Animated Piggy overflowing past the bottom! -->
-        <div class="mt-2 flex items-end justify-between gap-2">
-          <div class="pb-1 min-w-0">
-            <div class="text-xs font-semibold text-white/85">
-              {t(lang, "totalSpending")}
-            </div>
-            <div class="text-3xl font-extrabold tracking-tight text-white leading-tight mt-0.5">
-              {formatBaht(home?.totalSpendingSatang ?? 0, true)}
-            </div>
-          </div>
-
-          <div class="relative z-10 -mb-10 -mr-2 shrink-0">
-            <MooMascot
-              mood={isScanning || pullArmed ? "scan" : mascotMood}
-              size="hero"
-              onTap={handleMascotTap}
-              alt="MooJot mascot"
-            />
-          </div>
-        </div>
-      </div>
-
       <!-- Collapsible Future / Recurring Records Drawer -->
       {#if home && home.futureRecords.length > 0}
-        <div class="mx-4 mt-8 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] overflow-hidden shadow-xs">
+        <div class="mx-4 mt-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] overflow-hidden shadow-xs">
           <button
             type="button"
             onclick={() => (futureExpanded = !futureExpanded)}
@@ -698,16 +1008,12 @@
       {/if}
 
       <!-- Daily Day-Gutter Timeline -->
-      <div class="{home && home.futureRecords.length > 0 ? 'mt-4' : 'mt-8'} space-y-3">
+      <div class="mt-4 space-y-3">
         {#if !home || home.dayGroups.length === 0}
           <div class="mx-4 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-8 text-center space-y-3 flex flex-col items-center shadow-xs">
-            <MooMascot mood={isScanning ? "scan" : "idle"} size="lg" onTap={handleMascotTap} />
+            <EmptyMonthArt alt={t(lang, "noRecords")} />
             <div class="text-sm font-bold text-[var(--text-primary)]">{t(lang, "noRecords")}</div>
-            <p class="text-xs text-[var(--text-muted)]">
-              {lang === "th"
-                ? "กด + เพื่อบันทึกรายการ หรือดึงหน้าจอลงค้างไว้เพื่อสแกนสลิป"
-                : "Tap + Add Record or pull down & hold at the top to scan bank slips."}
-            </p>
+            <p class="text-xs text-[var(--text-muted)]">{t(lang, "emptyHint")}</p>
           </div>
         {:else}
           {#each home.dayGroups as group}
@@ -751,14 +1057,19 @@
                   {#each group.records as rec}
                     {@const cat = categoryMeta(rec.categoryId)}
                     {@const acc = accountMeta(rec.accountId)}
-                    <button
-                      type="button"
-                      onclick={() => {
+                    <SwipeRecordRow
+                      open={openSwipeId === rec.id}
+                      deleteLabel={t(lang, "delete")}
+                      onOpen={() => (openSwipeId = rec.id)}
+                      onClose={() => {
+                        if (openSwipeId === rec.id) openSwipeId = null;
+                      }}
+                      onDelete={() => queueSwipeDelete(rec)}
+                      onActivate={() => {
                         editingRecord = rec;
                         recordLightboxOpen = false;
                         showRecordSheet = true;
                       }}
-                      class="w-full relative px-4 py-3 flex items-center justify-between gap-3 text-left active:opacity-80"
                     >
                       <!-- Brand corner triangle on unreviewed auto-jotted slip -->
                       {#if !rec.isReviewed}
@@ -807,13 +1118,15 @@
                           {rec.kind === "income" ? "+" : ""}{formatBaht(rec.amountSatang)}
                         </span>
                       </div>
-                    </button>
+                    </SwipeRecordRow>
                   {/each}
                 </div>
               </div>
             </div>
           {/each}
         {/if}
+      </div>
+      </div>
       </div>
     </main>
 
@@ -921,9 +1234,13 @@
       {isScanning}
       {mascotMood}
       {theme}
+      {hand}
       bind:subPage={settingsSubPage}
       onChangeTheme={(nextTheme) => {
         theme = nextTheme;
+      }}
+      onChangeHand={(nextHand) => {
+        hand = nextHand;
       }}
       onSaveSettings={async (next) => {
         await api.updateSettings(next);
@@ -936,6 +1253,7 @@
       }}
       onScanNow={triggerSlipScan}
       onPickPhoto={triggerPickPhoto}
+      onPickStatement={(pdfBase64) => importPdfBase64(pdfBase64, null)}
       onReparseSlips={async () => {
         if (hasAndroidBridge() && window.MooJotAndroid?.hasGalleryPermission()) {
           const targets = await api.getBackfillTargets();
@@ -989,6 +1307,159 @@
   {/if}
 
   <!-- Bottom Navigation Bar -->
+  {#if undoDelete}
+    <div
+      class="fixed inset-x-4 z-40 flex items-center justify-between gap-3 rounded-2xl bg-[var(--text-primary)] px-4 py-3 text-[var(--bg-canvas)] shadow-xl"
+      style="bottom: calc(env(safe-area-inset-bottom) + 84px);"
+      role="status"
+    >
+      <span class="text-sm font-semibold">{t(lang, "recordDeleted")}</span>
+      <button
+        type="button"
+        class="text-sm font-extrabold text-[var(--brand)]"
+        onclick={undoSwipeDelete}
+      >
+        {t(lang, "undo")}
+      </button>
+    </div>
+  {/if}
+
+  {#if monthPicker}
+    <ThumbSheet
+      title={lang === "th" ? "ไปที่เดือน" : "Go to month"}
+      labelId="month-sheet-title"
+      closeLabel={t(lang, "close")}
+      close={monthSheet}
+      onClose={() => (monthPicker = false)}
+    >
+      <button
+        type="button"
+        class="w-full rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white"
+        onclick={() => goToPeriod(0)}
+      >
+        {lang === "th" ? "เดือนนี้" : "This month"}
+      </button>
+      <div class="mt-2 flex flex-col gap-2">
+        {#each [1, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12] as offset (offset)}
+          <button
+            type="button"
+            class="rounded-xl py-2.5 text-sm font-bold {offset === periodOffset
+              ? 'border border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand-text)]'
+              : 'border border-[var(--border-subtle)] bg-[var(--bg-card)] text-[var(--text-primary)]'}"
+            onclick={() => goToPeriod(offset)}
+          >
+            {monthLabel(offset)}
+          </button>
+        {/each}
+      </div>
+    </ThumbSheet>
+  {/if}
+
+  {#if scanStartPrompt}
+    <ThumbSheet
+      title={t(lang, "scanFrom")}
+      labelId="scan-sheet-title"
+      closeLabel={t(lang, "close")}
+      close={scanSheet}
+      onClose={() => (scanStartPrompt = false)}
+    >
+      <p class="text-xs text-[var(--text-muted)]">
+        {lang === "th"
+          ? "แตะเดือนแรกที่จะรวม สลิปที่สแกนแล้วจะถูกข้าม"
+          : "Tap the first month to include. Slips already scanned are skipped."}
+      </p>
+      <div class="mt-4 flex flex-col gap-2">
+        <button
+          type="button"
+          class="rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white"
+          onclick={() => startSlipScan(monthStartSec(periodOffset))}
+        >
+          {home?.period.label ?? monthLabel(periodOffset)}
+        </button>
+        <button
+          type="button"
+          class="rounded-xl border border-[var(--border-subtle)] py-2.5 text-sm font-bold text-[var(--text-primary)]"
+          onclick={() => startSlipScan(monthStartSec(periodOffset - 3))}
+        >
+          {lang === "th"
+            ? `3 เดือนจาก ${monthLabel(periodOffset)}`
+            : `3 months from ${monthLabel(periodOffset)}`}
+        </button>
+        <button
+          type="button"
+          class="rounded-xl border border-[var(--border-subtle)] py-2.5 text-sm font-bold text-[var(--text-primary)]"
+          onclick={() => startSlipScan(monthStartSec(periodOffset - 12))}
+        >
+          {lang === "th"
+            ? `1 ปีจาก ${monthLabel(periodOffset)}`
+            : `1 year from ${monthLabel(periodOffset)}`}
+        </button>
+      </div>
+      <div class="mt-4">
+        <div class="text-xs font-bold text-[var(--text-primary)]">
+          {lang === "th" ? "สแกนแล้ว" : "Already scanned"}
+        </div>
+        {#if scannedMonths.length === 0}
+          <p class="mt-1 text-xs text-[var(--text-muted)]">
+            {lang === "th" ? "ยังไม่มี" : "None yet"}
+          </p>
+        {:else}
+          <div class="mt-2 flex flex-wrap gap-1.5">
+            {#each scannedMonths as key (key)}
+              <span class="rounded-full bg-[var(--brand-soft)] px-2.5 py-1 text-[11px] font-bold text-[var(--brand-text)]">
+                {formatMonthKey(key)}
+              </span>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    </ThumbSheet>
+  {/if}
+
+  {#if pdfPrompt}
+    <div class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4">
+      <form
+        class="w-full max-w-md rounded-3xl bg-[var(--bg-card)] p-5 shadow-xl"
+        onsubmit={(event) => {
+          event.preventDefault();
+          if (!pdfPrompt || pdfBusy) return;
+          void importPdfBase64(pdfPrompt.pdfBase64, pdfPassword);
+        }}
+      >
+        <h2 class="text-base font-extrabold text-[var(--text-primary)]">{t(lang, "statementPassword")}</h2>
+        <p class="mt-1 text-xs text-[var(--text-muted)]">{t(lang, "statementPasswordHint")}</p>
+        {#if pdfPrompt.wrong}
+          <p class="mt-2 text-xs font-semibold text-rose-500">{t(lang, "wrongPassword")}</p>
+        {/if}
+        <input
+          type="password"
+          autocomplete="off"
+          bind:value={pdfPassword}
+          class="mt-4 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-input)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--brand)]"
+        />
+        <div class="mt-4 flex gap-2">
+          <button
+            type="button"
+            class="flex-1 rounded-xl border border-[var(--border-subtle)] py-2.5 text-sm font-bold text-[var(--text-secondary)]"
+            onclick={() => {
+              pdfPrompt = null;
+              pdfPassword = "";
+            }}
+          >
+            {t(lang, "cancel")}
+          </button>
+          <button
+            type="submit"
+            class="flex-1 rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white disabled:opacity-60"
+            disabled={pdfBusy || pdfPassword.trim() === ""}
+          >
+            {t(lang, "confirm")}
+          </button>
+        </div>
+      </form>
+    </div>
+  {/if}
+
   <nav
     class="fixed bottom-0 left-0 right-0 z-30 backdrop-blur-md border-t border-[var(--border-subtle)] grid grid-cols-3 pt-2"
     style="background-color: var(--nav-bg); padding-bottom: max(env(safe-area-inset-bottom), 20px);"
@@ -1127,68 +1598,64 @@
     </div>
   {/if}
 
-  <!-- Filter Records Bottom Sheet (All 20 Banks + Cash) -->
   {#if showFilterSheet}
-    <div class="fixed inset-0 z-50 bg-black/60 flex flex-col justify-end overscroll-contain">
-      <div class="bg-[var(--bg-card)] text-[var(--text-primary)] border-t border-[var(--border-subtle)] rounded-t-3xl max-h-[80vh] flex flex-col">
-        <div class="px-5 py-4 border-b border-[var(--border-subtle)] flex items-center justify-between shrink-0">
-          <h3 class="font-bold text-base">{t(lang, "filterRecords")}</h3>
-          <button
-            type="button"
-            onclick={async () => {
-              filterAccountIds = [];
-              await refreshPeriodData();
-              showFilterSheet = false;
-            }}
-            class="text-sm font-bold text-[var(--brand)]"
-          >
-            {t(lang, "reset")}
-          </button>
-        </div>
-        <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-3 space-y-2">
-          {#each accounts as acc}
-            {@const checked = filterAccountIds.includes(acc.id)}
-            <label class="flex items-center justify-between py-2">
-              <div class="flex items-center gap-3">
-                <span
-                  class="size-4 rounded-full"
-                  style="background-color: {acc.color};"
-                ></span>
-                <span class="text-sm font-medium text-[var(--text-primary)]">
-                  {lang === "th" ? acc.nameTh : acc.nameEn}
-                </span>
-              </div>
-              <input
-                type="checkbox"
-                {checked}
-                onchange={() => {
-                  if (checked) {
-                    filterAccountIds = filterAccountIds.filter((x) => x !== acc.id);
-                  } else {
-                    filterAccountIds = [...filterAccountIds, acc.id];
-                  }
-                }}
-                class="size-5 accent-[var(--brand)]"
-              />
-            </label>
-          {/each}
-        </div>
-        <div
-          class="p-4 border-t border-[var(--border-subtle)] shrink-0"
-          style="padding-bottom: max(env(safe-area-inset-bottom), 20px);"
+    <ThumbSheet
+      title={t(lang, "filterRecords")}
+      labelId="filter-sheet-title"
+      closeLabel={t(lang, "close")}
+      close={filterSheet}
+      onClose={() => (showFilterSheet = false)}
+    >
+      {#snippet actions()}
+        <button
+          type="button"
+          onclick={async () => {
+            filterAccountIds = [];
+            await refreshPeriodData();
+            filterSheet.current?.();
+          }}
+          class="text-sm font-bold text-[var(--brand)]"
         >
-          <button
-            type="button"
-            onclick={async () => {
-              await refreshPeriodData();
-              showFilterSheet = false;
-            }}
-            class="w-full py-3 rounded-full bg-[var(--brand)] text-white font-bold text-sm active:bg-[var(--brand-deep)]"
-          >
-            {t(lang, "apply")}
-          </button>
-        </div>
+          {t(lang, "reset")}
+        </button>
+      {/snippet}
+      <div class="space-y-1">
+        {#each accounts as acc}
+          {@const checked = filterAccountIds.includes(acc.id)}
+          <label class="flex items-center justify-between py-2">
+            <div class="flex items-center gap-3">
+              <span class="size-4 rounded-full" style="background-color: {acc.color};"></span>
+              <span class="text-sm font-medium text-[var(--text-primary)]">
+                {lang === "th" ? acc.nameTh : acc.nameEn}
+              </span>
+            </div>
+            <input
+              type="checkbox"
+              {checked}
+              onchange={() => {
+                if (checked) {
+                  filterAccountIds = filterAccountIds.filter((x) => x !== acc.id);
+                } else {
+                  filterAccountIds = [...filterAccountIds, acc.id];
+                }
+              }}
+              class="size-5 accent-[var(--brand)]"
+            />
+          </label>
+        {/each}
       </div>
-    </div>
+      {#snippet footer()}
+        <button
+          type="button"
+          onclick={async () => {
+            await refreshPeriodData();
+            filterSheet.current?.();
+          }}
+          class="w-full rounded-full bg-[var(--brand)] py-3 text-sm font-bold text-white active:bg-[var(--brand-deep)]"
+        >
+          {t(lang, "apply")}
+        </button>
+      {/snippet}
+    </ThumbSheet>
   {/if}
 </div>

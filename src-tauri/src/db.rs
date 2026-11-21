@@ -264,6 +264,15 @@ pub fn init_db(db_path: &Path) -> Result<Connection, String> {
             slips_synced INTEGER NOT NULL DEFAULT 0,
             records_categorized INTEGER NOT NULL DEFAULT 0
         );
+
+        CREATE TABLE IF NOT EXISTS scanned_media (
+            media_store_id TEXT PRIMARY KEY,
+            scanned_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS scanned_months (
+            year_month TEXT PRIMARY KEY
+        );
         "#,
     )
     .map_err(|e| format!("run migrations: {e}"))?;
@@ -443,6 +452,79 @@ pub fn save_settings(conn: &Connection, s: &AppSettings) -> Result<(), String> {
             params![k, v],
         )
         .map_err(|e| format!("save setting {k}: {e}"))?;
+    }
+    Ok(())
+}
+
+pub fn list_known_media_ids(conn: &Connection) -> Result<Vec<String>, String> {
+    let mut ids = Vec::new();
+    let mut slips = conn
+        .prepare(
+            "SELECT media_store_id FROM slips
+             WHERE media_store_id IS NOT NULL AND media_store_id != ''",
+        )
+        .map_err(|e| format!("prepare known slips: {e}"))?;
+    let slip_rows = slips
+        .query_map([], |row| row.get::<_, String>(0))
+        .map_err(|e| format!("query known slips: {e}"))?;
+    for row in slip_rows {
+        ids.push(row.map_err(|e| e.to_string())?);
+    }
+    let mut seen = conn
+        .prepare("SELECT media_store_id FROM scanned_media")
+        .map_err(|e| format!("prepare scanned media: {e}"))?;
+    let seen_rows = seen
+        .query_map([], |row| row.get::<_, String>(0))
+        .map_err(|e| format!("query scanned media: {e}"))?;
+    for row in seen_rows {
+        ids.push(row.map_err(|e| e.to_string())?);
+    }
+    ids.sort();
+    ids.dedup();
+    Ok(ids)
+}
+
+pub fn list_scanned_months(conn: &Connection) -> Result<Vec<String>, String> {
+    let mut stmt = conn
+        .prepare("SELECT year_month FROM scanned_months ORDER BY year_month DESC")
+        .map_err(|e| format!("prepare scanned months: {e}"))?;
+    let rows = stmt
+        .query_map([], |row| row.get::<_, String>(0))
+        .map_err(|e| format!("query scanned months: {e}"))?;
+    let mut months = Vec::new();
+    for row in rows {
+        months.push(row.map_err(|e| e.to_string())?);
+    }
+    Ok(months)
+}
+
+pub fn remember_scanned_months(conn: &Connection, months: &[String]) -> Result<(), String> {
+    for month in months {
+        let month = month.trim();
+        if month.len() != 7 || !month.as_bytes().get(4).is_some_and(|b| *b == b'-') {
+            continue;
+        }
+        conn.execute(
+            "INSERT OR IGNORE INTO scanned_months (year_month) VALUES (?1)",
+            params![month],
+        )
+        .map_err(|e| format!("remember scanned month: {e}"))?;
+    }
+    Ok(())
+}
+
+pub fn remember_scanned_media(conn: &Connection, ids: &[String]) -> Result<(), String> {
+    let now = Local::now().to_rfc3339();
+    for id in ids {
+        let id = id.trim();
+        if id.is_empty() {
+            continue;
+        }
+        conn.execute(
+            "INSERT OR IGNORE INTO scanned_media (media_store_id, scanned_at) VALUES (?1, ?2)",
+            params![id, now],
+        )
+        .map_err(|e| format!("remember scanned media: {e}"))?;
     }
     Ok(())
 }

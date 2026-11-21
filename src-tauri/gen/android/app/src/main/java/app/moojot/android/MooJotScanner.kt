@@ -48,7 +48,11 @@ object MooJotScanner {
         context: Context,
         albumKeywords: List<String>,
         includeSharedAlbum: Boolean,
-        limit: Int = 50
+        limit: Int = 50,
+        skipIds: Set<String> = emptySet(),
+        sinceSec: Long = 0L,
+        batchSize: Int = 8,
+        onBatch: ((JSONArray, JSONArray, Boolean) -> Unit)? = null
     ): JSONArray {
         val results = JSONArray()
         val lowerKeywords = albumKeywords.map { it.lowercase() }.filter { it.isNotBlank() }
@@ -67,13 +71,18 @@ object MooJotScanner {
         }
 
         val sortOrder = "${MediaStore.Images.Media.DATE_ADDED} DESC"
+        val selection = if (sinceSec > 0L) "${MediaStore.Images.Media.DATE_ADDED} >= ?" else null
+        val selectionArgs = if (sinceSec > 0L) arrayOf(sinceSec.toString()) else null
         val cursor = context.contentResolver.query(
             MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
             projection.toTypedArray(),
-            null,
-            null,
+            selection,
+            selectionArgs,
             sortOrder
-        ) ?: return results
+        ) ?: run {
+            onBatch?.invoke(JSONArray(), JSONArray(), true)
+            return results
+        }
 
         cursor.use { c ->
             val idCol = c.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
@@ -87,11 +96,19 @@ object MooJotScanner {
                 c.getColumnIndex(MediaStore.Images.Media.RELATIVE_PATH)
             } else -1
 
-            var matchedCount = 0
-            var inspectedCount = 0
+            var opened = 0
+            var batchCandidates = JSONArray()
+            var batchSeen = JSONArray()
+            val batchLimit = batchSize.coerceIn(1, 20)
+            fun emitBatch(done: Boolean) {
+                if (onBatch == null) return
+                if (!done && batchSeen.length() == 0) return
+                onBatch.invoke(batchCandidates, batchSeen, done)
+                batchCandidates = JSONArray()
+                batchSeen = JSONArray()
+            }
 
-            while (c.moveToNext() && matchedCount < limit && inspectedCount < 500) {
-                inspectedCount++
+            while (c.moveToNext() && opened < limit) {
                 val bucket = c.getString(bucketCol) ?: ""
                 val relPath = if (relCol >= 0) (c.getString(relCol) ?: "") else ""
                 val combinedPath = "$bucket $relPath".lowercase()
@@ -125,6 +142,8 @@ object MooJotScanner {
                 }
 
                 val id = c.getLong(idCol)
+                val mediaId = id.toString()
+                if (skipIds.contains(mediaId)) continue
                 val dateAdded = c.getLong(dateCol)
                 val mime = c.getString(mimeCol) ?: "image/jpeg"
                 val contentUri = ContentUris.withAppendedId(
@@ -132,10 +151,12 @@ object MooJotScanner {
                     id
                 )
 
+                opened++
+                batchSeen.put(mediaId)
                 val candidate = inspectSingleImage(
                     context = context,
                     uri = contentUri,
-                    mediaStoreId = id.toString(),
+                    mediaStoreId = mediaId,
                     albumName = bucket,
                     dateAddedSec = dateAdded,
                     mimeType = mime,
@@ -143,9 +164,11 @@ object MooJotScanner {
                 )
                 if (candidate != null) {
                     results.put(candidate)
-                    matchedCount++
+                    batchCandidates.put(candidate)
                 }
+                if (batchSeen.length() >= batchLimit) emitBatch(false)
             }
+            emitBatch(true)
         }
         return results
     }

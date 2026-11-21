@@ -80,8 +80,11 @@
 html,
 body {
   margin: 0;
+  max-width: 100%;
   background-color: var(--bg-canvas);
   color: var(--text-primary);
+  overflow-x: clip;
+  overscroll-behavior-x: none;
   overscroll-behavior-y: none;
 }
 

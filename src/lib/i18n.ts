@@ -27,6 +27,10 @@ const en = {
   recurring: "Recurring",
   allRecords: "All Records",
   noRecords: "No records yet",
+  emptyHint: "Pull down to scan a slip, or tap + to add one.",
+  scanFrom: "Start scanning from",
+  lastThreeMonths: "Last 3 months",
+  backToTop: "Back to top",
   noResults: "No results found",
 
   // Slips / OCR
@@ -122,6 +126,12 @@ const en = {
   slipAuto: "Slip (Auto)",
   slipShare: "Slip (Share)",
   pdfStatement: "PDF Statement",
+  importStatement: "Import card statement",
+  statementPassword: "Statement password",
+  statementPasswordHint: "Used once to open this PDF. It is not saved.",
+  wrongPassword: "That password did not open the PDF.",
+  recordDeleted: "Record deleted",
+  undo: "Undo",
 
   // Status labels
   ok: "OK",
@@ -204,6 +214,10 @@ const th: Record<I18nKey, string> = {
   recurring: "ประจำ",
   allRecords: "รายการทั้งหมด",
   noRecords: "ยังไม่มีรายการ",
+  emptyHint: "ดึงลงเพื่อสแกนสลิป หรือกด + เพื่อจดรายการ",
+  scanFrom: "เริ่มสแกนตั้งแต่",
+  lastThreeMonths: "3 เดือนล่าสุด",
+  backToTop: "กลับขึ้นบน",
   noResults: "ไม่พบผลลัพธ์",
 
   // Slips / OCR
@@ -299,6 +313,12 @@ const th: Record<I18nKey, string> = {
   slipAuto: "สลิป (อัตโนมัติ)",
   slipShare: "สลิป (แชร์)",
   pdfStatement: "ใบแจ้งยอด PDF",
+  importStatement: "นำเข้าใบแจ้งยอดบัตร",
+  statementPassword: "รหัสใบแจ้งยอด",
+  statementPasswordHint: "ใช้เปิด PDF ครั้งนี้เท่านั้น และไม่ถูกบันทึก",
+  wrongPassword: "รหัสนี้เปิด PDF ไม่ได้",
+  recordDeleted: "ลบรายการแล้ว",
+  undo: "เลิกทำ",
 
   // Status labels
   ok: "ปกติ",

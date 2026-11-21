@@ -4,6 +4,7 @@ pub mod categorizer;
 pub mod commands;
 pub mod db;
 pub mod slip_parser;
+pub mod statement;
 
 use std::sync::Mutex;
 use tauri::Manager;
@@ -46,6 +47,10 @@ pub fn run() {
             commands::get_settings,
             commands::update_settings,
             commands::get_album_scan_keywords,
+            commands::list_known_slip_media_ids,
+            commands::remember_scanned_media,
+            commands::list_scanned_months,
+            commands::remember_scanned_months,
             commands::import_slip_candidates,
             commands::reparse_all_slips,
             commands::get_backfill_targets,
@@ -56,6 +61,7 @@ pub fn run() {
             commands::auto_categorize_uncategorized,
             commands::export_records_csv,
             commands::export_backup_json,
+            commands::import_statement_pdf,
         ])
         .run(tauri::generate_context!())
         .expect("error while running MooJot Tauri application");

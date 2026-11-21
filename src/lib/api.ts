@@ -25,15 +25,26 @@ declare global {
       scanBankSlips(
         keywordsJson: string,
         includeShared: boolean,
-        limit: number,
-        includeBase64: boolean
+        sinceSec: number,
+        skipIdsJson: string
       ): void;
       pickSlipPhoto(includeBase64: boolean): void;
       backfillExistingSlips(itemsJson: string): void;
       readSlipImageDataUrl(relativePath: string): string | null;
       shareTextFile(filename: string, mimeType: string, content: string): boolean;
+      pickStatementPdf(): void;
     };
   }
+}
+
+export interface ImportStatementReport {
+  issuer: string | null;
+  imported: number;
+  duplicates: number;
+  skipped: number;
+  needsPassword: boolean;
+  wrongPassword: boolean;
+  message: string | null;
 }
 
 export const api = {
@@ -108,6 +119,16 @@ export const api = {
 
   getAlbumScanKeywords: () => invoke<string[]>("get_album_scan_keywords"),
 
+  listKnownSlipMediaIds: () => invoke<string[]>("list_known_slip_media_ids"),
+
+  rememberScannedMedia: (ids: string[]) =>
+    invoke<void>("remember_scanned_media", { ids }),
+
+  listScannedMonths: () => invoke<string[]>("list_scanned_months"),
+
+  rememberScannedMonths: (months: string[]) =>
+    invoke<void>("remember_scanned_months", { months }),
+
   importSlipCandidates: (candidates: SlipScanCandidate[]) =>
     invoke<SlipScanReport>("import_slip_candidates", { candidates }),
 
@@ -144,6 +165,14 @@ export const api = {
   exportRecordsCsv: () => invoke<string>("export_records_csv"),
 
   exportBackupJson: () => invoke<string>("export_backup_json"),
+
+  importStatementPdf: (pdfBase64: string, password?: string | null) =>
+    invoke<ImportStatementReport>("import_statement_pdf", {
+      input: {
+        pdfBase64,
+        password: password && password.length > 0 ? password : null,
+      },
+    }),
 };
 
 export function hasAndroidBridge(): boolean {
