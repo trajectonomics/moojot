@@ -650,15 +650,25 @@ fn run_reparse_slips_inner(
     let settings = load_settings(conn)?;
     let mut stmt = conn
         .prepare(
-            "SELECT r.id, r.local_date, r.category_id, s.qr_raw, s.ocr_text
+            "SELECT r.id, r.local_date, r.category_id, s.qr_raw, s.ocr_text, r.is_reviewed
              FROM records r
              JOIN slips s ON s.record_id = r.id
              WHERE r.source LIKE 'slip%'",
         )
         .map_err(|e| e.to_string())?;
 
-    let rows: Vec<(String, String, Option<String>, Option<String>, Option<String>)> = stmt
-        .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?)))
+    type SlipRow = (String, String, Option<String>, Option<String>, Option<String>, bool);
+    let rows: Vec<SlipRow> = stmt
+        .query_map([], |r| {
+            Ok((
+                r.get(0)?,
+                r.get(1)?,
+                r.get(2)?,
+                r.get(3)?,
+                r.get(4)?,
+                r.get::<_, i32>(5)? != 0,
+            ))
+        })
         .map_err(|e| e.to_string())?
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| e.to_string())?;
@@ -669,7 +679,7 @@ fn run_reparse_slips_inner(
     let mut own_last4s: std::collections::HashSet<String> = std::collections::HashSet::new();
     let mut learned_owners: Vec<String> = settings.owner_names.clone();
 
-    for (rec_id, orig_date, orig_cat, qr_raw, ocr_text) in rows {
+    for (rec_id, orig_date, orig_cat, qr_raw, ocr_text, reviewed) in rows {
         let qr = qr_raw.as_deref().and_then(|raw| parse_slip_qr(raw).ok());
         let ocr = ocr_text.as_deref().unwrap_or("");
         let parsed = parse_slip_text(ocr, qr.as_ref(), &settings.owner_names, None);
@@ -689,7 +699,11 @@ fn run_reparse_slips_inner(
                 }
             }
         }
-        parsed_rows.push((rec_id, orig_date, orig_cat, qr, ocr.to_string(), parsed));
+        // A record the user saved from the record sheet is reviewed. Its own-account hints
+        // above are still learned, but its fields are never overwritten or pruned below.
+        if !reviewed {
+            parsed_rows.push((rec_id, orig_date, orig_cat, qr, ocr.to_string(), parsed));
+        }
     }
 
     // Pass 2: re-evaluate with learned own names + cross-bank own-account last-4 digits
@@ -946,4 +960,104 @@ pub fn import_statement_pdf(
         .map_err(|_| "invalid pdf data".to_string())?;
     let conn = state.0.lock().map_err(|_| "db lock poisoned".to_string())?;
     crate::statement::import_statement_pdf(&conn, &bytes, input.password.as_deref())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db::{get_record_by_id, init_db};
+
+    // Synthetic slip text: no real names or account numbers.
+    const SLIP_OCR: &str = "\
+K PLUS
+Transfer Successful
+21 Nov 26 17:28
+From
+MR. TEST SENDER
+XXX-X-X1234-X
+To
+MS. TEST RECEIVER
+XXX-X-X5678-X
+Amount 2,922.50 THB
+Fee 0.00 THB
+Memo
+Lunch
+Ref. 202611211728ABC12";
+
+    fn temp_db() -> (rusqlite::Connection, std::path::PathBuf) {
+        let path = std::env::temp_dir().join(format!("moojot-cmd-{}.sqlite3", Uuid::new_v4()));
+        (init_db(&path).expect("init db"), path)
+    }
+
+    fn cleanup(path: &std::path::Path) {
+        let _ = std::fs::remove_file(path);
+        for suffix in ["-wal", "-shm"] {
+            let mut p = path.as_os_str().to_os_string();
+            p.push(suffix);
+            let _ = std::fs::remove_file(p);
+        }
+    }
+
+    fn insert_slip_record(conn: &rusqlite::Connection, record_id: &str) {
+        conn.execute(
+            "INSERT INTO records (id, kind, amount_satang, currency, local_date, source, parse_status,
+                                  is_reviewed, created_at, updated_at)
+             VALUES (?1, 'spending', 292250, 'THB', '2026-11-21', 'slip_auto', 'needs_review', 0, 'now', 'now')",
+            params![record_id],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO slips (id, record_id, content_sha256, ocr_text, parsed_at)
+             VALUES (?1, ?2, ?3, ?4, 'now')",
+            params![Uuid::new_v4().to_string(), record_id, Uuid::new_v4().to_string(), SLIP_OCR],
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn reparse_keeps_user_edits_on_reviewed_slip_records() {
+        let (conn, path) = temp_db();
+        insert_slip_record(&conn, "rec-edited");
+        insert_slip_record(&conn, "rec-untouched");
+
+        // The user corrects the slip record in the record sheet.
+        upsert_record(
+            &conn,
+            &RecordInput {
+                id: Some("rec-edited".into()),
+                kind: "income".into(),
+                amount_satang: 150_000,
+                local_date: "2026-11-20".into(),
+                local_time: Some("09:00".into()),
+                account_id: Some("scb".into()),
+                category_id: Some("cat_salary".into()),
+                payee_raw: Some("Edited payee".into()),
+                note: Some("my note".into()),
+                tag_ids: Vec::new(),
+                recurring_frequency: None,
+            },
+        )
+        .unwrap();
+
+        // Every later slip import runs this pass; a manual "re-parse" runs it with pruning.
+        run_reparse_slips_inner(&conn, false).unwrap();
+        run_reparse_slips_inner(&conn, true).unwrap();
+
+        let edited = get_record_by_id(&conn, "rec-edited").unwrap().unwrap();
+        assert_eq!(edited.kind, "income");
+        assert_eq!(edited.amount_satang, 150_000);
+        assert_eq!(edited.local_date, "2026-11-20");
+        assert_eq!(edited.local_time.as_deref(), Some("09:00"));
+        assert_eq!(edited.category_id.as_deref(), Some("cat_salary"));
+        assert_eq!(edited.payee_raw.as_deref(), Some("Edited payee"));
+        assert_eq!(edited.note.as_deref(), Some("my note"));
+        assert_eq!(edited.parse_status, "ok");
+
+        // Unreviewed slip records are still re-parsed.
+        let untouched = get_record_by_id(&conn, "rec-untouched").unwrap().unwrap();
+        assert_eq!(untouched.payee_raw.as_deref(), Some("MS. TEST RECEIVER"));
+        assert_eq!(untouched.note.as_deref(), Some("Lunch"));
+        assert_eq!(untouched.local_time.as_deref(), Some("17:28"));
+        cleanup(&path);
+    }
 }
