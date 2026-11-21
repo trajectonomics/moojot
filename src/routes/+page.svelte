@@ -564,7 +564,8 @@
         return "handled";
       }
       if (activeTab === "settings" && settingsSubPage !== null) {
-        settingsSubPage = null;
+        settingsSubPage =
+          settingsSubPage === "terms" || settingsSubPage === "privacy" ? "about" : null;
         return "handled";
       }
       if (activeTab !== "home") {

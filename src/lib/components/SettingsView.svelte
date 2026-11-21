@@ -18,9 +18,16 @@
     Building2,
     Database,
     FileText,
+    Info,
+    Scale,
+    GitFork,
   } from "@lucide/svelte";
+  import { openUrl } from "@tauri-apps/plugin-opener";
   import CategoryIcon from "./CategoryIcon.svelte";
+  import LegalText from "./LegalText.svelte";
   import MooMascot, { type MascotMood } from "./MooMascot.svelte";
+  import termsMarkdown from "../../../docs/terms-of-service.md?raw";
+  import privacyMarkdown from "../../../docs/privacy-policy.md?raw";
   import { t } from "$lib/i18n";
   import type { AppTheme, HandMode } from "$lib/theme";
   import type { Account, AppSettings, Category, Tag } from "$lib/types";
@@ -31,7 +38,12 @@
     | "slips"
     | "categories"
     | "calendar"
-    | "data";
+    | "data"
+    | "about"
+    | "terms"
+    | "privacy";
+
+  const GITHUB_URL = "https://github.com/trajectonomics/moojot";
 
   let {
     settings,
@@ -255,13 +267,36 @@
         return t(lang, "calendarSettings");
       case "data":
         return lang === "th" ? "สำรองข้อมูลและ OCR" : "Backup & Local OCR";
+      case "about":
+        return lang === "th" ? "เกี่ยวกับ" : "About";
+      case "terms":
+        return lang === "th" ? "ข้อกำหนดการใช้" : "Terms";
+      case "privacy":
+        return lang === "th" ? "ความเป็นส่วนตัว" : "Privacy";
       default:
         return "";
     }
   });
+
+  function closeSubPage() {
+    if (subPage === "terms" || subPage === "privacy") subPage = "about";
+    else subPage = null;
+  }
+
+  async function openGitHub() {
+    try {
+      await openUrl(GITHUB_URL);
+    } catch {
+      window.open(GITHUB_URL, "_blank", "noopener");
+    }
+  }
 </script>
 
-<div class="pb-28 bg-[var(--bg-canvas)] min-h-screen">
+<div
+  class="bg-[var(--bg-canvas)] {subPage === null
+    ? 'min-h-screen pb-28'
+    : 'fixed inset-0 z-10 flex flex-col overflow-hidden'}"
+>
   {#if subPage === null}
     <!-- Clean Main My Moo Hub -->
     <header
@@ -445,9 +480,33 @@
                 {lang === "th" ? "สำรองข้อมูลและ OCR ออฟไลน์" : "Backup & Local OCR"}
               </div>
               <div class="text-xs text-[var(--text-muted)] truncate">
+              {lang === "th"
+                ? "OCR ในเครื่อง · ส่งออก CSV / JSON"
+                : "On-device OCR · Export CSV / JSON"}
+              </div>
+            </div>
+          </div>
+          <ChevronRight class="size-4 text-[var(--text-muted)] shrink-0" />
+        </button>
+
+        <!-- 7. About -->
+        <button
+          type="button"
+          onclick={() => (subPage = "about")}
+          class="w-full px-4 py-3.5 flex items-center justify-between gap-3 text-left active:opacity-75"
+        >
+          <div class="flex items-center gap-3 min-w-0">
+            <span class="size-9 rounded-2xl bg-[var(--brand-soft)] text-[var(--brand)] flex items-center justify-center shrink-0">
+              <Info class="size-4" />
+            </span>
+            <div class="min-w-0">
+              <div class="text-sm font-bold text-[var(--text-primary)]">
+                {lang === "th" ? "เกี่ยวกับ" : "About"}
+              </div>
+              <div class="text-xs text-[var(--text-muted)] truncate">
                 {lang === "th"
-                  ? "AksonOCR-Lite ในเครื่อง 100% · ส่งออก CSV / JSON"
-                  : "100% on-device AksonOCR-Lite · Export CSV / JSON"}
+                  ? "ข้อกำหนด · ความเป็นส่วนตัว · GitHub"
+                  : "Terms · Privacy · GitHub"}
               </div>
             </div>
           </div>
@@ -458,12 +517,12 @@
   {:else}
     <!-- Focused Sub-Page Header seamlessly extending behind status bar -->
     <header
-      class="flex items-center gap-2 px-3 pb-3 text-white shadow-sm sticky top-0 z-20"
+      class="flex shrink-0 items-center gap-2 px-3 pb-3 text-white shadow-sm"
       style="background: linear-gradient(135deg, var(--hero-from), var(--hero-to)); padding-top: max(env(safe-area-inset-top), 38px);"
     >
       <button
         type="button"
-        onclick={() => (subPage = null)}
+        onclick={closeSubPage}
         class="size-10 flex items-center justify-center rounded-full active:bg-black/15"
         aria-label={t(lang, "back")}
       >
@@ -472,7 +531,7 @@
       <h2 class="flex-1 text-base font-extrabold tracking-tight">{subPageTitle}</h2>
     </header>
 
-    <div class="px-4 mt-4 space-y-4">
+    <div class="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pt-4 pb-28">
       {#if subPage === "appearance"}
         <!-- Theme Picker -->
         <section class="rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-4 space-y-3 shadow-xs">
@@ -941,12 +1000,12 @@
         <section class="rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-4 space-y-2.5 shadow-xs">
           <h3 class="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
             <ShieldCheck class="size-4 text-emerald-500" />
-            <span>{lang === "th" ? "OCR ออฟไลน์ในเครื่อง 100%" : "100% On-Device Local OCR"}</span>
+            <span>{lang === "th" ? "OCR ในเครื่อง" : "On-device OCR"}</span>
           </h3>
           <p class="text-xs text-[var(--text-secondary)] leading-relaxed">
             {lang === "th"
-              ? "อ่านสลิปภาษาไทยด้วย AksonOCR-Lite (ONNX 4.3 MB, Apache-2.0) และภาษาอังกฤษด้วย ML Kit Latin ในเครื่องทั้งหมด ไม่ส่งรูปขึ้นคลาวด์ ไม่ต้องใช้ API Key"
-              : "Runs AksonOCR-Lite (4.3 MB ONNX, Apache-2.0) for Thai + bundled ML Kit Latin for English 100% locally on your phone. Zero cloud uploads, zero API keys."}
+              ? "อ่านสลิปภาษาไทยด้วย AksonOCR-Lite (ONNX 4.3 MB, Apache-2.0) และภาษาอังกฤษด้วย ML Kit Latin บนเครื่อง ขั้นตอนนี้ไม่อัปโหลดรูป ถ้าในฐานข้อมูลมีคีย์ AksonOCR อยู่แล้ว สลิปที่ยังต้องอ่านภาษาไทยอาจถูกส่งไปที่ AksonOCR"
+              : "Reads Thai with AksonOCR-Lite (4.3 MB ONNX, Apache-2.0) and English with ML Kit Latin on the phone. Those steps do not upload the photo. If an AksonOCR API key is already stored in the local database, a slip that still needs Thai text can be sent to AksonOCR."}
           </p>
           <div class="flex flex-wrap gap-2 text-[11px] font-semibold">
             <span class="rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 px-2.5 py-0.5">Thai: AksonOCR-Lite ONNX</span>
@@ -977,6 +1036,81 @@
               {t(lang, "exportJson")}
             </button>
           </div>
+        </section>
+
+      {:else if subPage === "about"}
+        <section class="rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] overflow-hidden divide-y divide-[var(--border-subtle)] shadow-xs">
+          <button
+            type="button"
+            onclick={() => (subPage = "terms")}
+            class="w-full px-4 py-3.5 flex items-center justify-between gap-3 text-left active:opacity-75"
+          >
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="size-9 rounded-2xl bg-[var(--brand-soft)] text-[var(--brand)] flex items-center justify-center shrink-0">
+                <Scale class="size-4" />
+              </span>
+              <div class="min-w-0">
+                <div class="text-sm font-bold text-[var(--text-primary)]">
+                  {lang === "th" ? "ข้อกำหนดการใช้" : "Terms and conditions"}
+                </div>
+                <div class="text-xs text-[var(--text-muted)] truncate">
+                  {lang === "th" ? "ฉบับภาษาอังกฤษมีผลบังคับ" : "English text controls"}
+                </div>
+              </div>
+            </div>
+            <ChevronRight class="size-4 text-[var(--text-muted)] shrink-0" />
+          </button>
+          <button
+            type="button"
+            onclick={() => (subPage = "privacy")}
+            class="w-full px-4 py-3.5 flex items-center justify-between gap-3 text-left active:opacity-75"
+          >
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="size-9 rounded-2xl bg-[var(--brand-soft)] text-[var(--brand)] flex items-center justify-center shrink-0">
+                <ShieldCheck class="size-4" />
+              </span>
+              <div class="min-w-0">
+                <div class="text-sm font-bold text-[var(--text-primary)]">
+                  {lang === "th" ? "นโยบายความเป็นส่วนตัว" : "Privacy policy"}
+                </div>
+                <div class="text-xs text-[var(--text-muted)] truncate">
+                  {lang === "th" ? "บัญชีอยู่ในเครื่องคุณ" : "The ledger stays on your phone"}
+                </div>
+              </div>
+            </div>
+            <ChevronRight class="size-4 text-[var(--text-muted)] shrink-0" />
+          </button>
+          <button
+            type="button"
+            onclick={openGitHub}
+            class="w-full px-4 py-3.5 flex items-center justify-between gap-3 text-left active:opacity-75"
+          >
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="size-9 rounded-2xl bg-[var(--brand-soft)] text-[var(--brand)] flex items-center justify-center shrink-0">
+                <GitFork class="size-4" />
+              </span>
+              <div class="min-w-0">
+                <div class="text-sm font-bold text-[var(--text-primary)]">GitHub</div>
+                <div class="text-xs text-[var(--text-muted)] truncate">trajectonomics/moojot</div>
+              </div>
+            </div>
+            <ChevronRight class="size-4 text-[var(--text-muted)] shrink-0" />
+          </button>
+        </section>
+        <p class="px-1 text-[11px] leading-relaxed text-[var(--text-muted)]">
+          {lang === "th"
+            ? "MooJot 1.0.0 เผยแพร่โดย Trajectonomics ภายใต้สัญญาอนุญาต MIT ข้อความกฎหมายฉบับภาษาอังกฤษเป็นฉบับที่มีผล"
+            : "MooJot 1.0.0 is published by Trajectonomics under the MIT License. The English legal text is the official version."}
+        </p>
+
+      {:else if subPage === "terms"}
+        <section class="rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-4 shadow-xs">
+          <LegalText markdown={termsMarkdown} />
+        </section>
+
+      {:else if subPage === "privacy"}
+        <section class="rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-4 shadow-xs">
+          <LegalText markdown={privacyMarkdown} />
         </section>
       {/if}
     </div>

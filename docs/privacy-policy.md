@@ -1,26 +1,133 @@
 # MooJot Privacy Policy
 
-MooJot is a personal income and expense tracker. The ledger lives on your device.
+**Last updated: 22 November 2026**
 
-## What stays on the device
+Trajectonomics publishes MooJot, a personal income and expense tracker. This policy says what the Android app does with information. The same text is shown in My Moo → About → Privacy.
 
-- Accounts, categories, records, budgets, and settings are stored in a local SQLite database.
-- Bank-slip photos you import are copied into the app's private files.
-- Credit-card statement PDFs are decrypted and read on the device. The password is used only for that import and is not saved.
-- MooJot has no account server and does not send analytics.
+The short version: the ledger stays on your phone. Trajectonomics has no account server and no analytics SDK, and does not receive your records. The only upload the code can make is optional. It happens only if an AksonOCR API key is already stored in the local database. The settings screen does not ask for that key.
 
-## Photos
+This policy is written so a person can read it. It is the project's description of its own behavior. It is not a certificate of compliance, and it is not legal advice.
 
-Scanning bank albums uses Android photo access (`READ_MEDIA_IMAGES`) so MooJot can read the albums you enable. You can instead pick a single slip with the system file picker. Shared albums stay off until you turn them on, and even then MooJot only keeps images that pass the local slip check.
+## Who we are
 
-## Optional cloud OCR
+The copyright notice on MooJot names Trajectonomics. The repository does not list a registered office. For this policy, "we" means the MooJot project published by Trajectonomics at <https://github.com/trajectonomics/moojot>.
 
-Thai text is recognized on the device. If you type an AksonOCR API key into settings, slip images are sent to that service for recognition. Leave the key empty and nothing is uploaded.
+Because the ledger never reaches us, we cannot see it, correct it, or delete it from our side. You hold it on your phone.
 
-## Sharing
+## Information that stays on the phone
 
-Export and the Android share sheet send a file only when you ask. MooJot does not upload that file itself.
+MooJot stores the following in the app's private files. None of it is sent to a MooJot server.
+
+| Data | Where | Why |
+| --- | --- | --- |
+| Income and expense records: amount in satang, currency, date, time, account, category, payee, note, tags, source | SQLite on the phone | Your ledger |
+| Budgets, recurring rules, categories, tags, and the bank list you enable | SQLite on the phone | Categories, limits, and which albums to scan |
+| Slip photo, QR contents, recognized text, and a hash of the image | App private storage and SQLite | Attach the slip you imported |
+| Text taken from a credit-card statement PDF | SQLite, as records | Import a statement you chose |
+| PDF password | Phone memory for that import only | Open the file. It is not written to the database. |
+| Owner names you type, language, month-start day, week start, shared-album switch | SQLite on the phone | Tell your own transfers apart, and set the calendar |
+| AksonOCR API key and model name, if a key is present | SQLite on the phone, as plain text | Optional cloud OCR. The key is not encrypted by a separate MooJot secret. |
+| Ids of photos already scanned, and months already scanned | SQLite on the phone | Do not repeat work |
+| Daily counts of slips synced and records categorized | SQLite on the phone | A local activity count, not a remote log |
+| Theme (pink or dark) and hand (left or right) | localStorage on the phone | Remember appearance. These two keys are not tracking cookies. |
+
+Slip photos and statement lines can contain names, account details, amounts, and other information that is sensitive under Thailand's Personal Data Protection Act (PDPA). That sensitivity is why it stays in the app's private storage unless you export it or turn on the optional OCR key described below.
+
+## How information gets there
+
+You type a record, you scan a bank album, you pick one photo, or you pick a statement PDF. The app can also read albums you enable, using Android photo access (`READ_MEDIA_IMAGES`, and `READ_MEDIA_VISUAL_USER_SELECTED` on Android 14 and newer). On older Android versions the manifest also declares `READ_EXTERNAL_STORAGE`, limited to those old versions.
+
+You can import one slip or one PDF with the system picker instead of granting album access. Shared albums stay off until you turn them on. The scanner looks for a slip QR before it treats a photo as a slip. Camera and Screenshots folders are not the scan target.
+
+On-device tools read the slip locally: a QR decoder, ML Kit Latin for English text, and AksonOCR-Lite (an ONNX model) for Thai text. Those steps do not send the photo to Trajectonomics or to Google as part of MooJot's design.
+
+The manifest declares `INTERNET` so the optional OCR request below can use HTTPS. The manifest also declares `POST_NOTIFICATIONS`. The current app does not send notification content anywhere and does not use notifications to collect data.
+
+## Optional AksonOCR upload
+
+If, and only if, the local settings contain a non-empty AksonOCR API key, and a slip still needs Thai text, the app can send that slip image over HTTPS to AksonOCR at `https://backend.aksonocr.com/api/v2/ocr`. The image can contain the personal and financial details printed on the slip. The API key is sent with that request.
+
+We do not operate AksonOCR. We do not get a copy of the image back onto a server of ours. What AksonOCR stores, and for how long, is governed by AksonOCR, not by this policy. Leave the key empty and this request is not made. A new install has an empty key.
+
+The My Moo screen that describes local OCR is about the on-device model. It does not switch this optional path off if a key is already in the database.
+
+## What we do not collect
+
+We do not collect:
+
+- a MooJot account, email, or password
+- a payment card for Trajectonomics (the app is free and we take no payment)
+- advertising identifiers, analytics events, or crash reports
+- your contacts, location, or microphone
+- the ledger, by any automatic upload
+
+We do not sell personal information. We do not share it for cross-context advertising. We do not train a model on your records.
+
+## When information leaves the phone
+
+Information leaves the phone only in these cases:
+
+- You export CSV or JSON, or you use the Android share sheet. The file goes to the app you pick. We do not upload it.
+- You stored an AksonOCR API key, and the app sends one slip image to AksonOCR as described above.
+- You copy text into a GitHub issue or a security report yourself. Do not put real account numbers, slip photos, or a full ledger in a public issue.
+
+Banks, Google Play, Android, and AksonOCR are third parties. Their own terms apply when you use them. We are not responsible for their outages or their privacy practices.
+
+## How long it stays
+
+Records stay on the phone until you delete them, clear the app's storage, or uninstall MooJot. Android normally deletes the app's private storage on uninstall. A backup you made, or a file you exported, is outside the app and stays until you delete that copy.
+
+We have no server copy, so we have no server retention period. We also have no server backup we could restore for you.
+
+## Security
+
+The database sits in the app's private storage, which other apps are not supposed to read. That is not the same as a promise of encryption at rest. MooJot does not add a separate passphrase or biometric lock in this version. Your phone lock is your lock.
+
+No method of storage is perfectly safe. Someone who unlocks your phone, or who has a backup of it, may be able to read the database. If you save an AksonOCR key, it is stored in that database as plain text.
+
+The optional OCR call uses HTTPS. A PDF password is used in memory to decrypt the file and is not saved.
+
+## Your choices
+
+On the phone you can:
+
+- edit or delete a record
+- turn banks and shared albums on or off
+- refuse photo access and use the picker instead
+- export a copy
+- uninstall the app and remove its private storage
+
+Those are the practical ways to access, correct, and delete the ledger. We cannot do those steps for you, because we never receive the data.
+
+### Thailand (PDPA)
+
+If the PDPA applies to you, the personal data in MooJot is processed on your device for your own household ledger. Trajectonomics does not collect that ledger onto its own system. For the optional AksonOCR send, you cause the transfer by having a key stored, and AksonOCR is the recipient.
+
+You may ask questions about this policy through the contact links below. A request to delete data we do not hold can only be answered by pointing you back to the app, the uninstall step, and, if you used it, AksonOCR.
+
+### European Economic Area and the United Kingdom
+
+If you use the app from the EEA or the UK, the same facts apply. We do not operate a server that holds your ledger, so we are not in a position to act as a remote controller of that ledger. The legal basis for any optional image you send to AksonOCR is the step you take by storing a key and scanning. You can stop that path by clearing the key or leaving it empty. Rights of access, correction, deletion, and portability for the ledger are exercised on the device, including by export and uninstall.
+
+We do not transfer your ledger outside your phone. An optional AksonOCR request goes to that provider, which may process it in whatever country it uses. That provider's safeguards are its own.
+
+### California
+
+We do not sell personal information and we do not share it for cross-context behavioral advertising. We do not offer a financial incentive for personal information. Categories that can exist on the device are identifiers inside a slip (such as a name or account reference), financial information you enter, photos you import, and the local settings listed above. We do not collect those categories onto a MooJot server.
+
+## Children
+
+MooJot is not directed at children under 13, and we do not knowingly collect personal information from children on a server. The app has no account that a child could register with us. If a child uses a phone where the app is installed, the records remain on that phone.
+
+## Changes to this policy
+
+We will change the "last updated" date when this policy changes, and we will put the new text in the app's About screen and in `docs/privacy-policy.md` on GitHub. Please read it when the date changes. Continuing to use the app after the new date means you accept the update.
 
 ## Contact
 
-Questions about this policy can be opened as an issue on the MooJot repository.
+Questions about this policy, and privacy requests we are actually able to answer, go to:
+
+- <https://github.com/trajectonomics/moojot/issues>
+- Security: <https://github.com/trajectonomics/moojot/security/advisories/new>
+
+There is no privacy email and no postal address published for this project. Please do not include real bank details, slip images, or an API key in a public issue.
