@@ -98,6 +98,9 @@
   let pdfPassword = $state("");
   let pdfBusy = $state(false);
   let scanStartPrompt = $state(false);
+  let monthPicker = $state(false);
+  let monthSheetDrag = $state(0);
+  let monthSheetStartY = 0;
   let scannedMonths = $state<string[]>([]);
   let scanSinceSec = 0;
   let sheetDrag = $state(0);
@@ -131,7 +134,8 @@
     showSearch ||
     showFilterSheet ||
     pdfPrompt !== null ||
-    scanStartPrompt
+    scanStartPrompt ||
+    monthPicker
   );
 
   // Apply theme attribute & sync Android status bar icon contrast cleanly per screen!
@@ -185,15 +189,17 @@
     return () => el.removeEventListener("touchmove", move);
   });
 
-  async function changePeriod(delta: number) {
-    periodOffset += delta;
+  async function goToPeriod(offset: number) {
+    monthPicker = false;
+    monthSheetDrag = 0;
+    if (offset === periodOffset) return;
+    periodOffset = offset;
     stickyVisible = false;
     monthDrag = 0;
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "instant" });
     }
     const request = ++periodRequest;
-    const offset = periodOffset;
     const [h, sum, cmp, bdgs] = await Promise.all([
       api.getHomeData(offset, filterAccountIds),
       api.getSummaryData(offset, summaryKind, filterAccountIds),
@@ -205,6 +211,33 @@
     summary = sum;
     compare = cmp;
     budgets = bdgs;
+  }
+
+  function changePeriod(delta: number) {
+    void goToPeriod(periodOffset + delta);
+  }
+
+  function openMonthPicker() {
+    monthSheetDrag = 0;
+    monthPicker = true;
+  }
+
+  function onMonthSheetStart(event: TouchEvent) {
+    if (event.touches.length !== 1) return;
+    monthSheetStartY = event.touches[0].clientY;
+    monthSheetDrag = 0;
+  }
+
+  function onMonthSheetMove(event: TouchEvent) {
+    if (event.touches.length !== 1) return;
+    const scroller = event.currentTarget as HTMLElement;
+    const dy = event.touches[0].clientY - monthSheetStartY;
+    monthSheetDrag = scroller.scrollTop <= 0 ? Math.max(0, dy) : 0;
+  }
+
+  function onMonthSheetEnd() {
+    if (monthSheetDrag > 72) monthPicker = false;
+    monthSheetDrag = 0;
   }
 
   function celebrateMascot(msgEn: string, msgTh: string, durationMs = 3200) {
@@ -492,6 +525,10 @@
   // Wire Android hardware/gesture Back button handler
   $effect(() => {
     window.__moojotHandleBack = () => {
+      if (monthPicker) {
+        monthPicker = false;
+        return "handled";
+      }
       if (scanStartPrompt) {
         scanStartPrompt = false;
         return "handled";
@@ -781,7 +818,13 @@
     >
       <div class="flex items-center justify-between gap-3 px-4 py-3 {hand === 'left' ? 'flex-row-reverse' : ''}">
         <div class="min-w-0">
-          <div class="truncate text-sm font-extrabold">{home?.period.label ?? "..."}</div>
+          <button
+            type="button"
+            class="truncate text-left text-sm font-extrabold"
+            onclick={openMonthPicker}
+          >
+            {home?.period.label ?? "..."}
+          </button>
           <div class="truncate text-xs font-semibold text-white/85">
             {t(lang, "totalSpending")} {formatBaht(home?.totalSpendingSatang ?? 0, true)}
           </div>
@@ -894,9 +937,15 @@
               >
                 <ChevronLeft class="size-4" />
               </button>
-              <span class="truncate rounded-full bg-white px-3 py-1 text-xs font-bold text-[#18181b]">
+              <button
+                type="button"
+                class="truncate rounded-full px-3 py-1 text-xs font-bold {periodOffset === 0
+                  ? 'bg-[var(--brand)] text-white'
+                  : 'bg-white text-[#18181b]'}"
+                onclick={openMonthPicker}
+              >
                 {home?.period.label ?? "..."}
-              </span>
+              </button>
               <button
                 type="button"
                 class="flex size-8 items-center justify-center rounded-full bg-white text-[#18181b] shadow-sm"
@@ -1309,6 +1358,53 @@
     </div>
   {/if}
 
+  {#if monthPicker}
+    <button
+      type="button"
+      class="fixed inset-0 z-50 bg-black/50"
+      aria-label={t(lang, "close")}
+      onclick={() => (monthPicker = false)}
+    ></button>
+    <div
+      role="dialog"
+      tabindex="-1"
+      class="fixed inset-x-0 bottom-0 z-50 max-h-[70vh] overflow-y-auto rounded-t-3xl bg-[var(--bg-card)] px-5 pt-3 shadow-xl"
+      style="transform: translateY({monthSheetDrag}px); padding-bottom: max(env(safe-area-inset-bottom), 20px); transition: {monthSheetDrag === 0 ? 'transform 180ms ease' : 'none'};"
+      ontouchstart={onMonthSheetStart}
+      ontouchmove={onMonthSheetMove}
+      ontouchend={onMonthSheetEnd}
+      ontouchcancel={onMonthSheetEnd}
+    >
+      <div class="mx-auto mb-3 h-1.5 w-10 rounded-full bg-[var(--border-strong)]"></div>
+      <h2 class="text-base font-extrabold text-[var(--text-primary)]">
+        {lang === "th" ? "ไปที่เดือน" : "Go to month"}
+      </h2>
+      <button
+        type="button"
+        class="mt-3 w-full rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white"
+        onclick={() => goToPeriod(0)}
+      >
+        {lang === "th" ? "เดือนนี้" : "Current month"}
+        {periodOffset === 0 ? "" : ` · ${monthLabel(0)}`}
+      </button>
+      <div class="mt-3 flex flex-col gap-2">
+        {#each [1, 0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12] as offset (offset)}
+          <button
+            type="button"
+            class="rounded-xl py-2.5 text-sm font-bold {offset === 0
+              ? 'bg-[var(--brand)] text-white'
+              : offset === periodOffset
+                ? 'border border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand-text)]'
+                : 'border border-[var(--border-subtle)] bg-[var(--bg-card)] text-[var(--text-primary)]'}"
+            onclick={() => goToPeriod(offset)}
+          >
+            {monthLabel(offset)}
+          </button>
+        {/each}
+      </div>
+    </div>
+  {/if}
+
   {#if scanStartPrompt}
     <button
       type="button"
@@ -1318,6 +1414,7 @@
     ></button>
     <div
       role="dialog"
+      tabindex="-1"
       class="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-[var(--bg-card)] px-5 pt-3 shadow-xl"
       style="transform: translateY({sheetDrag}px); padding-bottom: max(env(safe-area-inset-bottom), 20px); transition: {sheetDrag === 0 ? 'transform 180ms ease' : 'none'};"
       ontouchstart={onSheetStart}
