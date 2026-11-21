@@ -70,6 +70,7 @@
     onToggleTag,
     onExportCsv,
     onExportJson,
+    onReplayOnboarding,
   }: {
     settings: AppSettings;
     accounts: Account[];
@@ -101,6 +102,7 @@
     onToggleTag: (id: string, disabled: boolean) => Promise<void>;
     onExportCsv: () => Promise<void>;
     onExportJson: () => Promise<void>;
+    onReplayOnboarding?: () => void;
   } = $props();
 
   const initialSettings = untrack(() => settings);
@@ -512,6 +514,26 @@
           </div>
           <ChevronRight class="size-4 text-[var(--text-muted)] shrink-0" />
         </button>
+
+        {#if onReplayOnboarding}
+          <!-- 8. Replay the first-run welcome tour -->
+          <button
+            type="button"
+            onclick={onReplayOnboarding}
+            class="w-full px-4 py-3.5 flex items-center justify-between gap-3 text-left active:opacity-75"
+          >
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="size-9 rounded-2xl bg-[var(--brand-soft)] text-[var(--brand)] flex items-center justify-center shrink-0">
+                <Sparkles class="size-4" />
+              </span>
+              <div class="min-w-0">
+                <div class="text-sm font-bold text-[var(--text-primary)]">{t(lang, "onbReplay")}</div>
+                <div class="text-xs text-[var(--text-muted)] truncate">{t(lang, "onbReplayHint")}</div>
+              </div>
+            </div>
+            <ChevronRight class="size-4 text-[var(--text-muted)] shrink-0" />
+          </button>
+        {/if}
       </section>
     </div>
   {:else}
