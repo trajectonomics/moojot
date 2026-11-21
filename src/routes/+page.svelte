@@ -288,22 +288,27 @@
     pullArmed = false;
   }
 
+  let slideToken = 0;
+
   async function slideMonth(delta: number) {
+    const token = ++slideToken;
     monthAnimating = true;
-    const width = Math.min(window.innerWidth, 480);
     monthDragging = false;
-    monthDrag = delta > 0 ? -width : width;
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    monthDrag = delta > 0 ? -88 : 88;
+    await new Promise((resolve) => setTimeout(resolve, 160));
+    if (token !== slideToken) return;
     monthDragging = true;
-    monthDrag = delta > 0 ? width : -width;
+    monthDrag = delta > 0 ? 88 : -88;
     await changePeriod(delta);
+    if (token !== slideToken) return;
     requestAnimationFrame(() => {
+      if (token !== slideToken) return;
       monthDragging = false;
       monthDrag = 0;
     });
     setTimeout(() => {
-      monthAnimating = false;
-    }, 240);
+      if (token === slideToken) monthAnimating = false;
+    }, 200);
   }
 
   async function refreshAll() {
@@ -764,20 +769,14 @@
       ontouchcancel={onHomeTouchCancel}
     >
       <div
-        style="transform: translateX({monthDrag}px); transition: {monthDragging ? 'none' : 'transform 200ms ease'};"
-      >
-      <div
         bind:this={heroEl}
         role="group"
         class="relative overflow-hidden shadow-xl"
         style="background: linear-gradient(180deg, var(--hero-from), var(--hero-to)); border-radius: 0 0 28px 28px;"
       >
         <svg class="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 360 228" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
-          <ellipse cx="70" cy="78" rx="46" ry="18" fill="#ffffff" opacity="0.35" />
-          <ellipse cx="250" cy="64" rx="62" ry="22" fill="#ffffff" opacity="0.28" />
-          <ellipse cx="180" cy="96" rx="40" ry="14" fill="#ffffff" opacity="0.22" />
-          <path d="M0 168 C70 132 120 188 190 156 C250 130 300 170 360 142 L360 228 L0 228 Z" fill="#ffffff" opacity="0.22" />
-          <path d="M0 188 C80 160 140 210 220 184 C280 166 320 196 360 176 L360 228 L0 228 Z" fill="#ffffff" opacity="0.38" />
+          <path d="M0 150 C90 118 150 176 230 146 C290 126 330 160 360 140 L360 228 L0 228 Z" fill="#ffffff" opacity="0.2" />
+          <path d="M0 184 C100 158 170 206 250 178 C300 160 330 186 360 172 L360 228 L0 228 Z" fill="#ffffff" opacity="0.34" />
         </svg>
 
         <div class="relative z-10 flex min-h-[228px] flex-col px-4 pb-3" style="padding-top: max(env(safe-area-inset-top), 28px);">
@@ -794,32 +793,11 @@
               </p>
             </div>
           {/if}
-          <div class="flex items-center justify-between gap-2">
-            <div class="flex min-w-0 items-center gap-1">
-              <button
-                type="button"
-                class="flex size-8 items-center justify-center rounded-full bg-white/90 text-[var(--text-primary)] shadow-sm"
-                aria-label="Previous period"
-                onclick={() => changePeriod(-1)}
-              >
-                <ChevronLeft class="size-4" />
-              </button>
-              <span class="truncate rounded-full bg-white/90 px-3 py-1 text-xs font-bold" style="color: var(--hero-btn-text);">
-                {home?.period.label ?? "..."}
-              </span>
-              <button
-                type="button"
-                class="flex size-8 items-center justify-center rounded-full bg-white/90 text-[var(--text-primary)] shadow-sm"
-                aria-label="Next period"
-                onclick={() => changePeriod(1)}
-              >
-                <ChevronRight class="size-4" />
-              </button>
-            </div>
+          <div class="flex items-start justify-between gap-3">
             <div class="flex items-center gap-2">
               <button
                 type="button"
-                class="flex size-9 items-center justify-center rounded-full bg-white text-[var(--text-primary)] shadow-sm"
+                class="flex size-9 items-center justify-center rounded-full bg-white text-[#18181b] shadow-sm"
                 aria-label={t(lang, "search")}
                 onclick={() => {
                   showSearch = true;
@@ -831,7 +809,7 @@
               </button>
               <button
                 type="button"
-                class="relative flex size-9 items-center justify-center rounded-full bg-white text-[var(--text-primary)] shadow-sm"
+                class="relative flex size-9 items-center justify-center rounded-full bg-white text-[#18181b] shadow-sm"
                 aria-label={t(lang, "filterRecords")}
                 onclick={() => (showFilterSheet = true)}
               >
@@ -841,10 +819,7 @@
                 {/if}
               </button>
             </div>
-          </div>
-
-          <div class="mt-auto flex items-end justify-between gap-2">
-            <div class="min-w-0 pb-2 pl-1">
+            <div class="min-w-0 text-right">
               <div class="text-[11px] font-semibold text-white/85">
                 {t(lang, "totalSpending")}
               </div>
@@ -855,13 +830,39 @@
                 <div class="mt-1 text-[11px] font-bold text-white">
                   {lang === "th" ? "กำลังสแกน..." : "Scanning..."}
                 </div>
-              {:else if scanBanner || mascotSpeech}
-                <div class="mt-1 truncate text-[11px] font-semibold text-white/90">
-                  {scanBanner || mascotSpeech}
-                </div>
               {/if}
             </div>
-            <div class="shrink-0">
+          </div>
+
+          <div class="mt-auto flex items-end justify-between gap-2 pt-6">
+            <div class="flex min-w-0 items-center gap-1 pb-2">
+              <button
+                type="button"
+                class="flex size-8 items-center justify-center rounded-full bg-white text-[#18181b] shadow-sm"
+                aria-label="Previous period"
+                onclick={() => changePeriod(-1)}
+              >
+                <ChevronLeft class="size-4" />
+              </button>
+              <span class="truncate rounded-full bg-white px-3 py-1 text-xs font-bold text-[#18181b]">
+                {home?.period.label ?? "..."}
+              </span>
+              <button
+                type="button"
+                class="flex size-8 items-center justify-center rounded-full bg-white text-[#18181b] shadow-sm"
+                aria-label="Next period"
+                onclick={() => changePeriod(1)}
+              >
+                <ChevronRight class="size-4" />
+              </button>
+            </div>
+            <div class="relative shrink-0">
+              {#if scanBanner || mascotSpeech}
+                <div class="absolute bottom-[88%] right-2 z-20 w-max max-w-[168px] rounded-2xl bg-white px-3 py-2 text-left text-[11px] font-bold leading-snug text-[#18181b] shadow-lg">
+                  {scanBanner || mascotSpeech}
+                  <span class="absolute -bottom-1.5 right-7 size-3 rotate-45 bg-white"></span>
+                </div>
+              {/if}
               <MooMascot
                 mood={isScanning || pullArmed ? "scan" : mascotMood}
                 size="hero"
@@ -872,8 +873,10 @@
           </div>
         </div>
       </div>
-      </div>
 
+      <div
+        style="transform: translateX({monthDrag}px); transition: {monthDragging ? 'none' : 'transform 180ms ease'};"
+      >
       <!-- Collapsible Future / Recurring Records Drawer -->
       {#if home && home.futureRecords.length > 0}
         <div class="mx-4 mt-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] overflow-hidden shadow-xs">
@@ -1064,6 +1067,7 @@
             </div>
           {/each}
         {/if}
+      </div>
       </div>
     </main>
 

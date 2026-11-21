@@ -278,18 +278,6 @@
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          onclick={async () => {
-            draft.language = draft.language === "en" ? "th" : "en";
-            await saveAllSettings();
-          }}
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold shrink-0 active:scale-95 transition-transform shadow-sm"
-          style="background-color: var(--hero-btn-bg); color: var(--hero-btn-text);"
-        >
-          <Globe class="size-3.5" />
-          <span>{draft.language === "en" ? "EN / ไทย" : "ไทย / EN"}</span>
-        </button>
       </div>
     </header>
 
