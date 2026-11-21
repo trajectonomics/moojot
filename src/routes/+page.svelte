@@ -147,7 +147,8 @@
     showFilterSheet ||
     pdfPrompt !== null ||
     scanStartPrompt ||
-    monthPicker
+    monthPicker ||
+    showOnboarding
   );
 
   // Apply theme attribute & sync Android status bar icon contrast cleanly per screen!
@@ -334,7 +335,11 @@
   }
 
   function openOnboarding(firstRun: boolean) {
-    onboardingLanguage = firstRun ? deviceLanguage() : settings.language;
+    // Only a brand-new install starts in the device language. A tour resumed after the
+    // app was closed (or replayed) keeps the language already saved, including one the
+    // user picked in Quick setup before closing.
+    onboardingLanguage =
+      firstRun && firstRunState === "new" ? deviceLanguage() : settings.language;
     if (firstRun) markOnboardingPending();
     showOnboarding = true;
   }
@@ -539,6 +544,11 @@
   // Wire Android hardware/gesture Back button handler
   $effect(() => {
     window.__moojotHandleBack = () => {
+      // The tour covers everything else, so Back belongs to it first.
+      if (showOnboarding) {
+        onboardingBack?.();
+        return "handled";
+      }
       if (monthPicker) {
         monthSheet.current?.();
         return "handled";
@@ -575,10 +585,6 @@
       }
       if (showFabMenu) {
         showFabMenu = false;
-        return "handled";
-      }
-      if (showOnboarding) {
-        onboardingBack?.();
         return "handled";
       }
       if (activeTab === "settings" && settingsSubPage !== null) {

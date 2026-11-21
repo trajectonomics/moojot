@@ -68,6 +68,7 @@
   let dragX = $state(0);
   let dragging = $state(false);
   let suppressClick = false;
+  let suppressTimer: ReturnType<typeof setTimeout> | null = null;
 
   const tr = (key: I18nKey, vars: Record<string, number> = {}) =>
     Object.entries(vars).reduce((s, [k, v]) => s.replace(`{${k}}`, String(v)), t(lang, key));
@@ -144,6 +145,7 @@
     dragStart = { x: e.clientX, y: e.clientY, id: e.pointerId };
     dragX = 0;
     suppressClick = false;
+    if (suppressTimer) clearTimeout(suppressTimer);
   }
 
   function onPointerMove(e: PointerEvent) {
@@ -156,6 +158,13 @@
         return;
       }
       dragging = true;
+      // Keep getting move/up events if the finger or mouse leaves the slides.
+      // Captured only once a swipe starts, so a plain tap still reaches its button.
+      try {
+        (e.currentTarget as Element).setPointerCapture(e.pointerId);
+      } catch {
+        // pointer already gone
+      }
     }
     // Resist at the ends.
     const atEdge = (step === 0 && dx > 0) || (step === LAST && dx < 0);
@@ -170,7 +179,11 @@
     dragging = false;
     dragX = 0;
     if (!wasDragging) return;
-    suppressClick = true; // a swipe that ends on a button is not a tap
+    // A swipe that ends on a button is not a tap. Some swipes produce no click at all,
+    // so don't leave the guard armed for a later keyboard or assistive activation.
+    suppressClick = true;
+    if (suppressTimer) clearTimeout(suppressTimer);
+    suppressTimer = setTimeout(() => (suppressClick = false), 400);
     if (dx <= -SWIPE_MIN) void goTo(step + 1);
     else if (dx >= SWIPE_MIN) void goTo(step - 1);
   }
@@ -190,6 +203,9 @@
       if (detail) galleryGranted = Boolean(detail.granted);
     };
     window.addEventListener("moojot:permission", onPerm);
+    // Save the language the tour opens in right away, so a tour resumed after the app
+    // was closed comes back in the same language.
+    if (settings.language !== lang) void save({ language: lang });
     backHandler = () => {
       if (step > 0) void goTo(step - 1);
       else void finish();
@@ -197,6 +213,7 @@
     return () => {
       window.removeEventListener("moojot:permission", onPerm);
       if (monthTimer) clearTimeout(monthTimer);
+      if (suppressTimer) clearTimeout(suppressTimer);
       backHandler = null;
       previouslyFocused?.focus?.({ preventScroll: true });
     };
@@ -262,6 +279,9 @@
     onpointermove={onPointerMove}
     onpointerup={onPointerUp}
     onpointercancel={onPointerCancel}
+    onlostpointercapture={(e) => {
+      if (dragStart && e.pointerId === dragStart.id && dragging) onPointerCancel();
+    }}
     onclickcapture={(e) => {
       if (!suppressClick) return;
       suppressClick = false;
