@@ -1,0 +1,56 @@
+name: factory-intake
+# Deterministic (no AI): tags who opened an issue, makes sure it has a status,
+# and sends needs-info issues back to triage when the reporter replies.
+
+on:
+  issues:
+    types: [opened, reopened]
+  issue_comment:
+    types: [created]
+
+permissions:
+  issues: write
+
+concurrency:
+  group: factory-issue-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  intake:
+    if: ${{ !github.event.issue.pull_request && github.event.sender.type != 'Bot' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const { owner, repo } = context.repo;
+            const labels = issue.labels.map(l => l.name);
+
+            async function isMaintainer(username) {
+              try {
+                const { data } = await github.rest.repos.getCollaboratorPermissionLevel({ owner, repo, username });
+                return ['admin', 'maintain'].includes(data.permission);
+              } catch { return false; }
+            }
+            async function setStatus(status) {
+              for (const l of labels.filter(l => l.startsWith('status:'))) {
+                if (l !== status) await github.rest.issues.removeLabel({ owner, repo, issue_number: issue.number, name: l }).catch(() => {});
+              }
+              if (!labels.includes(status)) await github.rest.issues.addLabels({ owner, repo, issue_number: issue.number, labels: [status] });
+            }
+
+            if (context.eventName === 'issues') {
+              const source = (await isMaintainer(issue.user.login)) ? 'source:owner' : 'source:community';
+              await github.rest.issues.addLabels({ owner, repo, issue_number: issue.number, labels: [source] });
+              if (!labels.some(l => l.startsWith('status:'))) await setStatus('status:triage');
+              return;
+            }
+
+            // issue_comment: the reporter answered a needs-info question → re-triage.
+            const commenter = context.payload.comment.user.login;
+            if (issue.state === 'open' && labels.includes('status:needs-info') && commenter === issue.user.login
+                && !context.payload.comment.body.trim().startsWith('/')) {
+              await setStatus('status:triage');
+              core.info(`#${issue.number}: reporter replied, back to status:triage`);
+            }

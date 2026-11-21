@@ -1,0 +1,49 @@
+name: 🐛 Bug report
+description: Something in moojot is broken or behaves differently than expected.
+labels: ["type:bug", "status:triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping make moojot better! 🐷
+        A bot reads this first. Clear, specific reports can get fixed automatically.
+        **Found a security problem? Don't file it here.** See SECURITY.md or contact the maintainer privately.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the problem.
+      placeholder: When I add an expense with a decimal amount, the total shows 0.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open ...
+        2. Tap ...
+        3. See ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version / commit
+      description: App version, or the commit or deploy URL you used.
+  - type: input
+    id: environment
+    attributes:
+      label: Device / browser / OS
+      placeholder: iPhone 15, Safari 19 / Pixel 9, Chrome
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots or logs
+      description: Optional. Remove any personal financial data first.

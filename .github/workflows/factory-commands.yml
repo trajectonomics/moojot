@@ -1,0 +1,106 @@
+name: factory-commands
+# Deterministic (no AI): maintainer slash commands on issues and PRs.
+#   /approve  /reject [reason]  /info [question]  /spec [notes]  /triage
+#   /size S|M|L  /risk low|high  /stop  /resume  /merge (PR only)
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write        # needed by /merge (enable auto-merge)
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: factory-issue-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  command:
+    if: ${{ startsWith(github.event.comment.body, '/') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const issue = context.payload.issue;
+            const comment = context.payload.comment;
+            const n = issue.number;
+            const isPR = !!issue.pull_request;
+            const labels = issue.labels.map(l => l.name);
+
+            const react = (content) => github.rest.reactions.createForIssueComment({ owner, repo, comment_id: comment.id, content });
+
+            // Only admins/maintainers may command the factory.
+            let perm = 'none';
+            try {
+              ({ data: { permission: perm } } = await github.rest.repos.getCollaboratorPermissionLevel({ owner, repo, username: comment.user.login }));
+            } catch {}
+            if (!['admin', 'maintain'].includes(perm)) { core.info(`ignored: ${comment.user.login} has ${perm}`); return; }
+
+            const firstLine = comment.body.trim().split('\n')[0];
+            const [, cmd, rawArg = ''] = firstLine.match(/^\/([a-z-]+)\s*(.*)$/i) || [];
+            const arg = rawArg.trim();
+            if (!cmd) return;
+
+            const add = (names) => github.rest.issues.addLabels({ owner, repo, issue_number: n, labels: names });
+            const remove = (name) => github.rest.issues.removeLabel({ owner, repo, issue_number: n, name }).catch(() => {});
+            async function swap(prefix, value) {
+              for (const l of labels.filter(l => l.startsWith(prefix) && l !== value)) await remove(l);
+              if (!labels.includes(value)) await add([value]);
+            }
+            const note = (body) => github.rest.issues.createComment({ owner, repo, issue_number: n, body: `${body}\n<!-- factory:command -->` });
+
+            switch (cmd.toLowerCase()) {
+              case 'approve':
+                await swap('status:', 'status:ready');
+                break;
+              case 'reject':
+                for (const l of labels.filter(l => l.startsWith('status:'))) await remove(l);
+                await add(['resolution:wontfix']);
+                if (arg) await note(`Closing: ${arg}`);
+                await github.rest.issues.update({ owner, repo, issue_number: n, state: 'closed', ...(isPR ? {} : { state_reason: 'not_planned' }) });
+                break;
+              case 'info':
+                await swap('status:', 'status:needs-info');
+                if (arg) await note(`@${issue.user.login} ${arg}`);
+                break;
+              case 'spec':
+                await swap('status:', 'status:spec');
+                break;
+              case 'triage':
+                await swap('status:', 'status:triage');
+                break;
+              case 'size': {
+                const v = arg.toUpperCase();
+                if (!['S', 'M', 'L'].includes(v)) { await react('confused'); return; }
+                await swap('size:', `size:${v}`);
+                break;
+              }
+              case 'risk': {
+                const v = arg.toLowerCase();
+                if (!['low', 'high'].includes(v)) { await react('confused'); return; }
+                await swap('risk:', `risk:${v}`);
+                break;
+              }
+              case 'stop':
+                await add(['factory:hold']);
+                break;
+              case 'resume':
+                await remove('factory:hold');
+                break;
+              case 'merge': {
+                if (!isPR) { await react('confused'); return; }
+                const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: n });
+                await github.graphql(`mutation($id: ID!) {
+                  enablePullRequestAutoMerge(input: { pullRequestId: $id, mergeMethod: SQUASH }) { clientMutationId }
+                }`, { id: pr.node_id });
+                break;
+              }
+              default:
+                await react('confused');
+                return;
+            }
+            await react('+1');

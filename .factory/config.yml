@@ -1,0 +1,46 @@
+# moojot software factory: policy read by every agent stage.
+# The workflow is described in .factory/README.md.
+
+owners: [preamza02]          # tagged on escalation; their commands are obeyed
+paused: false                # also honored: repo variable FACTORY_PAUSED=true
+
+auto_merge:
+  # Which issues may go issue → spec → build → PR → merge with no human.
+  allowed:
+    - { type: bug,     source: any }
+    - { type: docs,    source: any }
+    - { type: feature, source: owner }   # community features stop at spec until /approve or status:ready
+  requires:
+    size: S
+    risk: low
+    ci_green: true
+    reviewer_approved: true     # reviewer must be a different model than the builder
+    regression_test_for_bugs: true
+  limits:
+    max_files_changed: 3
+    max_lines_changed: 150
+    max_fix_attempts: 2         # after CI/review failures, then escalate to owner
+
+# Touching any of these makes the change risk:high (never auto-merged).
+sensitive_paths:
+  - ".github/**"
+  - ".factory/**"
+  - "AGENTS.md"
+  - "scripts/**"
+  - "**/migrations/**"
+  - "package.json"
+  - "*lock*"
+sensitive_topics:
+  - money / balance / currency arithmetic
+  - data storage, sync, import/export, deletion
+  - auth, accounts, permissions
+  - adding or upgrading dependencies
+
+needs_info:
+  days_until_close: 14
+
+models:            # builder and reviewer should differ
+  triage:  gemini
+  spec:    claude
+  builder: claude
+  reviewer: gemini
