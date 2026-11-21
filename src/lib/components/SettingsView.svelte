@@ -17,6 +17,7 @@
     Trash2,
     Building2,
     Database,
+    FileText,
   } from "@lucide/svelte";
   import CategoryIcon from "./CategoryIcon.svelte";
   import MooMascot, { type MascotMood } from "./MooMascot.svelte";
@@ -46,6 +47,7 @@
     onToggleAccount,
     onScanNow,
     onPickPhoto,
+    onPickStatement,
     onReparseSlips,
     onOpenRules,
     onCreateCategory,
@@ -68,6 +70,7 @@
     onToggleAccount: (id: string, enabled: boolean) => Promise<void>;
     onScanNow: () => Promise<void>;
     onPickPhoto: () => void;
+    onPickStatement: (pdfBase64: string) => void;
     onReparseSlips: () => Promise<void>;
     onOpenRules: () => void;
     onCreateCategory: (input: {
@@ -104,6 +107,7 @@
   let catError = $state("");
   let deletingCatId = $state<string | null>(null);
   let showAllBanks = $state(false);
+  let statementInput = $state<HTMLInputElement | null>(null);
 
   const CAT_COLORS = [
     "#FF4D94",
@@ -572,6 +576,39 @@
           >
             {lang === "th" ? "ประมวลผล + แนบสลิปเดิมใหม่ทั้งหมด" : "Re-parse & Attach Existing Slips"}
           </button>
+
+          <button
+            type="button"
+            onclick={() => {
+              if (window.MooJotAndroid?.pickStatementPdf) {
+                window.MooJotAndroid.pickStatementPdf();
+                return;
+              }
+              statementInput?.click();
+            }}
+            class="w-full py-2.5 px-3 rounded-xl border border-[var(--border-strong)] text-[var(--text-primary)] text-xs font-bold inline-flex items-center justify-center gap-2"
+          >
+            <FileText class="size-4 text-[var(--brand)]" />
+            {t(lang, "importStatement")}
+          </button>
+          <input
+            bind:this={statementInput}
+            type="file"
+            accept="application/pdf"
+            class="hidden"
+            onchange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              event.currentTarget.value = "";
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = () => {
+                const raw = String(reader.result ?? "");
+                const comma = raw.indexOf(",");
+                onPickStatement(comma >= 0 ? raw.slice(comma + 1) : raw);
+              };
+              reader.readAsDataURL(file);
+            }}
+          />
 
           <!-- Shared album opt-in -->
           <label class="flex items-center justify-between gap-3 pt-1">

@@ -119,11 +119,26 @@ class MainActivity : TauriActivity() {
                 }
             }
         } else if (type == "application/pdf") {
-            val payload = JSONObject().apply {
-                put("uri", uri.toString())
-                put("mimeType", type)
+            ioExecutor.execute {
+                val pdfBase64 = readUriBase64(uri) ?: return@execute
+                val payload = JSONObject().apply {
+                    put("mimeType", type)
+                    put("pdfBase64", pdfBase64)
+                }
+                emitEvent("moojot:shared-pdf", payload.toString())
             }
-            emitEvent("moojot:shared-pdf", payload.toString())
+        }
+    }
+
+    private fun readUriBase64(uri: Uri): String? {
+        return try {
+            contentResolver.openInputStream(uri)?.use { input ->
+                val bytes = input.readBytes()
+                if (bytes.size > 8 * 1024 * 1024) return null
+                Base64.encodeToString(bytes, Base64.NO_WRAP)
+            }
+        } catch (_: Throwable) {
+            null
         }
     }
 
@@ -210,6 +225,27 @@ class MainActivity : TauriActivity() {
                     limit = limit.coerceIn(1, 100)
                 )
                 emitEvent("moojot:scan-candidates", candidates.toString())
+            }
+        }
+
+        @JavascriptInterface
+        fun pickStatementPdf() {
+            runOnUiThread {
+                val pickIntent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                    type = "application/pdf"
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                }
+                launchActivityForResult(pickIntent) { result ->
+                    val uri = result?.data?.data ?: return@launchActivityForResult
+                    ioExecutor.execute {
+                        val pdfBase64 = readUriBase64(uri) ?: return@execute
+                        val payload = JSONObject().apply {
+                            put("mimeType", "application/pdf")
+                            put("pdfBase64", pdfBase64)
+                        }
+                        emitEvent("moojot:shared-pdf", payload.toString())
+                    }
+                }
             }
         }
 

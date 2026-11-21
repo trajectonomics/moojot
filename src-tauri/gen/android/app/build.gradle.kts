@@ -14,6 +14,33 @@ val tauriProperties = Properties().apply {
     }
 }
 
+val keystoreProperties = Properties().apply {
+    val candidates = listOf(
+        rootProject.file("keystore.properties"),
+        rootProject.file("../../keystore.properties")
+    )
+    for (candidate in candidates) {
+        if (candidate.exists()) {
+            candidate.inputStream().use { load(it) }
+            break
+        }
+    }
+}
+
+fun signingValue(envName: String, propName: String): String? {
+    val fromEnv = System.getenv(envName)?.takeIf { it.isNotBlank() }
+    if (fromEnv != null) return fromEnv
+    return keystoreProperties.getProperty(propName)?.takeIf { it.isNotBlank() }
+}
+
+fun versionCodeFromName(versionName: String): Int {
+    val parts = versionName.split(".").mapNotNull { it.toIntOrNull() }
+    val major = parts.getOrElse(0) { 0 }
+    val minor = parts.getOrElse(1) { 0 }
+    val patch = parts.getOrElse(2) { 0 }
+    return major * 10000 + minor * 100 + patch
+}
+
 android {
     compileSdk = 37
     namespace = "app.moojot.android"
@@ -22,8 +49,24 @@ android {
         applicationId = "app.moojot.android"
         minSdk = 24
         targetSdk = 37
-        versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
-        versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
+        val resolvedVersionName = tauriProperties.getProperty("tauri.android.versionName", "1.0.0")
+        versionName = resolvedVersionName
+        versionCode = tauriProperties.getProperty("tauri.android.versionCode")?.toIntOrNull()
+            ?: versionCodeFromName(resolvedVersionName)
+    }
+    signingConfigs {
+        create("release") {
+            val storePath = signingValue("ANDROID_KEYSTORE_PATH", "storeFile")
+            val storePass = signingValue("ANDROID_KEYSTORE_PASSWORD", "storePassword")
+            val alias = signingValue("ANDROID_KEY_ALIAS", "keyAlias")
+            val keyPass = signingValue("ANDROID_KEY_PASSWORD", "keyPassword")
+            if (!storePath.isNullOrBlank() && !storePass.isNullOrBlank() && !alias.isNullOrBlank() && !keyPass.isNullOrBlank()) {
+                storeFile = file(storePath)
+                storePassword = storePass
+                keyAlias = alias
+                keyPassword = keyPass
+            }
+        }
     }
     buildTypes {
         getByName("debug") {
@@ -39,6 +82,10 @@ android {
             }
         }
         getByName("release") {
+            val releaseSigning = signingConfigs.getByName("release")
+            if (releaseSigning.storeFile != null) {
+                signingConfig = releaseSigning
+            }
             optimization {
                enable = true
             }

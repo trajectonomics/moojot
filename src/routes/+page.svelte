@@ -20,7 +20,9 @@
     Loader2,
   } from "@lucide/svelte";
   import CategoryIcon from "$lib/components/CategoryIcon.svelte";
+  import EmptyMonthArt from "$lib/components/EmptyMonthArt.svelte";
   import MooMascot, { type MascotMood } from "$lib/components/MooMascot.svelte";
+  import SwipeRecordRow from "$lib/components/SwipeRecordRow.svelte";
   import RecordSheet from "$lib/components/RecordSheet.svelte";
   import SummaryView from "$lib/components/SummaryView.svelte";
   import SettingsView, { type SettingsSubPage } from "$lib/components/SettingsView.svelte";
@@ -32,6 +34,7 @@
   } from "$lib/api";
   import { formatBaht } from "$lib/format";
   import { t } from "$lib/i18n";
+  import { omitFromCompare, omitFromSummary, omitRecord } from "$lib/ledgerPatch";
   import { loadSavedTheme, saveTheme, type AppTheme } from "$lib/theme";
   import type {
     Account,
@@ -90,6 +93,20 @@
 
   let isScanning = $state<boolean>(false);
   let scanBanner = $state<string | null>(null);
+  let stickyVisible = $state(false);
+  let heroEl = $state<HTMLDivElement | null>(null);
+  let openSwipeId = $state<string | null>(null);
+  let pdfPrompt = $state<{ pdfBase64: string; wrong: boolean } | null>(null);
+  let pdfPassword = $state("");
+  let pdfBusy = $state(false);
+  let undoDelete = $state<{
+    recordId: string;
+    home: HomePayload;
+    summary: SummaryPayload | null;
+    compare: ComparePayload | null;
+    timer: ReturnType<typeof setTimeout>;
+  } | null>(null);
+  let deleteChain: Promise<void> = Promise.resolve();
 
   // Interactive Mascot state
   let mascotMood = $state<MascotMood>("idle");
@@ -106,7 +123,7 @@
 
   const lang = $derived(settings.language);
   const anyModalOpen = $derived(
-    showRecordSheet || showRulesModal || showSearch || showFilterSheet
+    showRecordSheet || showRulesModal || showSearch || showFilterSheet || pdfPrompt !== null
   );
 
   // Apply theme attribute & sync Android status bar icon contrast cleanly per screen!
@@ -119,9 +136,46 @@
       showRulesModal ||
       showSearch ||
       recordLightboxOpen;
-    const isLightStatusBar = theme === "pink-white" && !hasColoredTopBar;
+    const isLightStatusBar =
+      theme === "pink-white" && !hasColoredTopBar && !(activeTab === "home" && stickyVisible);
     window.MooJotAndroid?.setStatusBarLight?.(isLightStatusBar);
   });
+
+  // Pin the compact header once the monthly hero has left the viewport.
+  // At scrollY === 0 the hero is on screen, so pull-to-refresh keeps the top.
+  $effect(() => {
+    if (activeTab !== "home") {
+      stickyVisible = false;
+      return;
+    }
+    const el = heroEl;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        stickyVisible = !!entry && !entry.isIntersecting && window.scrollY > 8;
+      },
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    const onScroll = () => {
+      if (window.scrollY <= 2) stickyVisible = false;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", onScroll);
+    };
+  });
+
+  async function changePeriod(delta: number) {
+    periodOffset += delta;
+    stickyVisible = false;
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
+    await refreshPeriodData();
+  }
 
   function celebrateMascot(msgEn: string, msgTh: string, durationMs = 3200) {
     mascotMood = "happy";
@@ -160,6 +214,8 @@
 
   function onHomeTouchStart(e: TouchEvent) {
     if (activeTab !== "home" || anyModalOpen || isScanning) return;
+    const target = e.target;
+    if (target instanceof Element && target.closest("[data-swipe-row]")) return;
     if (window.scrollY <= 2 && e.touches.length === 1) {
       pullStartY = e.touches[0].clientY;
       pullDistance = 0;
@@ -319,6 +375,11 @@
   // Wire Android hardware/gesture Back button handler
   $effect(() => {
     window.__moojotHandleBack = () => {
+      if (pdfPrompt) {
+        pdfPrompt = null;
+        pdfPassword = "";
+        return "handled";
+      }
       if (recordLightboxOpen) {
         recordLightboxOpen = false;
         return "handled";
@@ -401,17 +462,25 @@
       setTimeout(() => (scanBanner = null), 5000);
     };
 
+    const onSharedPdf = (ev: Event) => {
+      const detail = (ev as CustomEvent<{ pdfBase64?: string }>).detail;
+      const pdfBase64 = detail?.pdfBase64;
+      if (pdfBase64) void importPdfBase64(pdfBase64, null);
+    };
+
     window.addEventListener("moojot:scan-candidates", onCandidates);
     window.addEventListener("moojot:shared-slips", onSharedSlips);
     window.addEventListener("moojot:permission", onPerm);
     window.addEventListener("moojot:scan-error", onErr);
     window.addEventListener("moojot:backfill-done", onBackfill);
+    window.addEventListener("moojot:shared-pdf", onSharedPdf);
     return () => {
       window.removeEventListener("moojot:scan-candidates", onCandidates);
       window.removeEventListener("moojot:shared-slips", onSharedSlips);
       window.removeEventListener("moojot:permission", onPerm);
       window.removeEventListener("moojot:scan-error", onErr);
       window.removeEventListener("moojot:backfill-done", onBackfill);
+      window.removeEventListener("moojot:shared-pdf", onSharedPdf);
     };
   });
 
@@ -448,10 +517,168 @@
     editingRecord = null;
     await refreshPeriodData();
   }
+
+  function commitQueuedDelete(id: string) {
+    deleteChain = deleteChain
+      .then(async () => {
+        await api.deleteRecord(id);
+      })
+      .catch(() => {});
+  }
+
+  async function flushDeletes() {
+    await deleteChain;
+    if (undoDelete === null) await refreshPeriodData();
+  }
+
+  function queueSwipeDelete(rec: RecordItem) {
+    if (!home) return;
+    if (undoDelete) {
+      clearTimeout(undoDelete.timer);
+      commitQueuedDelete(undoDelete.recordId);
+      undoDelete = null;
+    }
+    const snapshot = {
+      home: $state.snapshot(home),
+      summary: summary ? $state.snapshot(summary) : null,
+      compare: compare ? $state.snapshot(compare) : null,
+    };
+    home = omitRecord(home, rec.id);
+    if (summary) summary = omitFromSummary(summary, rec, summaryKind);
+    if (compare && rec.kind === summaryKind) {
+      compare = omitFromCompare(compare, rec.amountSatang);
+    }
+    openSwipeId = null;
+    const timer = setTimeout(() => {
+      undoDelete = null;
+      commitQueuedDelete(rec.id);
+      void flushDeletes();
+    }, 4500);
+    undoDelete = {
+      recordId: rec.id,
+      home: snapshot.home,
+      summary: snapshot.summary,
+      compare: snapshot.compare,
+      timer,
+    };
+  }
+
+  function undoSwipeDelete() {
+    if (!undoDelete) return;
+    clearTimeout(undoDelete.timer);
+    home = undoDelete.home;
+    summary = undoDelete.summary;
+    compare = undoDelete.compare;
+    undoDelete = null;
+  }
+
+  async function importPdfBase64(pdfBase64: string, password: string | null) {
+    pdfBusy = true;
+    try {
+      const report = await api.importStatementPdf(pdfBase64, password);
+      if (report.needsPassword || report.wrongPassword) {
+        pdfPrompt = { pdfBase64, wrong: report.wrongPassword };
+        pdfPassword = "";
+        return;
+      }
+      pdfPrompt = null;
+      pdfPassword = "";
+      await refreshPeriodData();
+      activeTab = "home";
+      scanBanner =
+        report.imported === 0 && report.message
+          ? report.message
+          : lang === "th"
+            ? `นำเข้า ${report.imported} รายการ · ซ้ำ ${report.duplicates}`
+            : `Imported ${report.imported} · duplicates ${report.duplicates}`;
+      setTimeout(() => (scanBanner = null), 5000);
+    } catch (error) {
+      scanBanner = error instanceof Error ? error.message : t(lang, "error");
+      setTimeout(() => (scanBanner = null), 4000);
+    } finally {
+      pdfBusy = false;
+    }
+  }
 </script>
 
 <div class="min-h-screen bg-[var(--bg-canvas)] text-[var(--text-primary)] flex flex-col">
   {#if activeTab === "home"}
+    <header
+      class="fixed top-0 inset-x-0 z-40 text-white shadow-lg transition-transform duration-200 ease-out {stickyVisible
+        ? 'translate-y-0'
+        : '-translate-y-full pointer-events-none'}"
+      style="background: linear-gradient(135deg, var(--hero-from), var(--hero-to)); padding-top: env(safe-area-inset-top);"
+      aria-hidden={!stickyVisible}
+    >
+      <div class="px-3 pt-2 pb-1 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-0.5 min-w-0 font-bold">
+          <span class="inline-flex items-center gap-1 pl-1 pr-1 text-xs font-bold text-white">
+            <Flame class="size-4 shrink-0" />
+            <span>{Math.max(home?.syncStreakDays ?? 0, home?.categorizeStreakDays ?? 0)}</span>
+          </span>
+          <button
+            type="button"
+            onclick={() => changePeriod(-1)}
+            class="size-7 rounded-full flex items-center justify-center active:bg-black/15"
+            aria-label="Previous period"
+          >
+            <ChevronLeft class="size-5" />
+          </button>
+          <span class="text-sm font-extrabold truncate">{home?.period.label ?? "..."}</span>
+          <button
+            type="button"
+            onclick={() => changePeriod(1)}
+            class="size-7 rounded-full flex items-center justify-center active:bg-black/15"
+            aria-label="Next period"
+          >
+            <ChevronRight class="size-5" />
+          </button>
+        </div>
+        <div class="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            onclick={() => {
+              showSearch = true;
+              searchQuery = "";
+              searchResults = [];
+            }}
+            class="size-8 rounded-full flex items-center justify-center text-white active:bg-black/15"
+            aria-label={t(lang, "search")}
+          >
+            <Search class="size-4" />
+          </button>
+          <button
+            type="button"
+            onclick={() => (showFilterSheet = true)}
+            class="relative size-8 rounded-full flex items-center justify-center text-white active:bg-black/15"
+            aria-label={t(lang, "filterRecords")}
+          >
+            <Wallet class="size-4" />
+            {#if filterAccountIds.length > 0}
+              <span class="absolute top-0.5 right-0.5 size-2 rounded-full bg-white"></span>
+            {/if}
+          </button>
+        </div>
+      </div>
+      <div class="px-4 pb-3 flex items-end justify-between gap-3">
+        <div class="min-w-0">
+          <div class="text-[11px] font-semibold text-white/85">{t(lang, "totalSpending")}</div>
+          <div class="text-xl font-extrabold tracking-tight leading-tight">
+            {formatBaht(home?.totalSpendingSatang ?? 0, true)}
+          </div>
+        </div>
+        <button
+          type="button"
+          onclick={() => (activeTab = "summary")}
+          class="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-extrabold shadow-md active:scale-95 transition-transform"
+          style="background-color: var(--hero-btn-bg); color: var(--hero-btn-text);"
+        >
+          <PieChart class="size-3.5" />
+          <span>{t(lang, "summary")}</span>
+        </button>
+      </div>
+    </header>
+
     <main
       class="flex-1 pb-28"
       ontouchstart={onHomeTouchStart}
@@ -562,6 +789,7 @@
 
       <!-- Signature Monthly Hero Card with BIG animated MooJot piggy overflowing the bottom right! -->
       <div
+        bind:this={heroEl}
         class="mx-4 mt-3 rounded-3xl text-white px-4 pt-4 pb-4 shadow-xl overflow-visible relative"
         style="background: linear-gradient(135deg, var(--hero-from), var(--hero-to)); box-shadow: 0 14px 32px -12px var(--hero-shadow);"
       >
@@ -569,24 +797,18 @@
           <div class="flex items-center gap-1 font-bold text-white">
             <button
               type="button"
-              onclick={async () => {
-                periodOffset -= 1;
-                await refreshPeriodData();
-              }}
+              onclick={() => changePeriod(-1)}
               class="size-7 rounded-full flex items-center justify-center active:bg-black/15"
-              aria-label="Prev month"
+              aria-label="Previous period"
             >
               <ChevronLeft class="size-5" />
             </button>
             <span class="text-sm font-extrabold">{home?.period.label ?? "..."}</span>
             <button
               type="button"
-              onclick={async () => {
-                periodOffset += 1;
-                await refreshPeriodData();
-              }}
+              onclick={() => changePeriod(1)}
               class="size-7 rounded-full flex items-center justify-center active:bg-black/15"
-              aria-label="Next month"
+              aria-label="Next period"
             >
               <ChevronRight class="size-5" />
             </button>
@@ -701,13 +923,9 @@
       <div class="{home && home.futureRecords.length > 0 ? 'mt-4' : 'mt-8'} space-y-3">
         {#if !home || home.dayGroups.length === 0}
           <div class="mx-4 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-8 text-center space-y-3 flex flex-col items-center shadow-xs">
-            <MooMascot mood={isScanning ? "scan" : "idle"} size="lg" onTap={handleMascotTap} />
+            <EmptyMonthArt alt={t(lang, "noRecords")} />
             <div class="text-sm font-bold text-[var(--text-primary)]">{t(lang, "noRecords")}</div>
-            <p class="text-xs text-[var(--text-muted)]">
-              {lang === "th"
-                ? "กด + เพื่อบันทึกรายการ หรือดึงหน้าจอลงค้างไว้เพื่อสแกนสลิป"
-                : "Tap + Add Record or pull down & hold at the top to scan bank slips."}
-            </p>
+            <p class="text-xs text-[var(--text-muted)]">{t(lang, "emptyHint")}</p>
           </div>
         {:else}
           {#each home.dayGroups as group}
@@ -751,14 +969,19 @@
                   {#each group.records as rec}
                     {@const cat = categoryMeta(rec.categoryId)}
                     {@const acc = accountMeta(rec.accountId)}
-                    <button
-                      type="button"
-                      onclick={() => {
+                    <SwipeRecordRow
+                      open={openSwipeId === rec.id}
+                      deleteLabel={t(lang, "delete")}
+                      onOpen={() => (openSwipeId = rec.id)}
+                      onClose={() => {
+                        if (openSwipeId === rec.id) openSwipeId = null;
+                      }}
+                      onDelete={() => queueSwipeDelete(rec)}
+                      onActivate={() => {
                         editingRecord = rec;
                         recordLightboxOpen = false;
                         showRecordSheet = true;
                       }}
-                      class="w-full relative px-4 py-3 flex items-center justify-between gap-3 text-left active:opacity-80"
                     >
                       <!-- Brand corner triangle on unreviewed auto-jotted slip -->
                       {#if !rec.isReviewed}
@@ -807,7 +1030,7 @@
                           {rec.kind === "income" ? "+" : ""}{formatBaht(rec.amountSatang)}
                         </span>
                       </div>
-                    </button>
+                    </SwipeRecordRow>
                   {/each}
                 </div>
               </div>
@@ -936,6 +1159,7 @@
       }}
       onScanNow={triggerSlipScan}
       onPickPhoto={triggerPickPhoto}
+      onPickStatement={(pdfBase64) => importPdfBase64(pdfBase64, null)}
       onReparseSlips={async () => {
         if (hasAndroidBridge() && window.MooJotAndroid?.hasGalleryPermission()) {
           const targets = await api.getBackfillTargets();
@@ -989,6 +1213,67 @@
   {/if}
 
   <!-- Bottom Navigation Bar -->
+  {#if undoDelete}
+    <div
+      class="fixed inset-x-4 z-40 flex items-center justify-between gap-3 rounded-2xl bg-[var(--text-primary)] px-4 py-3 text-[var(--bg-canvas)] shadow-xl"
+      style="bottom: calc(env(safe-area-inset-bottom) + 84px);"
+      role="status"
+    >
+      <span class="text-sm font-semibold">{t(lang, "recordDeleted")}</span>
+      <button
+        type="button"
+        class="text-sm font-extrabold text-[var(--brand)]"
+        onclick={undoSwipeDelete}
+      >
+        {t(lang, "undo")}
+      </button>
+    </div>
+  {/if}
+
+  {#if pdfPrompt}
+    <div class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4">
+      <form
+        class="w-full max-w-md rounded-3xl bg-[var(--bg-card)] p-5 shadow-xl"
+        onsubmit={(event) => {
+          event.preventDefault();
+          if (!pdfPrompt || pdfBusy) return;
+          void importPdfBase64(pdfPrompt.pdfBase64, pdfPassword);
+        }}
+      >
+        <h2 class="text-base font-extrabold text-[var(--text-primary)]">{t(lang, "statementPassword")}</h2>
+        <p class="mt-1 text-xs text-[var(--text-muted)]">{t(lang, "statementPasswordHint")}</p>
+        {#if pdfPrompt.wrong}
+          <p class="mt-2 text-xs font-semibold text-rose-500">{t(lang, "wrongPassword")}</p>
+        {/if}
+        <input
+          type="password"
+          autocomplete="off"
+          bind:value={pdfPassword}
+          class="mt-4 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-input)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--brand)]"
+        />
+        <div class="mt-4 flex gap-2">
+          <button
+            type="button"
+            class="flex-1 rounded-xl border border-[var(--border-subtle)] py-2.5 text-sm font-bold text-[var(--text-secondary)]"
+            onclick={() => {
+              pdfPrompt = null;
+              pdfPassword = "";
+            }}
+          >
+            {t(lang, "cancel")}
+          </button>
+          <button
+            type="submit"
+            class="flex-1 rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white disabled:opacity-60"
+            disabled={pdfBusy || pdfPassword.trim() === ""}
+          >
+            {t(lang, "confirm")}
+          </button>
+        </div>
+      </form>
+    </div>
+  {/if}
+
   <nav
     class="fixed bottom-0 left-0 right-0 z-30 backdrop-blur-md border-t border-[var(--border-subtle)] grid grid-cols-3 pt-2"
     style="background-color: var(--nav-bg); padding-bottom: max(env(safe-area-inset-bottom), 20px);"

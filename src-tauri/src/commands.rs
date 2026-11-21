@@ -893,3 +893,29 @@ pub fn export_backup_json(state: State<'_, DbState>) -> Result<String, String> {
     });
     serde_json::to_string_pretty(&payload).map_err(|e| e.to_string())
 }
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportStatementInput {
+    pub pdf_base64: String,
+    /// Used only to decrypt this PDF. Never stored or returned.
+    pub password: Option<String>,
+}
+
+#[tauri::command]
+pub fn import_statement_pdf(
+    state: State<'_, DbState>,
+    input: ImportStatementInput,
+) -> Result<crate::statement::ImportStatementReport, String> {
+    let encoded = input
+        .pdf_base64
+        .trim()
+        .rsplit_once(',')
+        .map(|(_, data)| data)
+        .unwrap_or(input.pdf_base64.trim());
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(encoded)
+        .map_err(|_| "invalid pdf data".to_string())?;
+    let conn = state.0.lock().map_err(|_| "db lock poisoned".to_string())?;
+    crate::statement::import_statement_pdf(&conn, &bytes, input.password.as_deref())
+}

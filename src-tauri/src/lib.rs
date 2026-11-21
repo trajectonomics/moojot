@@ -4,6 +4,7 @@ pub mod categorizer;
 pub mod commands;
 pub mod db;
 pub mod slip_parser;
+pub mod statement;
 
 use std::sync::Mutex;
 use tauri::Manager;
@@ -56,6 +57,7 @@ pub fn run() {
             commands::auto_categorize_uncategorized,
             commands::export_records_csv,
             commands::export_backup_json,
+            commands::import_statement_pdf,
         ])
         .run(tauri::generate_context!())
         .expect("error while running MooJot Tauri application");

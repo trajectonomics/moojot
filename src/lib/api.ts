@@ -32,8 +32,19 @@ declare global {
       backfillExistingSlips(itemsJson: string): void;
       readSlipImageDataUrl(relativePath: string): string | null;
       shareTextFile(filename: string, mimeType: string, content: string): boolean;
+      pickStatementPdf(): void;
     };
   }
+}
+
+export interface ImportStatementReport {
+  issuer: string | null;
+  imported: number;
+  duplicates: number;
+  skipped: number;
+  needsPassword: boolean;
+  wrongPassword: boolean;
+  message: string | null;
 }
 
 export const api = {
@@ -144,6 +155,14 @@ export const api = {
   exportRecordsCsv: () => invoke<string>("export_records_csv"),
 
   exportBackupJson: () => invoke<string>("export_backup_json"),
+
+  importStatementPdf: (pdfBase64: string, password?: string | null) =>
+    invoke<ImportStatementReport>("import_statement_pdf", {
+      input: {
+        pdfBase64,
+        password: password && password.length > 0 ? password : null,
+      },
+    }),
 };
 
 export function hasAndroidBridge(): boolean {
