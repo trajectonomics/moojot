@@ -98,6 +98,10 @@
   let pdfPassword = $state("");
   let pdfBusy = $state(false);
   let scanStartPrompt = $state(false);
+  let scannedMonths = $state<string[]>([]);
+  let scanSinceSec = 0;
+  let sheetDrag = $state(0);
+  let sheetStartY = 0;
   let undoDelete = $state<{
     recordId: string;
     home: HomePayload;
@@ -314,6 +318,7 @@
     accounts = accs;
     categories = cats;
     tags = tgs;
+    scannedMonths = await api.listScannedMonths();
     await refreshPeriodData();
   }
 
@@ -350,13 +355,6 @@
     }
   }
 
-  function threeMonthsAgoSec(): number {
-    const start = new Date();
-    start.setMonth(start.getMonth() - 3);
-    start.setHours(0, 0, 0, 0);
-    return Math.floor(start.getTime() / 1000);
-  }
-
   function monthStartSec(offset: number): number {
     const start = new Date();
     start.setDate(1);
@@ -375,12 +373,51 @@
     });
   }
 
-  function viewedMonthIsOlder(): boolean {
-    const boundary = threeMonthsAgoSec();
-    const start = home?.period.startDate;
-    if (!start) return periodOffset <= -3;
-    const ms = Date.parse(`${start}T00:00:00`);
-    return Number.isFinite(ms) && ms / 1000 < boundary;
+  function monthKey(offset: number): string {
+    const start = new Date();
+    start.setDate(1);
+    start.setMonth(start.getMonth() + offset);
+    return `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`;
+  }
+
+  function formatMonthKey(key: string): string {
+    const [year, month] = key.split("-").map(Number);
+    if (!year || !month) return key;
+    return new Date(year, month - 1, 1).toLocaleDateString(lang === "th" ? "th-TH" : "en-US", {
+      month: "short",
+      year: "2-digit",
+    });
+  }
+
+  function monthKeysFromSince(sinceSec: number): string[] {
+    const cursor = new Date(sinceSec * 1000);
+    cursor.setDate(1);
+    cursor.setHours(0, 0, 0, 0);
+    const end = new Date();
+    end.setDate(1);
+    end.setHours(0, 0, 0, 0);
+    const keys: string[] = [];
+    while (cursor <= end && keys.length < 36) {
+      keys.push(`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`);
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+    return keys;
+  }
+
+  function onSheetStart(event: TouchEvent) {
+    if (event.touches.length !== 1) return;
+    sheetStartY = event.touches[0].clientY;
+    sheetDrag = 0;
+  }
+
+  function onSheetMove(event: TouchEvent) {
+    if (event.touches.length !== 1) return;
+    sheetDrag = Math.max(0, event.touches[0].clientY - sheetStartY);
+  }
+
+  function onSheetEnd() {
+    if (sheetDrag > 72) scanStartPrompt = false;
+    sheetDrag = 0;
   }
 
   async function triggerSlipScan() {
@@ -397,16 +434,19 @@
       window.MooJotAndroid.requestGalleryPermission();
       return;
     }
-    if (viewedMonthIsOlder()) {
+    if (!scannedMonths.includes(monthKey(periodOffset))) {
+      sheetDrag = 0;
       scanStartPrompt = true;
       return;
     }
-    await startSlipScan(threeMonthsAgoSec());
+    await startSlipScan(monthStartSec(periodOffset));
   }
 
   async function startSlipScan(sinceSec: number) {
     if (!window.MooJotAndroid) return;
+    scanSinceSec = sinceSec;
     scanStartPrompt = false;
+    sheetDrag = 0;
     isScanning = true;
     scanBanner = lang === "th" ? "กำลังสแกนสลิปใหม่..." : "Scanning new slips...";
     const [keywords, knownIds] = await Promise.all([
@@ -571,6 +611,11 @@
             }
           }
           if (detail?.done) {
+            const covered = monthKeysFromSince(scanSinceSec);
+            if (covered.length > 0) {
+              await api.rememberScannedMonths(covered);
+              scannedMonths = [...new Set([...covered, ...scannedMonths])].sort().reverse();
+            }
             isScanning = false;
             if (!candidates.length) {
               scanBanner = lang === "th" ? "ไม่มีสลิปใหม่" : "No new slips";
@@ -1265,48 +1310,72 @@
   {/if}
 
   {#if scanStartPrompt}
-    <div class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4">
-      <div class="w-full max-w-md rounded-3xl bg-[var(--bg-card)] p-5 shadow-xl">
-        <h2 class="text-base font-extrabold text-[var(--text-primary)]">{t(lang, "scanFrom")}</h2>
-        <p class="mt-1 text-xs text-[var(--text-muted)]">
+    <button
+      type="button"
+      class="fixed inset-0 z-50 bg-black/50"
+      aria-label={t(lang, "close")}
+      onclick={() => (scanStartPrompt = false)}
+    ></button>
+    <div
+      role="dialog"
+      class="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-[var(--bg-card)] px-5 pt-3 shadow-xl"
+      style="transform: translateY({sheetDrag}px); padding-bottom: max(env(safe-area-inset-bottom), 20px); transition: {sheetDrag === 0 ? 'transform 180ms ease' : 'none'};"
+      ontouchstart={onSheetStart}
+      ontouchmove={onSheetMove}
+      ontouchend={onSheetEnd}
+      ontouchcancel={onSheetEnd}
+    >
+      <div class="mx-auto mb-3 h-1.5 w-10 rounded-full bg-[var(--border-strong)]"></div>
+      <h2 class="text-base font-extrabold text-[var(--text-primary)]">{t(lang, "scanFrom")}</h2>
+      <p class="mt-1 text-xs text-[var(--text-muted)]">
+        {lang === "th"
+          ? "แตะเดือนแรกที่จะรวม สลิปที่สแกนแล้วจะถูกข้าม"
+          : "Tap the first month to include. Slips already scanned are skipped."}
+      </p>
+      <div class="mt-4 flex flex-col gap-2">
+        <button
+          type="button"
+          class="rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white"
+          onclick={() => startSlipScan(monthStartSec(periodOffset))}
+        >
+          {home?.period.label ?? monthLabel(periodOffset)}
+        </button>
+        <button
+          type="button"
+          class="rounded-xl border border-[var(--border-subtle)] py-2.5 text-sm font-bold text-[var(--text-primary)]"
+          onclick={() => startSlipScan(monthStartSec(periodOffset - 3))}
+        >
           {lang === "th"
-            ? "เดือนนี้เก่ากว่า 3 เดือน สลิปที่เคยสแกนแล้วจะถูกข้าม"
-            : "This month is older than 3 months. Slips already scanned are skipped."}
-        </p>
-        <div class="mt-4 flex flex-col gap-2">
-          {#if periodOffset < -3}
-            <button
-              type="button"
-              class="rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white"
-              onclick={() => startSlipScan(monthStartSec(periodOffset))}
-            >
-              {home?.period.label ?? monthLabel(periodOffset)}
-            </button>
-          {/if}
-          <button
-            type="button"
-            class="rounded-xl bg-[var(--brand-soft)] py-2.5 text-sm font-bold text-[var(--brand-text)]"
-            onclick={() => startSlipScan(threeMonthsAgoSec())}
-          >
-            {t(lang, "lastThreeMonths")}
-          </button>
-          {#each [-3, -2, -1, 0] as offset}
-            <button
-              type="button"
-              class="rounded-xl border border-[var(--border-subtle)] py-2.5 text-sm font-bold text-[var(--text-primary)]"
-              onclick={() => startSlipScan(monthStartSec(offset))}
-            >
-              {monthLabel(offset)}
-            </button>
-          {/each}
-          <button
-            type="button"
-            class="py-2 text-sm font-semibold text-[var(--text-muted)]"
-            onclick={() => (scanStartPrompt = false)}
-          >
-            {t(lang, "cancel")}
-          </button>
+            ? `3 เดือนจาก ${monthLabel(periodOffset)}`
+            : `3 months from ${monthLabel(periodOffset)}`}
+        </button>
+        <button
+          type="button"
+          class="rounded-xl border border-[var(--border-subtle)] py-2.5 text-sm font-bold text-[var(--text-primary)]"
+          onclick={() => startSlipScan(monthStartSec(periodOffset - 12))}
+        >
+          {lang === "th"
+            ? `1 ปีจาก ${monthLabel(periodOffset)}`
+            : `1 year from ${monthLabel(periodOffset)}`}
+        </button>
+      </div>
+      <div class="mt-4">
+        <div class="text-xs font-bold text-[var(--text-primary)]">
+          {lang === "th" ? "สแกนแล้ว" : "Already scanned"}
         </div>
+        {#if scannedMonths.length === 0}
+          <p class="mt-1 text-xs text-[var(--text-muted)]">
+            {lang === "th" ? "ยังไม่มี" : "None yet"}
+          </p>
+        {:else}
+          <div class="mt-2 flex flex-wrap gap-1.5">
+            {#each scannedMonths as key (key)}
+              <span class="rounded-full bg-[var(--brand-soft)] px-2.5 py-1 text-[11px] font-bold text-[var(--brand-text)]">
+                {formatMonthKey(key)}
+              </span>
+            {/each}
+          </div>
+        {/if}
       </div>
     </div>
   {/if}

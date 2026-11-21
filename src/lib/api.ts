@@ -124,6 +124,11 @@ export const api = {
   rememberScannedMedia: (ids: string[]) =>
     invoke<void>("remember_scanned_media", { ids }),
 
+  listScannedMonths: () => invoke<string[]>("list_scanned_months"),
+
+  rememberScannedMonths: (months: string[]) =>
+    invoke<void>("remember_scanned_months", { months }),
+
   importSlipCandidates: (candidates: SlipScanCandidate[]) =>
     invoke<SlipScanReport>("import_slip_candidates", { candidates }),
 

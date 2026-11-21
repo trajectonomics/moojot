@@ -16,8 +16,11 @@ use crate::categorizer::{
 };
 use crate::db::{
     fetch_tags_for_record, list_accounts, list_categories, list_tags,
-    list_known_media_ids, load_settings, normalize_payee, record_activity_synced,
-    remember_scanned_media as remember_scanned_media_rows, save_settings, upsert_record, Account,
+    list_known_media_ids, list_scanned_months as list_scanned_month_rows, load_settings,
+    normalize_payee,
+    record_activity_synced, remember_scanned_media as remember_scanned_media_rows,
+    remember_scanned_months as remember_scanned_month_rows, save_settings, upsert_record,
+    Account,
     AppSettings, Category, DbState, RecordInput, RecordItem, Tag,
 };
 use crate::slip_parser::{call_akson_ocr, parse_slip_qr, parse_slip_text};
@@ -404,6 +407,18 @@ pub fn list_known_slip_media_ids(state: State<'_, DbState>) -> Result<Vec<String
 pub fn remember_scanned_media(state: State<'_, DbState>, ids: Vec<String>) -> Result<(), String> {
     let conn = state.0.lock().map_err(|_| "db lock poisoned".to_string())?;
     remember_scanned_media_rows(&conn, &ids)
+}
+
+#[tauri::command]
+pub fn list_scanned_months(state: State<'_, DbState>) -> Result<Vec<String>, String> {
+    let conn = state.0.lock().map_err(|_| "db lock poisoned".to_string())?;
+    list_scanned_month_rows(&conn)
+}
+
+#[tauri::command]
+pub fn remember_scanned_months(state: State<'_, DbState>, months: Vec<String>) -> Result<(), String> {
+    let conn = state.0.lock().map_err(|_| "db lock poisoned".to_string())?;
+    remember_scanned_month_rows(&conn, &months)
 }
 
 #[tauri::command]
