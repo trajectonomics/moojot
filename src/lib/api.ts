@@ -1,0 +1,169 @@
+import { invoke } from "@tauri-apps/api/core";
+import type {
+  Account,
+  AppSettings,
+  BudgetItem,
+  Category,
+  ComparePayload,
+  HomePayload,
+  RecordInput,
+  RecordItem,
+  SlipScanCandidate,
+  SlipScanReport,
+  SummaryPayload,
+  Tag,
+} from "./types";
+
+declare global {
+  interface Window {
+    __moojotHandleBack?: () => string;
+    MooJotAndroid?: {
+      isAndroidNative(): boolean;
+      setStatusBarLight?(light: boolean): void;
+      hasGalleryPermission(): boolean;
+      requestGalleryPermission(): void;
+      scanBankSlips(
+        keywordsJson: string,
+        includeShared: boolean,
+        limit: number,
+        includeBase64: boolean
+      ): void;
+      pickSlipPhoto(includeBase64: boolean): void;
+      backfillExistingSlips(itemsJson: string): void;
+      readSlipImageDataUrl(relativePath: string): string | null;
+      shareTextFile(filename: string, mimeType: string, content: string): boolean;
+    };
+  }
+}
+
+export const api = {
+  getHomeData: (periodOffset: number, accountIds?: string[]) =>
+    invoke<HomePayload>("get_home_data", {
+      periodOffset,
+      accountIds: accountIds && accountIds.length > 0 ? accountIds : null,
+    }),
+
+  getSummaryData: (periodOffset: number, kind: string, accountIds?: string[]) =>
+    invoke<SummaryPayload>("get_summary_data", {
+      periodOffset,
+      kind,
+      accountIds: accountIds && accountIds.length > 0 ? accountIds : null,
+    }),
+
+  getCompareData: (periodOffset: number, kind: string, months = 6) =>
+    invoke<ComparePayload>("get_compare_data", { periodOffset, kind, months }),
+
+  getBudgets: (periodOffset: number) =>
+    invoke<BudgetItem[]>("get_budgets", { periodOffset }),
+
+  upsertBudget: (input: {
+    id?: string;
+    scopeType: string;
+    scopeId: string | null;
+    periodType: string;
+    limitSatang: number;
+    alertThresholdPct: number;
+  }) => invoke<string>("upsert_budget", { input }),
+
+  deleteBudget: (id: string) => invoke<void>("delete_budget", { id }),
+
+  saveRecord: (input: RecordInput) => invoke<RecordItem>("save_record", { input }),
+
+  deleteRecord: (id: string) => invoke<void>("delete_record", { id }),
+
+  deleteRecurringRule: (ruleId: string) =>
+    invoke<void>("delete_recurring_rule", { ruleId }),
+
+  searchRecords: (query: string) => invoke<RecordItem[]>("search_records", { query }),
+
+  getAccounts: () => invoke<Account[]>("get_accounts"),
+
+  toggleAccountEnabled: (id: string, enabled: boolean) =>
+    invoke<void>("toggle_account_enabled", { id, enabled }),
+
+  getCategories: () => invoke<Category[]>("get_categories"),
+
+  createCategory: (input: {
+    nameEn: string;
+    nameTh: string;
+    kind: "spending" | "income";
+    icon: string;
+    color: string;
+  }) => invoke<Category>("create_category", { input }),
+
+  deleteCategory: (id: string) => invoke<void>("delete_category", { id }),
+
+  getTags: () => invoke<Tag[]>("get_tags"),
+
+  createTag: (name: string, color?: string) =>
+    invoke<Tag>("create_tag", { name, color: color ?? null }),
+
+  toggleTagDisabled: (id: string, disabled: boolean) =>
+    invoke<void>("toggle_tag_disabled", { id, disabled }),
+
+  getSettings: () => invoke<AppSettings>("get_settings"),
+
+  updateSettings: (settings: AppSettings) =>
+    invoke<void>("update_settings", { settings }),
+
+  getAlbumScanKeywords: () => invoke<string[]>("get_album_scan_keywords"),
+
+  importSlipCandidates: (candidates: SlipScanCandidate[]) =>
+    invoke<SlipScanReport>("import_slip_candidates", { candidates }),
+
+  reparseAllSlips: () =>
+    invoke<{ updated: number; removedNonSlips: number; transfersDetected: number }>(
+      "reparse_all_slips"
+    ),
+
+  getBackfillTargets: () =>
+    invoke<{ mediaStoreId: string; contentSha256: string; needsThaiOcr: boolean }[]>(
+      "get_backfill_targets"
+    ),
+
+  applySlipBackfill: (
+    items: { contentSha256: string; imagePath: string | null; ocrText: string | null }[]
+  ) => invoke<number>("apply_slip_backfill", { items }),
+
+  listPayeeRules: () =>
+    invoke<{ id: string; pattern: string; categoryId: string; hitCount: number; isBuiltin: boolean }[]>(
+      "list_payee_rules"
+    ),
+
+  upsertPayeeRule: (pattern: string, categoryId: string) =>
+    invoke<{ id: string; pattern: string; categoryId: string; hitCount: number; isBuiltin: boolean }>(
+      "upsert_payee_rule",
+      { pattern, categoryId }
+    ),
+
+  deletePayeeRule: (id: string) => invoke<void>("delete_payee_rule", { id }),
+
+  autoCategorizeUncategorized: () =>
+    invoke<number>("auto_categorize_uncategorized"),
+
+  exportRecordsCsv: () => invoke<string>("export_records_csv"),
+
+  exportBackupJson: () => invoke<string>("export_backup_json"),
+};
+
+export function hasAndroidBridge(): boolean {
+  return typeof window !== "undefined" && Boolean(window.MooJotAndroid?.isAndroidNative());
+}
+
+export function triggerAndroidDownloadOrShare(
+  filename: string,
+  mimeType: string,
+  content: string
+): boolean {
+  if (typeof window !== "undefined" && window.MooJotAndroid) {
+    return window.MooJotAndroid.shareTextFile(filename, mimeType, content);
+  }
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+  return true;
+}
