@@ -846,9 +846,15 @@ pub fn upsert_record(conn: &Connection, input: &RecordInput) -> Result<RecordIte
         );
     }
 
-    // Learn payee -> category mapping for auto-categorization
-    if let (Some(payee), Some(cat)) = (input.payee_raw.as_deref(), input.category_id.as_deref()) {
-        learn_payee_category(conn, payee, cat);
+    // Learn payee -> category mapping for auto-categorization. Only spending is
+    // auto-categorized, and payee rules are unique per pattern, so learning from income
+    // would overwrite the payee's spending rule with a rule that is never applied.
+    if input.kind == "spending" {
+        if let (Some(payee), Some(cat)) =
+            (input.payee_raw.as_deref(), input.category_id.as_deref())
+        {
+            learn_payee_category(conn, payee, cat);
+        }
     }
     if input.category_id.is_some() {
         record_activity_categorized(conn);
@@ -915,4 +921,57 @@ pub fn add_one_month(date: NaiveDate) -> NaiveDate {
         day -= 1;
     }
     NaiveDate::from_ymd_opt(y, m, day).unwrap_or(date + Duration::days(30))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::categorizer::{classify_local, upsert_user_rule};
+
+    fn temp_db() -> (Connection, std::path::PathBuf) {
+        let path = std::env::temp_dir().join(format!("moojot-db-{}.sqlite3", Uuid::new_v4()));
+        (init_db(&path).expect("init db"), path)
+    }
+
+    fn cleanup(path: &Path) {
+        let _ = std::fs::remove_file(path);
+        for suffix in ["-wal", "-shm"] {
+            let mut p = path.as_os_str().to_os_string();
+            p.push(suffix);
+            let _ = std::fs::remove_file(p);
+        }
+    }
+
+    #[test]
+    fn income_record_does_not_overwrite_a_spending_rule() {
+        let (conn, path) = temp_db();
+        // The user taught moojot that "Test Mart" is food.
+        upsert_user_rule(&conn, "test mart", "cat_food").unwrap();
+
+        // Later they get cashback from the same payee.
+        upsert_record(
+            &conn,
+            &RecordInput {
+                id: None,
+                kind: "income".into(),
+                amount_satang: 5_000,
+                local_date: "2026-11-21".into(),
+                local_time: None,
+                account_id: None,
+                category_id: Some("cat_cashback".into()),
+                payee_raw: Some("Test Mart".into()),
+                note: None,
+                tag_ids: Vec::new(),
+                recurring_frequency: None,
+            },
+        )
+        .unwrap();
+
+        // Spending at Test Mart is still food.
+        assert_eq!(
+            classify_local(&conn, Some("Test Mart"), None, None).as_deref(),
+            Some("cat_food")
+        );
+        cleanup(&path);
+    }
 }
