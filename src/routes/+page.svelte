@@ -15,8 +15,6 @@
     X,
     Repeat,
     PenLine,
-    ArrowDown,
-    Loader2,
   } from "@lucide/svelte";
   import CategoryIcon from "$lib/components/CategoryIcon.svelte";
   import EmptyMonthArt from "$lib/components/EmptyMonthArt.svelte";
@@ -119,7 +117,6 @@
   let pullStartY = $state<number | null>(null);
   let pullDistance = $state<number>(0);
   let pullArmed = $state<boolean>(false);
-  let holdTimer: ReturnType<typeof setTimeout> | null = null;
   const PULL_THRESHOLD = 68;
 
   const lang = $derived(settings.language);
@@ -142,7 +139,8 @@
       showRulesModal ||
       showSearch ||
       recordLightboxOpen;
-    const isLightStatusBar = theme === "pink-white" && !hasColoredTopBar;
+    const isLightStatusBar =
+      theme === "pink-white" && !hasColoredTopBar && activeTab !== "home";
     window.MooJotAndroid?.setStatusBarLight?.(isLightStatusBar);
   });
 
@@ -171,6 +169,14 @@
       observer.disconnect();
       window.removeEventListener("scroll", onScroll);
     };
+  });
+
+  $effect(() => {
+    const el = homeMain;
+    if (!el) return;
+    const move = (event: TouchEvent) => onHomeTouchMove(event);
+    el.addEventListener("touchmove", move, { passive: false });
+    return () => el.removeEventListener("touchmove", move);
   });
 
   async function changePeriod(delta: number) {
@@ -210,72 +216,94 @@
     celebrateMascot(linesEn[idx], linesTh[idx], 2800);
   }
 
-  function clearHoldTimer() {
-    if (holdTimer) {
-      clearTimeout(holdTimer);
-      holdTimer = null;
-    }
-  }
+  let homeMain = $state<HTMLElement | null>(null);
+  let monthDrag = $state(0);
+  let monthDragging = $state(false);
+  let monthAnimating = $state(false);
+  let gesture: { x: number; y: number; axis: "undecided" | "h" | "v" } | null = null;
 
   function onHomeTouchStart(e: TouchEvent) {
-    if (activeTab !== "home" || anyModalOpen || isScanning) return;
+    if (activeTab !== "home" || anyModalOpen || isScanning || monthAnimating) return;
     const target = e.target;
-    if (target instanceof Element && target.closest("[data-swipe-row]")) return;
-    if (window.scrollY <= 2 && e.touches.length === 1) {
-      pullStartY = e.touches[0].clientY;
-      pullDistance = 0;
-      pullArmed = false;
-    }
+    if (target instanceof Element && target.closest("[data-swipe-row], button, a, input")) return;
+    if (e.touches.length !== 1) return;
+    gesture = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+      axis: "undecided",
+    };
+    pullDistance = 0;
+    pullArmed = false;
+    monthDrag = 0;
+    monthDragging = false;
   }
 
   function onHomeTouchMove(e: TouchEvent) {
-    if (pullStartY === null || isScanning || anyModalOpen) return;
-    if (window.scrollY > 2) {
-      pullStartY = null;
-      pullDistance = 0;
-      pullArmed = false;
-      clearHoldTimer();
+    if (!gesture || isScanning || anyModalOpen || monthAnimating || e.touches.length !== 1) return;
+    const dx = e.touches[0].clientX - gesture.x;
+    const dy = e.touches[0].clientY - gesture.y;
+    if (gesture.axis === "undecided") {
+      if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+      gesture.axis = Math.abs(dx) > Math.abs(dy) ? "h" : "v";
+    }
+    if (gesture.axis === "h") {
+      monthDragging = true;
+      monthDrag = Math.max(-160, Math.min(160, dx));
+      if (e.cancelable) e.preventDefault();
       return;
     }
-    const delta = e.touches[0].clientY - pullStartY;
-    if (delta <= 0) {
+    if (window.scrollY > 4 && pullDistance === 0) return;
+    if (dy <= 8) {
       pullDistance = 0;
       pullArmed = false;
-      clearHoldTimer();
       return;
     }
-    const damped = Math.min(104, delta * 0.52);
-    pullDistance = damped;
-    if (damped >= PULL_THRESHOLD && !pullArmed) {
-      pullArmed = true;
-      clearHoldTimer();
-      // Hold at top past threshold for 550ms -> auto-trigger scan!
-      holdTimer = setTimeout(() => {
-        if (pullArmed && !isScanning) {
-          pullStartY = null;
-          pullDistance = 0;
-          pullArmed = false;
-          void triggerSlipScan();
-        }
-      }, 550);
-    } else if (damped < PULL_THRESHOLD && pullArmed) {
-      pullArmed = false;
-      clearHoldTimer();
-    }
+    pullDistance = Math.min(148, (dy - 8) * 0.5);
+    pullArmed = pullDistance >= PULL_THRESHOLD;
+    if (e.cancelable) e.preventDefault();
   }
 
   function onHomeTouchEnd() {
-    clearHoldTimer();
-    if (pullArmed && !isScanning) {
-      pullStartY = null;
-      pullDistance = 0;
-      pullArmed = false;
-      void triggerSlipScan();
+    if (gesture?.axis === "h") {
+      const dx = monthDrag;
+      gesture = null;
+      monthDragging = false;
+      if (dx <= -56) void slideMonth(1);
+      else if (dx >= 56) void slideMonth(-1);
+      else monthDrag = 0;
       return;
     }
-    pullStartY = null;
+    const shouldScan = pullArmed && !isScanning;
+    gesture = null;
     pullDistance = 0;
     pullArmed = false;
+    if (shouldScan) void triggerSlipScan();
+  }
+
+  function onHomeTouchCancel() {
+    gesture = null;
+    monthDragging = false;
+    monthDrag = 0;
+    pullDistance = 0;
+    pullArmed = false;
+  }
+
+  async function slideMonth(delta: number) {
+    monthAnimating = true;
+    const width = Math.min(window.innerWidth, 480);
+    monthDragging = false;
+    monthDrag = delta > 0 ? -width : width;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    monthDragging = true;
+    monthDrag = delta > 0 ? width : -width;
+    await changePeriod(delta);
+    requestAnimationFrame(() => {
+      monthDragging = false;
+      monthDrag = 0;
+    });
+    setTimeout(() => {
+      monthAnimating = false;
+    }, 240);
   }
 
   async function refreshAll() {
@@ -394,36 +422,6 @@
       sinceSec,
       JSON.stringify(knownIds)
     );
-  }
-
-  let heroSwipe: { x: number; y: number; axis: "undecided" | "h" | "v" } | null = null;
-
-  function onHeroTouchStart(event: TouchEvent) {
-    if (event.touches.length !== 1 || anyModalOpen) return;
-    heroSwipe = {
-      x: event.touches[0].clientX,
-      y: event.touches[0].clientY,
-      axis: "undecided",
-    };
-  }
-
-  function onHeroTouchMove(event: TouchEvent) {
-    if (!heroSwipe || event.touches.length !== 1) return;
-    const dx = event.touches[0].clientX - heroSwipe.x;
-    const dy = event.touches[0].clientY - heroSwipe.y;
-    if (heroSwipe.axis === "undecided") {
-      if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
-      heroSwipe.axis = Math.abs(dx) > Math.abs(dy) ? "h" : "v";
-    }
-  }
-
-  function onHeroTouchEnd(event: TouchEvent) {
-    if (heroSwipe?.axis === "h") {
-      const dx = event.changedTouches[0].clientX - heroSwipe.x;
-      if (dx <= -56) void changePeriod(1);
-      else if (dx >= 56) void changePeriod(-1);
-    }
-    heroSwipe = null;
   }
 
   function triggerPickPhoto() {
@@ -733,86 +731,69 @@
 <div class="min-h-screen bg-[var(--bg-canvas)] text-[var(--text-primary)] flex flex-col">
   {#if activeTab === "home"}
     <header
-      class="fixed inset-x-0 top-0 z-40 px-3 transition-transform duration-200 ease-out {stickyVisible
+      class="fixed inset-x-0 top-0 z-40 text-white transition-transform duration-200 ease-out {stickyVisible
         ? 'translate-y-0'
         : '-translate-y-full pointer-events-none'}"
-      style="padding-top: max(env(safe-area-inset-top), 8px);"
+      style="padding-top: env(safe-area-inset-top); background: linear-gradient(180deg, var(--hero-from), var(--hero-to));"
       aria-hidden={!stickyVisible}
     >
-      <div class="flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-card)] py-1 pl-1 pr-2 shadow-lg">
-        <MooMascot
-          mood={isScanning ? "scan" : "idle"}
-          size="sm"
-          interactive={false}
-          alt="MooJot"
-        />
-        <div class="min-w-0 flex-1">
-          <div class="truncate text-xs font-extrabold text-[var(--text-primary)]">
-            {home?.period.label ?? "..."}
-          </div>
-          <div class="truncate text-[11px] font-semibold text-[var(--text-muted)]">
-            {formatBaht(home?.totalSpendingSatang ?? 0, true)}
+      <div class="flex items-center justify-between gap-3 px-4 py-3">
+        <div class="min-w-0">
+          <div class="truncate text-sm font-extrabold">{home?.period.label ?? "..."}</div>
+          <div class="truncate text-xs font-semibold text-white/85">
+            {t(lang, "totalSpending")} {formatBaht(home?.totalSpendingSatang ?? 0, true)}
           </div>
         </div>
         <button
           type="button"
-          class="flex size-9 items-center justify-center rounded-full bg-[var(--brand-soft)] text-[var(--brand-text)]"
-          aria-label={t(lang, "backToTop")}
-          onclick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          class="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-extrabold"
+          style="background-color: var(--hero-btn-bg); color: var(--hero-btn-text);"
+          onclick={() => (activeTab = "summary")}
         >
-          <ChevronDown class="size-5" />
+          <PieChart class="size-3.5" />
+          <span>{t(lang, "summary")}</span>
         </button>
       </div>
     </header>
 
     <main
+      bind:this={homeMain}
       class="flex-1 pb-28"
       ontouchstart={onHomeTouchStart}
-      ontouchmove={onHomeTouchMove}
       ontouchend={onHomeTouchEnd}
-      ontouchcancel={onHomeTouchEnd}
+      ontouchcancel={onHomeTouchCancel}
     >
-      <!-- Pull-to-refresh hint ONLY while dragging down (never duplicates scanning banner!) -->
-      {#if pullDistance > 6 && !isScanning}
-        <div
-          class="overflow-hidden flex items-end justify-center bg-[var(--bg-canvas)] transition-[height] duration-150"
-          style="height: {Math.round(pullDistance + 24)}px; padding-top: max(env(safe-area-inset-top), 36px);"
-        >
-          <div class="flex items-center gap-2 pb-2 px-4 rounded-full bg-[var(--bg-card)] border border-[var(--brand-border)] shadow-sm">
-            {#if pullArmed}
-              <ScanLine class="size-4 text-[var(--brand)] animate-pulse" />
-              <span class="text-xs font-bold text-[var(--brand-text)]">
-                {lang === "th" ? "ค้างไว้หรือปล่อยเพื่อสแกน!" : "Hold or release to scan!"}
-              </span>
-            {:else}
-              <ArrowDown class="size-4 text-[var(--text-muted)]" />
-              <span class="text-xs font-medium text-[var(--text-secondary)]">
-                {lang === "th" ? "ดึงลงค้างไว้เพื่อสแกนสลิป" : "Pull down & hold to scan slips"}
-              </span>
-            {/if}
-          </div>
-        </div>
-      {/if}
-
+      <div
+        style="transform: translateX({monthDrag}px); transition: {monthDragging ? 'none' : 'transform 200ms ease'};"
+      >
       <div
         bind:this={heroEl}
         role="group"
-        class="relative mx-3 overflow-hidden rounded-[28px] shadow-xl"
-        style="margin-top: {pullDistance > 6 && !isScanning ? '8px' : 'max(env(safe-area-inset-top), 12px)'}; background: {theme === 'pink-white' ? '#f3fff6' : '#141417'}; min-height: 228px;"
-        ontouchstart={onHeroTouchStart}
-        ontouchmove={onHeroTouchMove}
-        ontouchend={onHeroTouchEnd}
-        ontouchcancel={onHeroTouchEnd}
+        class="relative overflow-hidden shadow-xl"
+        style="background: linear-gradient(180deg, var(--hero-from), var(--hero-to)); border-radius: 0 0 28px 28px;"
       >
         <svg class="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 360 228" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
-          <ellipse cx="70" cy="78" rx="46" ry="18" fill={theme === "pink-white" ? "#ffffff" : "#1f1f24"} opacity="0.9" />
-          <ellipse cx="250" cy="64" rx="62" ry="22" fill={theme === "pink-white" ? "#ffffff" : "#1f1f24"} opacity="0.85" />
-          <ellipse cx="180" cy="96" rx="40" ry="14" fill={theme === "pink-white" ? "#ffffff" : "#26262c"} opacity="0.7" />
-          <path d="M0 168 C70 132 120 188 190 156 C250 130 300 170 360 142 L360 228 L0 228 Z" fill={theme === "pink-white" ? "#b7ebc6" : "#3f2a22"} />
-          <path d="M0 188 C80 160 140 210 220 184 C280 166 320 196 360 176 L360 228 L0 228 Z" fill={theme === "pink-white" ? "#86d59a" : "#7c3a12"} />
+          <ellipse cx="70" cy="78" rx="46" ry="18" fill="#ffffff" opacity="0.35" />
+          <ellipse cx="250" cy="64" rx="62" ry="22" fill="#ffffff" opacity="0.28" />
+          <ellipse cx="180" cy="96" rx="40" ry="14" fill="#ffffff" opacity="0.22" />
+          <path d="M0 168 C70 132 120 188 190 156 C250 130 300 170 360 142 L360 228 L0 228 Z" fill="#ffffff" opacity="0.22" />
+          <path d="M0 188 C80 160 140 210 220 184 C280 166 320 196 360 176 L360 228 L0 228 Z" fill="#ffffff" opacity="0.38" />
         </svg>
 
-        <div class="relative z-10 flex min-h-[228px] flex-col px-3 pb-3 pt-3">
+        <div class="relative z-10 flex min-h-[228px] flex-col px-4 pb-3" style="padding-top: max(env(safe-area-inset-top), 28px);">
+          {#if pullDistance > 8 && !isScanning}
+            <div class="flex items-end justify-center overflow-hidden" style="height: {Math.round(pullDistance)}px;">
+              <p class="pb-2 text-center text-xs font-bold text-white">
+                {pullArmed
+                  ? lang === "th"
+                    ? "ปล่อยเพื่อสแกน · เลื่อนขึ้นเพื่อยกเลิก"
+                    : "Release to scan · slide up to cancel"
+                  : lang === "th"
+                    ? "ดึงค้างไว้เพื่อสแกนสลิป"
+                    : "Pull and hold to scan slips"}
+              </p>
+            </div>
+          {/if}
           <div class="flex items-center justify-between gap-2">
             <div class="flex min-w-0 items-center gap-1">
               <button
@@ -823,7 +804,7 @@
               >
                 <ChevronLeft class="size-4" />
               </button>
-              <span class="truncate rounded-full bg-black/55 px-3 py-1 text-xs font-bold text-white">
+              <span class="truncate rounded-full bg-white/90 px-3 py-1 text-xs font-bold" style="color: var(--hero-btn-text);">
                 {home?.period.label ?? "..."}
               </span>
               <button
@@ -864,19 +845,18 @@
 
           <div class="mt-auto flex items-end justify-between gap-2">
             <div class="min-w-0 pb-2 pl-1">
-              <div class="text-[11px] font-semibold text-[var(--text-secondary)]">
+              <div class="text-[11px] font-semibold text-white/85">
                 {t(lang, "totalSpending")}
               </div>
-              <div class="text-2xl font-extrabold leading-tight text-[var(--text-primary)]">
+              <div class="text-2xl font-extrabold leading-tight text-white">
                 {formatBaht(home?.totalSpendingSatang ?? 0, true)}
               </div>
               {#if isScanning}
-                <div class="mt-1 flex items-center gap-1 text-[11px] font-bold text-[var(--brand-text)]">
-                  <Loader2 class="size-3.5 animate-spin" />
-                  <span>{lang === "th" ? "กำลังสแกน..." : "Scanning..."}</span>
+                <div class="mt-1 text-[11px] font-bold text-white">
+                  {lang === "th" ? "กำลังสแกน..." : "Scanning..."}
                 </div>
               {:else if scanBanner || mascotSpeech}
-                <div class="mt-1 truncate text-[11px] font-semibold text-[var(--text-secondary)]">
+                <div class="mt-1 truncate text-[11px] font-semibold text-white/90">
                   {scanBanner || mascotSpeech}
                 </div>
               {/if}
@@ -891,6 +871,7 @@
             </div>
           </div>
         </div>
+      </div>
       </div>
 
       <!-- Collapsible Future / Recurring Records Drawer -->
