@@ -32,6 +32,14 @@
   } from "$lib/api";
   import { formatBaht } from "$lib/format";
   import { monthPickerOffsets } from "$lib/monthPicker";
+  import {
+    clampMonthStartDay,
+    monthPeriod,
+    periodForKey,
+    periodKeysSince,
+    periodRangeLabel,
+    type MonthPeriod,
+  } from "$lib/period";
   import { t } from "$lib/i18n";
   import { omitFromCompare, omitFromSummary, omitRecord } from "$lib/ledgerPatch";
   import { loadSavedHand, loadSavedTheme, saveHand, saveTheme, type AppTheme, type HandMode } from "$lib/theme";
@@ -369,53 +377,35 @@
     }
   }
 
+  // Month helpers follow the "Month starts on" period, like the backend. Scanned
+  // months are stored as "YYYY-MM" keys: the calendar month a period starts in.
   function monthStartSec(offset: number): number {
-    const start = new Date();
-    start.setDate(1);
-    start.setMonth(start.getMonth() + offset);
-    start.setHours(0, 0, 0, 0);
-    return Math.floor(start.getTime() / 1000);
+    return Math.floor(monthPeriod(offset, settings.monthStartDay).start.getTime() / 1000);
+  }
+
+  function periodLabel(period: MonthPeriod): string {
+    if (clampMonthStartDay(settings.monthStartDay) !== 1) return periodRangeLabel(period);
+    return period.start.toLocaleDateString(lang === "th" ? "th-TH" : "en-US", {
+      month: "short",
+      year: "2-digit",
+    });
   }
 
   function monthLabel(offset: number): string {
-    const start = new Date();
-    start.setDate(1);
-    start.setMonth(start.getMonth() + offset);
-    return start.toLocaleDateString(lang === "th" ? "th-TH" : "en-US", {
-      month: "short",
-      year: "2-digit",
-    });
+    return periodLabel(monthPeriod(offset, settings.monthStartDay));
   }
 
   function monthKey(offset: number): string {
-    const start = new Date();
-    start.setDate(1);
-    start.setMonth(start.getMonth() + offset);
-    return `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`;
+    return monthPeriod(offset, settings.monthStartDay).key;
   }
 
   function formatMonthKey(key: string): string {
-    const [year, month] = key.split("-").map(Number);
-    if (!year || !month) return key;
-    return new Date(year, month - 1, 1).toLocaleDateString(lang === "th" ? "th-TH" : "en-US", {
-      month: "short",
-      year: "2-digit",
-    });
+    const period = periodForKey(key, settings.monthStartDay);
+    return period ? periodLabel(period) : key;
   }
 
   function monthKeysFromSince(sinceSec: number): string[] {
-    const cursor = new Date(sinceSec * 1000);
-    cursor.setDate(1);
-    cursor.setHours(0, 0, 0, 0);
-    const end = new Date();
-    end.setDate(1);
-    end.setHours(0, 0, 0, 0);
-    const keys: string[] = [];
-    while (cursor <= end && keys.length < 36) {
-      keys.push(`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`);
-      cursor.setMonth(cursor.getMonth() + 1);
-    }
-    return keys;
+    return periodKeysSince(new Date(sinceSec * 1000), settings.monthStartDay);
   }
 
   async function triggerSlipScan() {
