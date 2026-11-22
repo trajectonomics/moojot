@@ -41,7 +41,7 @@
     }
     if (!release) return; // unknown: keep the plain /download link
     root.setAttribute("data-release", "ready");
-    var android = root.lang === "th" ? "Android 7.0 ขึ้นไป" : "Android 7.0+";
+    var android = root.lang === "th" ? "Android 7.0 ขึ้นไป (64 บิต)" : "Android 7.0+, 64-bit";
     var meta = document.querySelector(".js-release-meta");
     var parts = [release.version, release.apk.size ? formatSize(release.apk.size) : "", android];
     if (meta) meta.textContent = parts.filter(Boolean).join(" · ");

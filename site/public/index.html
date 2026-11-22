@@ -106,7 +106,7 @@
             </a>
           </div>
           <p class="meta">
-            <span class="js-release-meta"><span lang="th">ไฟล์ APK · Android 7.0 ขึ้นไป</span><span lang="en">APK file · Android 7.0 or newer</span></span>
+            <span class="js-release-meta"><span lang="th">ไฟล์ APK · Android 7.0 ขึ้นไป (64 บิต)</span><span lang="en">APK file · Android 7.0 or newer, 64-bit</span></span>
           </p>
           <p class="meta meta-stores">
             <span class="store-pill"><span lang="th">Google Play: เร็วๆ นี้</span><span lang="en">Google Play: coming soon</span></span>
@@ -181,10 +181,10 @@
         </ol>
 
         <div class="install-extras">
-          <p lang="th"><strong>อัปเดต:</strong> โหลดไฟล์ใหม่จากหน้านี้แล้วติดตั้งทับได้เลย ข้อมูลเดิมอยู่ครบ</p>
-          <p lang="en"><strong>Updating:</strong> download the new file from this page and install it over the old one. Your records stay.</p>
-          <p lang="th"><strong>อยากตรวจไฟล์?</strong> ทุกเวอร์ชันมีไฟล์ <a class="js-checksums" href="https://github.com/trajectonomics/moojot/releases/latest">SHA256SUMS</a> ให้เทียบ</p>
-          <p lang="en"><strong>Want to check the file?</strong> Every release ships a <a class="js-checksums" href="https://github.com/trajectonomics/moojot/releases/latest">SHA256SUMS</a> file.</p>
+          <p lang="th"><strong>อัปเดต:</strong> โหลดไฟล์ใหม่จากหน้านี้แล้วติดตั้งทับได้เลย ข้อมูลเดิมอยู่ครบ เพราะทุกเวอร์ชันเซ็นด้วยคีย์เดียวกัน</p>
+          <p lang="en"><strong>Updating:</strong> download the new file from this page and install it over the old one. Your records stay, because every release is signed with the same key.</p>
+          <p lang="th"><strong>อยากตรวจไฟล์?</strong> ทุกเวอร์ชันมีไฟล์ <a class="js-checksums" href="https://github.com/trajectonomics/moojot/releases/latest/download/SHA256SUMS">SHA256SUMS</a> ให้เทียบ และเซ็นด้วยคีย์ของโปรเจกต์ <code>CN=MooJot</code> ลายนิ้วมือ SHA-256 <code>be15a0f5<wbr>b1735899<wbr>0cecde23<wbr>d3c49dc0<wbr>2a1741ee<wbr>544006ac<wbr>5b011475<wbr>5041a3a1</code> ถ้าเจอไฟล์ APK ของ MooJot ที่ลายนิ้วมือไม่ตรงนี้ อย่าติดตั้ง</p>
+          <p lang="en"><strong>Want to check the file?</strong> Every release ships a <a class="js-checksums" href="https://github.com/trajectonomics/moojot/releases/latest/download/SHA256SUMS">SHA256SUMS</a> file and is signed with the project's key, <code>CN=MooJot</code>, SHA-256 fingerprint <code>be15a0f5<wbr>b1735899<wbr>0cecde23<wbr>d3c49dc0<wbr>2a1741ee<wbr>544006ac<wbr>5b011475<wbr>5041a3a1</code>. Don't install a MooJot APK whose fingerprint is different.</p>
         </div>
       </div>
     </section>
@@ -316,14 +316,14 @@
               <li><span lang="th">แยกหมวดอัตโนมัติและจำสิ่งที่คุณแก้</span><span lang="en">Auto categories that learn from your fixes</span></li>
               <li><span lang="th">สรุป เทียบ 6 เดือน และงบประมาณ</span><span lang="en">Summaries, 6-month compare and budgets</span></li>
               <li><span lang="th">นำเข้า e-Statement บัตรเครดิต</span><span lang="en">Credit card e-statement import</span></li>
+              <li><a href="https://github.com/trajectonomics/moojot/issues/11"><span lang="th">หน้าแนะนำการใช้ครั้งแรก</span><span lang="en">First-run setup guide</span></a></li>
+              <li><a href="https://github.com/trajectonomics/moojot/issues/34"><span lang="th">ปล่อยไฟล์ให้ดาวน์โหลดเวอร์ชันแรก</span><span lang="en">First public download</span></a></li>
             </ul>
           </div>
           <div class="lane lane-now">
             <h3><svg class="icon"><use href="#i-clock"/></svg><span lang="th">กำลังทำ</span><span lang="en">In progress</span></h3>
             <ul>
-              <li><a href="https://github.com/trajectonomics/moojot/issues/34"><span lang="th">ปล่อยไฟล์ให้ดาวน์โหลดเวอร์ชันแรก</span><span lang="en">First public download</span></a></li>
               <li><a href="https://github.com/trajectonomics/moojot/issues/35"><span lang="th">ขึ้น Google Play</span><span lang="en">Google Play listing</span></a></li>
-              <li><a href="https://github.com/trajectonomics/moojot/issues/11"><span lang="th">หน้าแนะนำการใช้ครั้งแรก</span><span lang="en">First-run setup guide</span></a></li>
             </ul>
           </div>
           <div class="lane lane-later">
@@ -352,12 +352,14 @@
           <details>
             <summary><span lang="th">ติดตั้งนอก Play Store ปลอดภัยไหม?</span><span lang="en">Is installing outside the Play Store safe?</span></summary>
             <p lang="th">ไฟล์ APK สร้างโดย GitHub Actions จากซอร์สโค้ดสาธารณะ เซ็นด้วยคีย์ของโปรเจกต์ และมี SHA256SUMS ให้ตรวจ คุณเปิดอ่านโค้ดได้ทุกบรรทัด</p>
+            <p lang="th">ใบรับรองของคีย์คือ <code>CN=MooJot</code> ลายนิ้วมือ SHA-256 <code>be15a0f5<wbr>b1735899<wbr>0cecde23<wbr>d3c49dc0<wbr>2a1741ee<wbr>544006ac<wbr>5b011475<wbr>5041a3a1</code> ทุกเวอร์ชันต่อจากนี้เซ็นด้วยคีย์เดียวกันนี้ ถ้าลายนิ้วมือไม่ตรง อย่าติดตั้ง สายเทคนิคตรวจเองได้ด้วย <code>apksigner verify --print-certs moojot-android-arm64.apk</code></p>
             <p lang="en">The APK is built by GitHub Actions from the public source code, signed with the project's key, and published with SHA-256 checksums. You can read every line of the code.</p>
+            <p lang="en">The key's certificate is <code>CN=MooJot</code>, SHA-256 fingerprint <code>be15a0f5<wbr>b1735899<wbr>0cecde23<wbr>d3c49dc0<wbr>2a1741ee<wbr>544006ac<wbr>5b011475<wbr>5041a3a1</code>. Every future release is signed with this same key, so if the fingerprint differs, don't install it. To check it yourself: <code>apksigner verify --print-certs moojot-android-arm64.apk</code></p>
           </details>
           <details>
             <summary><span lang="th">ใช้กับ iPhone ได้ไหม?</span><span lang="en">Does it work on iPhone?</span></summary>
-            <p lang="th">ยังไม่ได้ ตอนนี้มีเฉพาะ Android 7.0 ขึ้นไป</p>
-            <p lang="en">Not yet. MooJot is Android-only for now (Android 7.0 or newer).</p>
+            <p lang="th">ยังไม่ได้ ตอนนี้มีเฉพาะ Android 7.0 ขึ้นไปที่เป็นมือถือ 64 บิต (มือถือเกือบทุกรุ่นที่ขายตั้งแต่ราวปี 2017 เป็น 64 บิต)</p>
+            <p lang="en">Not yet. MooJot is Android-only for now: Android 7.0 or newer on a 64-bit phone. Nearly every phone sold since about 2017 is 64-bit.</p>
           </details>
           <details>
             <summary><span lang="th">ต้องต่ออินเทอร์เน็ตไหม?</span><span lang="en">Does it need the internet?</span></summary>

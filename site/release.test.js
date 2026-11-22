@@ -48,6 +48,24 @@ test("pickRelease prefers the universal APK and finds the checksums", () => {
   assert.match(picked.checksumsUrl, /SHA256SUMS$/);
 });
 
+test("pickRelease picks the APK, never the AAB, from the real v1.0.0 assets", () => {
+  const picked = pickRelease(
+    release([
+      asset("moojot-android-arm64.apk", 52653181),
+      asset("moojot-android-arm64.aab", 48000000),
+      asset("SHA256SUMS", 200),
+    ]),
+  );
+  assert.equal(picked.version, "v1.0.0");
+  assert.equal(picked.apk.name, "moojot-android-arm64.apk");
+  assert.equal(picked.apk.size, 52653181);
+  assert.equal(
+    picked.apk.url,
+    "https://github.com/trajectonomics/moojot/releases/download/v1.0.0/moojot-android-arm64.apk",
+  );
+  assert.equal(picked.checksumsUrl, "https://github.com/trajectonomics/moojot/releases/download/v1.0.0/SHA256SUMS");
+});
+
 test("pickRelease returns null when there is no APK", () => {
   assert.equal(pickRelease(release([asset("app.aab"), asset("SHA256SUMS")])), null);
   assert.equal(pickRelease({ ...release([asset("a.apk")]), draft: true }), null);
