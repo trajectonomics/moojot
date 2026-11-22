@@ -41,7 +41,7 @@ Each line: name, version, license, and the numbers of the license texts in Part 
 ------------------------------------------------------------------------------
 MooJot - 1
 ------------------------------------------------------------------------------
-MooJot 1.0.0 - MIT [L1]
+MooJot 1.1.0 - MIT [L1]
 
 ------------------------------------------------------------------------------
 Rust crates (compiled into libmoojot_lib.so) - 546
