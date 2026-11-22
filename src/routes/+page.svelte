@@ -202,8 +202,8 @@
     const [h, sum, cmp, bdgs] = await Promise.all([
       api.getHomeData(offset, filterAccountIds),
       api.getSummaryData(offset, summaryKind, filterAccountIds),
-      api.getCompareData(offset, summaryKind, 6),
-      api.getBudgets(offset),
+      api.getCompareData(offset, summaryKind, 6, filterAccountIds),
+      api.getBudgets(offset, filterAccountIds),
     ]);
     if (request !== periodRequest) return;
     home = h;
@@ -339,8 +339,8 @@
     const [h, sum, cmp, bdgs] = await Promise.all([
       api.getHomeData(periodOffset, filterAccountIds),
       api.getSummaryData(periodOffset, summaryKind, filterAccountIds),
-      api.getCompareData(periodOffset, summaryKind, 6),
-      api.getBudgets(periodOffset),
+      api.getCompareData(periodOffset, summaryKind, 6, filterAccountIds),
+      api.getBudgets(periodOffset, filterAccountIds),
     ]);
     home = h;
     summary = sum;

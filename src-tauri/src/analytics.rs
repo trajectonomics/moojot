@@ -461,13 +461,28 @@ pub fn build_summary_payload(
     })
 }
 
+/// Bound value for the account filter in the aggregate queries below. `None`
+/// (or an empty list) means every account, as in `query_records_in_range`.
+/// Otherwise it is a JSON array that SQLite expands with `json_each`, so the
+/// SQL text stays fixed and the ids are only ever bound as a parameter.
+fn account_filter_param(account_ids: Option<&[String]>) -> Result<Option<String>, String> {
+    match account_ids {
+        Some(ids) if !ids.is_empty() => serde_json::to_string(ids)
+            .map(Some)
+            .map_err(|e| e.to_string()),
+        _ => Ok(None),
+    }
+}
+
 pub fn build_compare_payload(
     conn: &Connection,
     period_offset: i32,
     kind: &str,
     months: i32,
+    account_ids: Option<&[String]>,
 ) -> Result<ComparePayload, String> {
     let settings = load_settings(conn)?;
+    let accounts = account_filter_param(account_ids)?;
     let count = months.clamp(3, 12);
     let mut bars = Vec::new();
     let mut prior_sum = 0i64;
@@ -482,8 +497,9 @@ pub fn build_compare_payload(
         let amt: i64 = conn
             .query_row(
                 "SELECT COALESCE(SUM(amount_satang), 0) FROM records
-                 WHERE kind = ?1 AND local_date >= ?2 AND local_date <= ?3",
-                params![kind, start_ymd, end_ymd],
+                 WHERE kind = ?1 AND local_date >= ?2 AND local_date <= ?3
+                   AND (?4 IS NULL OR account_id IN (SELECT value FROM json_each(?4)))",
+                params![kind, start_ymd, end_ymd, accounts],
                 |r| r.get(0),
             )
             .unwrap_or(0);
@@ -516,8 +532,13 @@ pub fn build_compare_payload(
     })
 }
 
-pub fn build_budgets(conn: &Connection, period_offset: i32) -> Result<Vec<BudgetItem>, String> {
+pub fn build_budgets(
+    conn: &Connection,
+    period_offset: i32,
+    account_ids: Option<&[String]>,
+) -> Result<Vec<BudgetItem>, String> {
     let settings = load_settings(conn)?;
+    let accounts = account_filter_param(account_ids)?;
     let (start, end, _) = compute_month_period(period_offset, settings.month_start_day);
     let start_ymd = start.format("%Y-%m-%d").to_string();
     let end_ymd = end.format("%Y-%m-%d").to_string();
@@ -564,8 +585,9 @@ pub fn build_budgets(conn: &Connection, period_offset: i32) -> Result<Vec<Budget
             ("category", Some(cid)) => conn
                 .query_row(
                     "SELECT COALESCE(SUM(amount_satang), 0) FROM records
-                     WHERE kind = 'spending' AND category_id = ?1 AND local_date >= ?2 AND local_date <= ?3",
-                    params![cid, start_ymd, end_ymd],
+                     WHERE kind = 'spending' AND category_id = ?1 AND local_date >= ?2 AND local_date <= ?3
+                       AND (?4 IS NULL OR account_id IN (SELECT value FROM json_each(?4)))",
+                    params![cid, start_ymd, end_ymd, accounts],
                     |r| r.get(0),
                 )
                 .unwrap_or(0),
@@ -573,16 +595,18 @@ pub fn build_budgets(conn: &Connection, period_offset: i32) -> Result<Vec<Budget
                 .query_row(
                     "SELECT COALESCE(SUM(r.amount_satang), 0)
                      FROM records r JOIN record_tags rt ON rt.record_id = r.id
-                     WHERE r.kind = 'spending' AND rt.tag_id = ?1 AND r.local_date >= ?2 AND r.local_date <= ?3",
-                    params![tid, start_ymd, end_ymd],
+                     WHERE r.kind = 'spending' AND rt.tag_id = ?1 AND r.local_date >= ?2 AND r.local_date <= ?3
+                       AND (?4 IS NULL OR r.account_id IN (SELECT value FROM json_each(?4)))",
+                    params![tid, start_ymd, end_ymd, accounts],
                     |r| r.get(0),
                 )
                 .unwrap_or(0),
             _ => conn
                 .query_row(
                     "SELECT COALESCE(SUM(amount_satang), 0) FROM records
-                     WHERE kind = 'spending' AND local_date >= ?1 AND local_date <= ?2",
-                    params![start_ymd, end_ymd],
+                     WHERE kind = 'spending' AND local_date >= ?1 AND local_date <= ?2
+                       AND (?3 IS NULL OR account_id IN (SELECT value FROM json_each(?3)))",
+                    params![start_ymd, end_ymd, accounts],
                     |r| r.get(0),
                 )
                 .unwrap_or(0),
@@ -712,4 +736,114 @@ pub fn export_csv(conn: &Connection) -> Result<String, String> {
     }
     let bytes = wtr.into_inner().map_err(|e| e.to_string())?;
     String::from_utf8(bytes).map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db::init_db;
+
+    fn temp_db() -> (Connection, std::path::PathBuf) {
+        let path =
+            std::env::temp_dir().join(format!("moojot-analytics-{}.sqlite3", uuid::Uuid::new_v4()));
+        let conn = init_db(&path).expect("init db");
+        (conn, path)
+    }
+
+    fn cleanup(path: &std::path::Path) {
+        for suffix in ["", "-wal", "-shm"] {
+            let mut file = path.as_os_str().to_os_string();
+            file.push(suffix);
+            let _ = std::fs::remove_file(file);
+        }
+    }
+
+    fn period_start(conn: &Connection, offset: i32) -> String {
+        let settings = load_settings(conn).unwrap();
+        let (start, _, _) = compute_month_period(offset, settings.month_start_day);
+        start.format("%Y-%m-%d").to_string()
+    }
+
+    fn add_spending(conn: &Connection, id: &str, account_id: &str, satang: i64, date: &str) {
+        conn.execute(
+            "INSERT INTO records (id, kind, amount_satang, local_date, account_id, category_id,
+                                  created_at, updated_at)
+             VALUES (?1, 'spending', ?2, ?3, ?4, 'cat_food', ?3, ?3)",
+            params![id, satang, date, account_id],
+        )
+        .unwrap();
+    }
+
+    /// Made-up spending on two accounts, this period and the one before,
+    /// all in one category; this period's records also share one tag.
+    fn seed_two_accounts(conn: &Connection) {
+        let this_period = period_start(conn, 0);
+        let last_period = period_start(conn, -1);
+        add_spending(conn, "r1", "kbank", 100_000, &this_period);
+        add_spending(conn, "r2", "scb", 400_000, &this_period);
+        add_spending(conn, "r3", "kbank", 30_000, &last_period);
+        add_spending(conn, "r4", "scb", 70_000, &last_period);
+        conn.execute("INSERT INTO tags (id, name) VALUES ('t1', 'test-tag')", [])
+            .unwrap();
+        for record_id in ["r1", "r2"] {
+            conn.execute(
+                "INSERT INTO record_tags (record_id, tag_id) VALUES (?1, 't1')",
+                params![record_id],
+            )
+            .unwrap();
+        }
+    }
+
+    #[test]
+    fn compare_follows_the_account_filter() {
+        let (conn, path) = temp_db();
+        seed_two_accounts(&conn);
+        let kbank = vec!["kbank".to_string()];
+
+        let all = build_compare_payload(&conn, 0, "spending", 3, None).unwrap();
+        assert_eq!(all.current_satang, 500_000);
+        assert_eq!(all.bars[1].amount_satang, 100_000);
+
+        let one = build_compare_payload(&conn, 0, "spending", 3, Some(&kbank)).unwrap();
+        assert_eq!(one.current_satang, 100_000);
+        assert_eq!(one.bars[1].amount_satang, 30_000);
+        assert_eq!(one.average_satang, 15_000);
+
+        // No account selected means every account, as on Home and Summary.
+        let none_selected = build_compare_payload(&conn, 0, "spending", 3, Some(&[])).unwrap();
+        assert_eq!(none_selected.current_satang, 500_000);
+
+        cleanup(&path);
+    }
+
+    #[test]
+    fn budgets_count_spending_only_in_the_filtered_accounts() {
+        let (conn, path) = temp_db();
+        seed_two_accounts(&conn);
+        conn.execute_batch(
+            "INSERT INTO budgets (id, scope_type, scope_id, limit_satang) VALUES
+                ('b_total', 'total', NULL, 1000000),
+                ('b_food', 'category', 'cat_food', 800000),
+                ('b_tag', 'tag', 't1', 600000);",
+        )
+        .unwrap();
+        let kbank = vec!["kbank".to_string()];
+        let budget = |items: &[BudgetItem], id: &str| -> (i64, i64) {
+            let item = items.iter().find(|b| b.id == id).unwrap();
+            (item.spent_satang, item.limit_satang)
+        };
+
+        let all = build_budgets(&conn, 0, None).unwrap();
+        assert_eq!(budget(&all, "b_total"), (500_000, 1_000_000));
+        assert_eq!(budget(&all, "b_food"), (500_000, 800_000));
+        assert_eq!(budget(&all, "b_tag"), (500_000, 600_000));
+
+        // Limits stay the same; only the spent amounts follow the filter.
+        let one = build_budgets(&conn, 0, Some(&kbank)).unwrap();
+        assert_eq!(budget(&one, "b_total"), (100_000, 1_000_000));
+        assert_eq!(budget(&one, "b_food"), (100_000, 800_000));
+        assert_eq!(budget(&one, "b_tag"), (100_000, 600_000));
+
+        cleanup(&path);
+    }
 }

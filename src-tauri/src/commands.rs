@@ -98,18 +98,26 @@ pub fn get_compare_data(
     period_offset: i32,
     kind: String,
     months: Option<i32>,
+    account_ids: Option<Vec<String>>,
 ) -> Result<ComparePayload, String> {
     let conn = state.0.lock().map_err(|_| "db lock poisoned".to_string())?;
-    build_compare_payload(&conn, period_offset, &kind, months.unwrap_or(6))
+    build_compare_payload(
+        &conn,
+        period_offset,
+        &kind,
+        months.unwrap_or(6),
+        account_ids.as_deref(),
+    )
 }
 
 #[tauri::command]
 pub fn get_budgets(
     state: State<'_, DbState>,
     period_offset: i32,
+    account_ids: Option<Vec<String>>,
 ) -> Result<Vec<BudgetItem>, String> {
     let conn = state.0.lock().map_err(|_| "db lock poisoned".to_string())?;
-    build_budgets(&conn, period_offset)
+    build_budgets(&conn, period_offset, account_ids.as_deref())
 }
 
 #[tauri::command]
