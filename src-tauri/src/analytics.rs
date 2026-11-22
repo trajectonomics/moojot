@@ -739,7 +739,7 @@ pub fn export_csv(conn: &Connection) -> Result<String, String> {
 }
 
 #[cfg(test)]
-mod tests {
+mod account_filter_tests {
     use super::*;
     use crate::db::init_db;
 
