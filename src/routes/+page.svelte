@@ -289,13 +289,13 @@
     tapCount += 1;
     const linesEn = [
       "Oink! Pull down at the top to scan new slips!",
-      "100% offline & local — your money stays yours!",
+      "Your records stay on your phone — your money stays yours!",
       "Saving every satang like a pro piggy!",
       "Tap any slip row to inspect the attached photo!",
     ];
     const linesTh = [
       "อู๊ดๆ! ดึงหน้าจอลงค้างไว้เพื่อสแกนสลิปใหม่ได้เลย!",
-      "ข้อมูลอยู่ในเครื่อง 100% ปลอดภัยหายห่วง!",
+      "รายการเงินอยู่ในเครื่องคุณ ปลอดภัยหายห่วง!",
       "เก็บออมทุกบาททุกสตางค์ เก่งมากมนุษย์หมู!",
       "แตะที่รายการเพื่อดูรูปสลิปเต็มจอได้นะ!",
     ];
@@ -632,7 +632,9 @@
       }
       if (activeTab === "settings" && settingsSubPage !== null) {
         settingsSubPage =
-          settingsSubPage === "terms" || settingsSubPage === "privacy" ? "about" : null;
+          settingsSubPage === "terms" || settingsSubPage === "privacy" || settingsSubPage === "licenses"
+            ? "about"
+            : null;
         return "handled";
       }
       if (activeTab !== "home") {

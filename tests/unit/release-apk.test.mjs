@@ -5,11 +5,14 @@
 // Run it against a built APK:
 //   MOOJOT_APK=path/to/moojot-android-arm64.apk node --test tests/unit/release-apk.test.mjs
 // Without MOOJOT_APK the test is skipped, because CI's unit job builds no APK.
+//
+// It also checks #57: every library the APK bundles has an entry in static/third-party-notices.txt.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { inflateRawSync } from "node:zlib";
+import { apkArtifacts, NATIVE_LIBS } from "../../tools/third-party-notices.mjs";
 
 const apkPath = process.env.MOOJOT_APK;
 const ONNX_JNI_LIB = "lib/arm64-v8a/libonnxruntime4j_jni.so";
@@ -185,6 +188,24 @@ test("release APK keeps what ML Kit and ONNX Runtime look up at runtime", { skip
     assert.ok(registrars.length > 0, "the manifest lists no component registrars");
     const broken = registrars.filter((r) => !(classes.get(descriptor(r)) ?? []).includes("()V"));
     assert.deepEqual(broken, [], "ML Kit creates these with a no-arg constructor, which R8 removed");
+  });
+
+  await t.test("every library in the APK has an entry in the third-party notices", () => {
+    const notices = readFileSync(new URL("../../static/third-party-notices.txt", import.meta.url), "utf8");
+    const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const { versioned, clients } = apkArtifacts(zip);
+    assert.ok(versioned.length > 20 && clients.length > 5, "the APK names too few libraries");
+    const missing = [
+      ...versioned.map((v) => ({ label: `${v.group}:${v.artifact} ${v.version}`, re: new RegExp(`^${escape(`${v.group}:${v.artifact}`)} ${escape(v.version)}(?: \\*)? - `, "m") })),
+      // The properties files name the artifact and version but not the group.
+      ...clients.map((c) => ({ label: `${c.artifact} ${c.version}`, re: new RegExp(`^[\\w.-]+:${escape(c.artifact)} ${escape(c.version)}(?: \\*)? - `, "m") })),
+    ]
+      .filter(({ re }) => !re.test(notices))
+      .map(({ label }) => label);
+    assert.deepEqual(missing, [], "regenerate the notices: node tools/third-party-notices.mjs --apk <this apk>");
+
+    const nativeLibs = [...new Set(zip.names.filter((n) => /^lib\/[^/]+\/[^/]+\.so$/.test(n)).map((n) => n.split("/").pop()))];
+    assert.deepEqual(nativeLibs.filter((l) => !NATIVE_LIBS[l]), [], "a native library has no notice rule in tools/third-party-notices.mjs");
   });
 
   await t.test("every ONNX Runtime class and constructor its JNI library uses survives", () => {

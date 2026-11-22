@@ -23,12 +23,15 @@
     GitFork,
     ChartNoAxesColumn,
   } from "@lucide/svelte";
+  import { getVersion } from "@tauri-apps/api/app";
   import { openUrl } from "@tauri-apps/plugin-opener";
   import CategoryIcon from "./CategoryIcon.svelte";
   import LegalText from "./LegalText.svelte";
   import MooMascot, { type MascotMood } from "./MooMascot.svelte";
   import termsMarkdown from "../../../docs/terms-of-service.md?raw";
   import privacyMarkdown from "../../../docs/privacy-policy.md?raw";
+  import termsMarkdownTh from "../../../docs/terms-of-service.th.md?raw";
+  import privacyMarkdownTh from "../../../docs/privacy-policy.th.md?raw";
   import { t } from "$lib/i18n";
   import type { AppTheme, HandMode } from "$lib/theme";
   import type { Account, AppSettings, Category, Tag } from "$lib/types";
@@ -42,7 +45,8 @@
     | "data"
     | "about"
     | "terms"
-    | "privacy";
+    | "privacy"
+    | "licenses";
 
   const GITHUB_URL = "https://github.com/trajectonomics/moojot";
 
@@ -190,6 +194,15 @@
     }
   });
 
+  // The installed version, shown under the legal links. Asked for only when About opens.
+  let appVersion = $state("");
+  $effect(() => {
+    if (subPage !== "about" || appVersion) return;
+    getVersion()
+      .then((v) => (appVersion = v))
+      .catch(() => {});
+  });
+
   const lang = $derived(settings.language);
   const bankAccounts = $derived(accounts.filter((a) => a.kind !== "cash"));
   const enabledBankCount = $derived(bankAccounts.filter((b) => b.enabled).length);
@@ -263,6 +276,40 @@
     }
   }
 
+  // The third-party notices are generated into static/third-party-notices.txt (tools/third-party-notices.mjs).
+  // They are a few MB, so they load only when the page opens, and render in chunks the browser can skip
+  // while they are off screen.
+  const NOTICES_URL = "/third-party-notices.txt";
+  const NOTICES_FIRST_LINE = "MOOJOT THIRD-PARTY NOTICES";
+  const NOTICE_CHUNK_LINES = 300;
+  let noticesState = $state<"idle" | "loading" | "ready" | "error">("idle");
+  let noticeChunks = $state<string[]>([]);
+
+  async function loadNotices() {
+    if (noticesState === "loading" || noticesState === "ready") return;
+    noticesState = "loading";
+    try {
+      const res = await fetch(NOTICES_URL);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      // A missing file can come back as the app shell (single-page fallback) with a 200.
+      if (!text.startsWith(NOTICES_FIRST_LINE)) throw new Error("not the notices file");
+      const lines = text.split("\n");
+      const chunks: string[] = [];
+      for (let i = 0; i < lines.length; i += NOTICE_CHUNK_LINES) {
+        chunks.push(lines.slice(i, i + NOTICE_CHUNK_LINES).join("\n"));
+      }
+      noticeChunks = chunks;
+      noticesState = "ready";
+    } catch {
+      noticesState = "error";
+    }
+  }
+
+  $effect(() => {
+    if (subPage === "licenses") void untrack(loadNotices);
+  });
+
   const subPageTitle = $derived.by(() => {
     switch (subPage) {
       case "appearance":
@@ -281,13 +328,15 @@
         return lang === "th" ? "ข้อกำหนดการใช้" : "Terms";
       case "privacy":
         return lang === "th" ? "ความเป็นส่วนตัว" : "Privacy";
+      case "licenses":
+        return lang === "th" ? "สัญญาอนุญาตโอเพนซอร์ส" : "Open-source licenses";
       default:
         return "";
     }
   });
 
   function closeSubPage() {
-    if (subPage === "terms" || subPage === "privacy") subPage = "about";
+    if (subPage === "terms" || subPage === "privacy" || subPage === "licenses") subPage = "about";
     else subPage = null;
   }
 
@@ -320,8 +369,8 @@
             </h1>
             <p class="text-xs font-medium text-white/85 mt-0.5">
               {lang === "th"
-                ? "โอเพนซอร์ส 100% · ข้อมูลอยู่ในเครื่องคุณ"
-                : "100% Open Source · Local-First"}
+                ? "โอเพนซอร์ส · บัญชีอยู่ในเครื่องคุณ"
+                : "Open source · Your ledger stays on your phone"}
             </p>
           </div>
         </div>
@@ -1129,6 +1178,26 @@
           </button>
           <button
             type="button"
+            onclick={() => (subPage = "licenses")}
+            class="w-full px-4 py-3.5 flex items-center justify-between gap-3 text-left active:opacity-75"
+          >
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="size-9 rounded-2xl bg-[var(--brand-soft)] text-[var(--brand)] flex items-center justify-center shrink-0">
+                <FileText class="size-4" />
+              </span>
+              <div class="min-w-0">
+                <div class="text-sm font-bold text-[var(--text-primary)]">
+                  {lang === "th" ? "สัญญาอนุญาตโอเพนซอร์ส" : "Open-source licenses"}
+                </div>
+                <div class="text-xs text-[var(--text-muted)] truncate">
+                  {lang === "th" ? "ส่วนประกอบจากโครงการอื่นที่แอปใช้" : "Third-party components in this app"}
+                </div>
+              </div>
+            </div>
+            <ChevronRight class="size-4 text-[var(--text-muted)] shrink-0" />
+          </button>
+          <button
+            type="button"
             onclick={openGitHub}
             class="w-full px-4 py-3.5 flex items-center justify-between gap-3 text-left active:opacity-75"
           >
@@ -1146,18 +1215,48 @@
         </section>
         <p class="px-1 text-[11px] leading-relaxed text-[var(--text-muted)]">
           {lang === "th"
-            ? "MooJot 1.0.0 เผยแพร่โดย Trajectonomics ภายใต้สัญญาอนุญาต MIT ข้อความกฎหมายฉบับภาษาอังกฤษเป็นฉบับที่มีผล"
-            : "MooJot 1.0.0 is published by Trajectonomics under the MIT License. The English legal text is the official version."}
+            ? `MooJot${appVersion ? ` ${appVersion}` : ""} เผยแพร่โดย Trajectonomics ภายใต้สัญญาอนุญาต MIT ข้อความกฎหมายฉบับภาษาอังกฤษเป็นฉบับที่มีผล`
+            : `MooJot${appVersion ? ` ${appVersion}` : ""} is published by Trajectonomics under the MIT License. The English legal text is the official version.`}
         </p>
 
       {:else if subPage === "terms"}
         <section class="rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-4 shadow-xs">
-          <LegalText markdown={termsMarkdown} />
+          <LegalText markdown={lang === "th" ? termsMarkdownTh : termsMarkdown} />
         </section>
 
       {:else if subPage === "privacy"}
         <section class="rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-4 shadow-xs">
-          <LegalText markdown={privacyMarkdown} />
+          <LegalText markdown={lang === "th" ? privacyMarkdownTh : privacyMarkdown} />
+        </section>
+
+      {:else if subPage === "licenses"}
+        <section class="rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-4 shadow-xs">
+          {#if noticesState === "ready"}
+            {#each noticeChunks as chunk, i (i)}
+              <pre
+                class="m-0 whitespace-pre-wrap break-words font-mono text-[11px] leading-snug text-[var(--text-secondary)]"
+                style="content-visibility: auto; contain-intrinsic-size: auto 4800px;">{chunk}</pre>
+            {/each}
+          {:else if noticesState === "error"}
+            <div class="space-y-3 text-center">
+              <p class="text-sm text-[var(--text-secondary)]">
+                {lang === "th"
+                  ? "เปิดรายการสัญญาอนุญาตไม่ได้ ลองอีกครั้ง"
+                  : "Could not load the license list. Please try again."}
+              </p>
+              <button
+                type="button"
+                onclick={loadNotices}
+                class="rounded-full bg-[var(--brand)] px-4 py-2 text-sm font-bold text-white active:opacity-80"
+              >
+                {lang === "th" ? "ลองอีกครั้ง" : "Try again"}
+              </button>
+            </div>
+          {:else}
+            <p class="text-sm text-[var(--text-muted)]">
+              {lang === "th" ? "กำลังโหลด…" : "Loading…"}
+            </p>
+          {/if}
         </section>
       {/if}
     </div>
