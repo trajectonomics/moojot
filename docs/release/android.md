@@ -94,7 +94,13 @@ Google ML Kit and the Google Play services libraries are proprietary (ML Kit Ter
 
 ## Releasing
 
-`.github/workflows/release-android.yml` builds the arm64 APK and AAB. Before it does, it checks that the versions agree, runs the typecheck and the unit and Rust tests, and checks 16 KB alignment.
+`.github/workflows/release-android.yml` builds the arm64 APK and AAB. Before it does, it checks that the versions agree and runs the typecheck and the unit and Rust tests. After the build, it checks 16 KB alignment and runs `tests/unit/release-apk.test.mjs` on the APK, which fails if R8 stripped code that ML Kit or ONNX Runtime needs (#45). Nothing is published when a check fails.
+
+To run that APK check on a build you have locally:
+
+```bash
+MOOJOT_APK=path/to/moojot-android-arm64.apk node --test tests/unit/release-apk.test.mjs
+```
 
 **Dry run** (publishes nothing): Actions → `release-android` → Run workflow, or
 
@@ -136,4 +142,5 @@ The build is arm64 only (`aarch64`), which covers current Android phones.
 
 - Privacy policy: [../privacy-policy.md](../privacy-policy.md)
 - Data safety and photo declaration: [play-data-safety.md](play-data-safety.md)
+- Store text, settings, declarations and the signing-key choice: [play-listing.md](play-listing.md)
 - Upload the `.aab` from the release build. The GitHub Release is the APK channel.

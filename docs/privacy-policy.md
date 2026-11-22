@@ -32,7 +32,7 @@ MooJot stores the following in the app's private files. None of it is sent to a 
 | Theme (pink or dark) and hand (left or right) | localStorage on the phone | Remember appearance. These two keys are not tracking cookies. |
 | The usage-statistics switch and, while it is on, a random anonymous ID and the queue of events not yet sent | localStorage on the phone | Remember your choice, and send the statistics described below |
 
-Slip photos and statement lines can contain names, account details, amounts, and other information that is sensitive under Thailand's Personal Data Protection Act (PDPA). That sensitivity is why it stays in the app's private storage unless you export it or turn on the optional OCR key described below.
+Slip photos and statement lines can contain names, account details, amounts, and other personal data protected by Thailand's Personal Data Protection Act (PDPA). That is why it stays in the app's private storage unless you export it or turn on the optional OCR key described below.
 
 ## How information gets there
 
@@ -150,9 +150,29 @@ Those are the practical ways to access, correct, and delete the ledger. We canno
 
 ### Thailand (PDPA)
 
-If the PDPA applies to you, the personal data in MooJot is processed on your device for your own household ledger. Trajectonomics does not collect that ledger onto its own system. For the optional AksonOCR send, you cause the transfer by having a key stored, and AksonOCR is the recipient. ML Kit metrics go to Google, under Google's Privacy Policy. Anonymous usage statistics are sent to PostHog for us only if you turn them on, and website analytics only run after you allow cookies.
+If the PDPA applies to you, the personal data in MooJot's ledger is processed on your device for your own household ledger. Trajectonomics does not collect that ledger onto its own system. For the optional AksonOCR send, you cause the transfer by having a key stored, and AksonOCR is the recipient.
 
-You may ask questions about this policy through the contact links below. A request to delete data we do not hold can only be answered by pointing you back to the app, the uninstall step, and, if you used it, AksonOCR.
+This is the data we do handle, why, and on what legal basis:
+
+- **Anonymous usage statistics from the app** (the random ID, the events listed above, and the IP address PostHog sees): to learn which screens and features get used and where people get stuck, so we can improve the app. Basis: your consent (PDPA section 19). The switch is off until you turn it on.
+- **Website analytics cookies** (PostHog's cookie, the pages and buttons you use, and your IP address): to learn how people find the website and whether it works. Basis: your consent, given with "Allow" on the cookie banner.
+- **Cookieless website counts** (link source, country, coarse platform, in-app browser): to count which links bring people in. They carry no IP address, browser details, or lasting ID, so they are not linked to a person. Basis: our legitimate interest in knowing which links work (section 24(5)).
+- **ML Kit metrics** go to Google when ML Kit reads a slip, as described in "Google ML Kit metrics". They are part of the slip reading you ask the app to do (section 24(3)), and Google uses them for diagnostics and usage analytics under its own Privacy Policy. To avoid them, type your records by hand instead of scanning.
+
+For the data we handle, you have these rights under the PDPA:
+
+- withdraw your consent at any time: the switch in My Moo for the app, and "Cookie settings" on the website. Withdrawing doesn't undo processing that happened before.
+- ask for access to and a copy of your data, and ask how we got it
+- ask for your data in a readable, commonly used format, or for us to send it to someone else
+- object to our use of it
+- ask us to delete it, destroy it, or make it anonymous
+- ask us to restrict its use
+- ask us to correct it
+- complain to the Office of the Personal Data Protection Committee (PDPC): <https://www.pdpc.or.th>
+
+Usage statistics are linked only to a random ID that we can't tie to you, so we may not be able to find your events. We will still try if you ask through the contact links below. A request to delete data we do not hold can only be answered by pointing you back to the app, the uninstall step, and, if you used it, AksonOCR.
+
+**Sending data outside Thailand.** PostHog stores usage statistics and website analytics on its EU Cloud, in the European Union, where the GDPR protects personal data. Turning on usage statistics, or tapping "Allow" on the cookie banner, includes agreeing to that transfer. Cloudflare, which runs the website and passes events on to PostHog, handles requests in data centres around the world. Google may process ML Kit metrics in the United States and other countries, under its own safeguards.
 
 ### European Economic Area and the United Kingdom
 
@@ -166,7 +186,7 @@ We do not sell personal information and we do not share it for cross-context beh
 
 ## Children
 
-MooJot is not directed at children under 13, and we do not knowingly collect personal information from children on a server. Anonymous usage statistics are not linked to a person. The app has no account that a child could register with us. If a child uses a phone where the app is installed, the records remain on that phone.
+MooJot is not directed at children under 13, and we do not knowingly collect personal information from children on a server. Anonymous usage statistics are not linked to a person. If you are under 20, ask a parent or guardian before you turn on usage statistics or allow cookies on the website. The app has no account that a child could register with us. If a child uses a phone where the app is installed, the records remain on that phone.
 
 ## Changes to this policy
 
