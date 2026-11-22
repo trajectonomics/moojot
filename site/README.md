@@ -55,10 +55,29 @@ Bots and link-preview fetchers (Facebook, WhatsApp, Telegram, Slack, Discord, �
 ```bash
 node --test site/release.test.js           # unit tests (Node 20+)
 cd site && npx wrangler@4 dev --port 8799   # local preview at http://127.0.0.1:8799
-cd site && npx wrangler@4 deploy            # deploy (needs a Cloudflare login for the Trajectonomics account)
+cd site && npx wrangler@4 deploy            # deploy by hand (needs a Cloudflare login for the Trajectonomics account)
 ```
 
 `wrangler` is run with `npx` on purpose, so the repo's `package.json` doesn't gain a dependency.
+
+## Deploys
+
+The site deploys itself. Cloudflare Workers Builds is connected to this repo, and every push to `main` that changes a file under `site/` builds and deploys the Worker. The build shows up as a check on the commit. A deploy by hand is only needed when that build is broken.
+
+The connection is set in the Cloudflare dashboard (Workers & Pages → `moojot-site` → Settings → Builds), not in this repo:
+
+| Setting | Value |
+|---|---|
+| Production branch | `main` |
+| Root directory | `site` |
+| Build command | none |
+| Deploy command | `npx wrangler@4 deploy` |
+| Build watch paths | `site/*` |
+| Non-production branch builds | off |
+
+The Worker's name in the dashboard has to match `name` in `wrangler.jsonc`, or the build fails.
+
+App releases are separate and stay manual: a `v*` tag pushed by the owner. See `docs/release/android.md`.
 
 The PostHog project key and region are `vars` in `wrangler.jsonc`. The same key is in `public/analytics.js` and `src/lib/analytics.ts`, and `tracking.test.js` checks that they match. It is a public project key that can only send events, so it is not a secret.
 
