@@ -47,6 +47,11 @@ const CHROME_ARGS = [
   "--font-render-hinting=none",
   "--disable-lcd-text",
   "--disable-font-subpixel-positioning",
+  // Without this, Chrome repaints only the rectangle that changed (the mascot,
+  // when its image loads or is stilled), and the curve edges under it come out
+  // a few shades different from a full repaint. Which one a run gets depends
+  // on timing, so always repaint whole tiles.
+  "--disable-partial-raster",
 ];
 
 const log = (...args) => console.log("[screenshots]", ...args);

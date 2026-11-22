@@ -63,7 +63,12 @@ rm -r tests/screenshots/baseline
 gh run download <run-id> -n screenshot-baselines -D tests/screenshots/baseline
 ```
 
-A local run is still the fast way to see what a change does. If your Chrome renders text
+A local run is still the fast way to see what a change does. If your machine renders text
 differently from the runner, scenes fail locally without a real change; the failing run says so
 when `meta.json` does not match your setup. In that case do not commit locally made baselines,
 take them from the artifact.
+
+What differs today is only the text the bundled Noto Sans Thai has no glyph for, which falls back
+to a system font: the `↑` `↓` arrows on Home and Summary, the `▲` `▼` on Compare, and the
+monospace amount in the record sheet. Scenes without those came out identical on the runner and
+on a developer machine.
