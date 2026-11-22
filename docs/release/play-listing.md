@@ -82,7 +82,7 @@ MooJot isn't affiliated with any bank or e-wallet. Bank and app names belong to 
 | Category | Finance |
 | Tags | Budgeting, expense tracking (pick the closest ones Play offers) |
 | Website | https://moojot.trajectonomics.com |
-| Email | The privacy contact from #59 |
+| Email | privacy@trajectonomics.com |
 | Privacy policy | https://github.com/trajectonomics/moojot/blob/main/docs/privacy-policy.md |
 
 ## App content declarations

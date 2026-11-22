@@ -1,6 +1,6 @@
 # MooJot Privacy Policy
 
-**Last updated: 22 November 2026**
+**Last updated: 23 November 2026**
 
 Trajectonomics publishes MooJot, a personal income and expense tracker. This policy says what the Android app and the website at <https://moojot.trajectonomics.com> do with information. The same text is shown in My Moo → About → Privacy.
 
@@ -10,7 +10,7 @@ This policy is written so a person can read it. It is the project's description 
 
 ## Who we are
 
-The copyright notice on MooJot names Trajectonomics. The repository does not list a registered office. For this policy, "we" means the MooJot project published by Trajectonomics at <https://github.com/trajectonomics/moojot>.
+The copyright notice on MooJot names Trajectonomics. The repository does not list a registered office. For this policy, "we" means the MooJot project published by Trajectonomics at <https://github.com/trajectonomics/moojot>. You can reach us about privacy at [privacy@trajectonomics.com](mailto:privacy@trajectonomics.com).
 
 Because the ledger never reaches us, we cannot see it, correct it, or delete it from our side. You hold it on your phone.
 
@@ -194,9 +194,10 @@ We will change the "last updated" date when this policy changes, and we will put
 
 ## Contact
 
-Questions about this policy, and privacy requests we are actually able to answer, go to:
+Questions about this policy, and privacy requests we are actually able to answer, including the PDPA requests above, go to:
 
-- <https://github.com/trajectonomics/moojot/issues>
+- Email: [privacy@trajectonomics.com](mailto:privacy@trajectonomics.com). Use this for anything about you, because it is private.
+- Public questions about the app: <https://github.com/trajectonomics/moojot/issues>
 - Security: <https://github.com/trajectonomics/moojot/security/advisories/new>
 
-There is no privacy email and no postal address published for this project. Please do not include real bank details, slip images, or an API key in a public issue.
+There is no postal address published for this project. Please do not include real bank details, slip images, or an API key in a public issue.

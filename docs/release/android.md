@@ -1,6 +1,6 @@
 # Android release
 
-The version lives in `package.json`, `src-tauri/Cargo.toml`, and `src-tauri/tauri.conf.json`. The Android `versionName` comes from the Tauri build. `versionCode` is `major * 10000 + minor * 100 + patch` unless `tauri.android.versionCode` is set (1.0.0 → 10000, 1.2.0 → 10200).
+The version lives in `package.json`, `src-tauri/Cargo.toml`, and `src-tauri/tauri.conf.json`. The Android `versionName` comes from the Tauri build. `versionCode` is `major * 1000000 + minor * 1000 + patch`, which the Tauri CLI writes to `tauri.properties` (1.0.0 → 1000000, 1.2.0 → 1002000). `build.gradle.kts` falls back to the same formula if that file is missing. It must go up with every release, or Android and Play refuse the update.
 
 ## Signing key
 

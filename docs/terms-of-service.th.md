@@ -2,7 +2,7 @@
 
 ฉบับแปลภาษาไทยนี้จัดทำเพื่อความสะดวกในการอ่าน หากข้อความไม่ตรงกับฉบับภาษาอังกฤษ ให้ถือฉบับภาษาอังกฤษเป็นหลัก ([อ่านฉบับภาษาอังกฤษบน GitHub](https://github.com/trajectonomics/moojot/blob/main/docs/terms-of-service.md))
 
-**อัปเดตล่าสุด: 22 พฤศจิกายน 2026**
+**อัปเดตล่าสุด: 23 พฤศจิกายน 2026**
 
 ข้อกำหนดเหล่านี้เป็นสัญญาระหว่างคุณกับ Trajectonomics สำหรับแอป MooJot เขียนด้วยภาษาที่เข้าใจง่าย ไม่ใช่คำมั่นว่าศาลจะบังคับใช้ทุกประโยค และไม่ได้มาแทนคำปรึกษาจากทนายความของคุณเอง
 
@@ -142,5 +142,6 @@ MooJot ไม่มีส่วนเกี่ยวข้อง ไม่ได
 - โครงการและ issue: <https://github.com/trajectonomics/moojot/issues>
 - รายงานความปลอดภัย: <https://github.com/trajectonomics/moojot/security/advisories/new>
 - นโยบายความเป็นส่วนตัว: หัวข้อเกี่ยวกับในมูของฉัน และ `docs/privacy-policy.md` ในที่เก็บโค้ด
+- คำถามและคำขอด้านความเป็นส่วนตัว: [privacy@trajectonomics.com](mailto:privacy@trajectonomics.com)
 
 Trajectonomics ไม่ได้เผยแพร่ที่อยู่ไปรษณีย์สำหรับ MooJot อย่าส่งหนังสือแจ้งทางกระดาษ ใช้ลิงก์ด้านบน

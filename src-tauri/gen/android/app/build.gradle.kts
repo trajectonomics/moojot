@@ -38,7 +38,9 @@ fun versionCodeFromName(versionName: String): Int {
     val major = parts.getOrElse(0) { 0 }
     val minor = parts.getOrElse(1) { 0 }
     val patch = parts.getOrElse(2) { 0 }
-    return major * 10000 + minor * 100 + patch
+    // Same formula the Tauri CLI writes to tauri.properties, so a build without that file
+    // can't produce a lower versionCode than a published release.
+    return major * 1000000 + minor * 1000 + patch
 }
 
 android {

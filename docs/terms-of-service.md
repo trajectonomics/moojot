@@ -1,6 +1,6 @@
 # Terms of Service
 
-**Last updated: 22 November 2026**
+**Last updated: 23 November 2026**
 
 These terms are a contract between you and Trajectonomics for the MooJot app. They are written in plain language. They are not a promise that a court will enforce every sentence, and they do not replace advice from your own lawyer.
 
@@ -140,5 +140,6 @@ A failure to enforce a term once is not a waiver.
 - Project and issues: <https://github.com/trajectonomics/moojot/issues>
 - Security reports: <https://github.com/trajectonomics/moojot/security/advisories/new>
 - Privacy Policy: the About section in My Moo, and `docs/privacy-policy.md` in the repository
+- Privacy questions and requests: [privacy@trajectonomics.com](mailto:privacy@trajectonomics.com)
 
 Trajectonomics does not publish a postal address for MooJot. Do not send paper notices. Use the links above.
