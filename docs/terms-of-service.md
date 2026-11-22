@@ -44,6 +44,8 @@ The MooJot source code is licensed under the MIT License, copyright 2026 Traject
 
 If these terms and the MIT License ever disagree about copying the source code, the MIT License controls that copying. These terms do not remove the MIT License. A fork of the source code is still the fork's own app, and these terms do not automatically bind people who only receive source code from someone else.
 
+The published app also contains third-party components under their own licenses. One of them, Google ML Kit, is not open source. Google provides it under the ML Kit Terms of Service (<https://developers.google.com/ml-kit/terms>), which include the Google APIs Terms of Service. The MIT License covers MooJot's own source code, not ML Kit.
+
 The pig artwork, the name MooJot, and the way the app is presented are part of this project. The MIT License still applies to the source as stated in the LICENSE file. Do not present a modified app as the official MooJot build from Trajectonomics.
 
 ## 7. Acceptable use
@@ -58,15 +60,17 @@ You agree not to:
 
 You are responsible for the photos and PDFs you choose to open.
 
-## 8. Optional third-party OCR
+## 8. Third-party OCR
 
-Thai and English text on a slip are read on your phone, using a local model (AksonOCR-Lite) and ML Kit Latin. That on-device reading does not send the photo to Trajectonomics.
+Thai and English text on a slip are read on your phone, using a local model (AksonOCR-Lite) and Google ML Kit. That on-device reading does not send the photo to Trajectonomics. Google states that ML Kit does not send the photo, or the text it reads, to Google either.
+
+ML Kit does send Google metrics about its performance and use, such as your device model, the app version, a per-installation identifier, timings, and error codes. Google's terms and privacy policy govern those metrics, and the Privacy Policy lists them. The app has no setting that switches them off. If you do not want Google to receive them, type your records by hand instead of scanning slips.
 
 Separately, the app can send a slip image to AksonOCR at `backend.aksonocr.com` when a non-empty AksonOCR API key is stored in the local settings and the parser still needs Thai text. AksonOCR is not our service. Its terms and privacy policy are its own. We do not control its uptime, its prices, its models, or what it does with an image after you send it. If you do not store a key, that request is not made.
 
 ## 9. Privacy
 
-The Privacy Policy at `docs/privacy-policy.md`, and the same text in My Moo, is part of these terms. It describes what stays on the phone and the one optional upload.
+The Privacy Policy at `docs/privacy-policy.md`, and the same text in My Moo, is part of these terms. It describes what stays on the phone, the metrics Google ML Kit sends to Google, and the one optional upload of a slip image.
 
 ## 10. Price
 
