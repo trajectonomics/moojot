@@ -17,7 +17,7 @@ use crate::categorizer::{
 use crate::db::{
     fetch_tags_for_record, list_accounts, list_categories, list_tags,
     list_known_media_ids, list_scanned_months as list_scanned_month_rows, load_settings,
-    normalize_payee,
+    normalize_payee, post_due_recurring,
     record_activity_synced, remember_scanned_media as remember_scanned_media_rows,
     remember_scanned_months as remember_scanned_month_rows, save_settings, upsert_record,
     Account,
@@ -178,6 +178,12 @@ pub fn delete_recurring_rule(state: State<'_, DbState>, rule_id: String) -> Resu
     conn.execute("DELETE FROM recurring_rules WHERE id = ?1", params![rule_id])
         .map_err(|e| e.to_string())?;
     Ok(())
+}
+
+#[tauri::command]
+pub fn post_due_recurring_records(state: State<'_, DbState>) -> Result<usize, String> {
+    let conn = state.0.lock().map_err(|_| "db lock poisoned".to_string())?;
+    post_due_recurring(&conn, Local::now().date_naive())
 }
 
 #[tauri::command]
