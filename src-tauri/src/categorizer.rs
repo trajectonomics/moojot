@@ -361,10 +361,13 @@ fn longest_builtin_category(text: &str, min_chars: usize) -> Option<&'static str
         .map(|(_, category)| *category)
 }
 
-/// Loads `payee_rules` in priority order: `hit_count DESC, length(pattern) DESC`.
+/// Loads `payee_rules` that point at a spending category, in priority order:
+/// `hit_count DESC, length(pattern) DESC`. Rules learned from income records are skipped,
+/// because `classify_local` only categorizes spending.
 fn load_ordered_rules(conn: &Connection) -> rusqlite::Result<Vec<(String, String)>> {
     let mut stmt = conn.prepare(
         "SELECT pattern, category_id FROM payee_rules
+         WHERE category_id IN (SELECT id FROM categories WHERE kind = 'spending')
          ORDER BY hit_count DESC, length(pattern) DESC, pattern",
     )?;
     let rows = stmt.query_map([], |r| {
@@ -667,6 +670,23 @@ mod tests {
             |r| r.get(0),
         )
         .unwrap()
+    }
+
+    #[test]
+    fn income_rules_are_not_applied_to_spending() {
+        let conn = test_db();
+        // Learned from income records: Shopee cashback, and money a friend sent.
+        upsert_user_rule(&conn, "shopee", "cat_cashback").unwrap();
+        upsert_user_rule(&conn, "test friend", "cat_gifts_in").unwrap();
+
+        // Spending at Shopee falls through to the built-in spending rule.
+        assert_eq!(classify(&conn, Some("SHOPEE"), None).as_deref(), Some("cat_shopping"));
+        // Paying the friend back must not become an income category.
+        assert_eq!(classify(&conn, Some("Test Friend"), None), None);
+
+        insert_record(&conn, "r1", "spending", None, Some("Shopee"), None);
+        auto_categorize_uncategorized(&conn).unwrap();
+        assert_eq!(category_of(&conn, "r1").as_deref(), Some("cat_shopping"));
     }
 
     #[test]
