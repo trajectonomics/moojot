@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::db::{
     compute_streaks, fetch_tags_for_record, list_categories, list_tags, load_settings,
-    next_occurrence, FutureRecordItem, RecordItem,
+    first_occurrence_on_or_after, next_occurrence, FutureRecordItem, RecordItem,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -724,17 +724,25 @@ fn upcoming_occurrences(
 
     let mut out = Vec::new();
     for rule in rules {
-        let Ok(mut due) = NaiveDate::parse_from_str(&rule.due_date, "%Y-%m-%d") else {
+        let Ok(next_run) = NaiveDate::parse_from_str(&rule.due_date, "%Y-%m-%d") else {
+            continue;
+        };
+        // Skip straight to the viewed period instead of listing every earlier date.
+        let Some(mut due) =
+            first_occurrence_on_or_after(next_run, start, &rule.frequency, rule.day_of_month)
+        else {
             continue;
         };
         while due <= end {
-            if due >= start {
-                out.push(FutureRecordItem {
-                    due_date: due.format("%Y-%m-%d").to_string(),
-                    ..rule.clone()
-                });
+            out.push(FutureRecordItem {
+                due_date: due.format("%Y-%m-%d").to_string(),
+                ..rule.clone()
+            });
+            let next = next_occurrence(due, &rule.frequency, rule.day_of_month);
+            if next <= due {
+                break;
             }
-            due = next_occurrence(due, &rule.frequency, rule.day_of_month);
+            due = next;
         }
     }
     out.sort_by(|a, b| a.due_date.cmp(&b.due_date));
@@ -831,6 +839,20 @@ mod tests {
                 ("2026-03-31", "income"),
             ]
         );
+        cleanup(&path);
+    }
+
+    #[test]
+    fn future_records_skip_ahead_from_a_far_past_next_run_date() {
+        let (conn, path) = temp_db();
+        // Mistyped year: the rule's next date is in year 26.
+        add_rule(&conn, "spending", 10_000, "weekly", ymd("0026-03-04"));
+
+        let items = upcoming_occurrences(&conn, ymd("2026-03-01"), ymd("2026-03-31"))
+            .expect("upcoming occurrences");
+
+        assert!(!items.is_empty() && items.len() <= 5, "{} items", items.len());
+        assert!(items.iter().all(|f| f.due_date.as_str() >= "2026-03-01"));
         cleanup(&path);
     }
 }

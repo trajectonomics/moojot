@@ -961,6 +961,32 @@ pub fn next_occurrence(date: NaiveDate, frequency: &str, anchor_day: Option<i32>
         .unwrap_or(NaiveDate::MAX)
 }
 
+/// How far back recurring catch-up reaches. Missed occurrences older than this (usually
+/// a mistyped start date) are skipped, not posted.
+pub const RECURRING_CATCH_UP_DAYS: i64 = 366;
+/// Safety cap on the occurrences walked for one rule in one call.
+const MAX_OCCURRENCE_STEPS: usize = 200_000;
+
+/// The first occurrence on or after `from`, walking forward from `due`. Returns `None`
+/// when the walk can't get there (corrupt rule data), so callers never loop forever.
+pub fn first_occurrence_on_or_after(
+    mut due: NaiveDate,
+    from: NaiveDate,
+    frequency: &str,
+    anchor_day: Option<i32>,
+) -> Option<NaiveDate> {
+    let mut steps = 0;
+    while due < from {
+        let next = next_occurrence(due, frequency, anchor_day);
+        steps += 1;
+        if next <= due || steps > MAX_OCCURRENCE_STEPS {
+            return None;
+        }
+        due = next;
+    }
+    Some(due)
+}
+
 struct DueRule {
     id: String,
     kind: String,
@@ -1012,9 +1038,15 @@ pub fn post_due_recurring(conn: &Connection, today: NaiveDate) -> Result<usize, 
     };
 
     let now = Local::now().to_rfc3339();
+    let horizon = today - Duration::days(RECURRING_CATCH_UP_DAYS);
     let mut posted = 0;
     for rule in rules {
-        let Ok(mut due) = NaiveDate::parse_from_str(&rule.next_run_date, "%Y-%m-%d") else {
+        let Ok(next_run) = NaiveDate::parse_from_str(&rule.next_run_date, "%Y-%m-%d") else {
+            continue;
+        };
+        let Some(mut due) =
+            first_occurrence_on_or_after(next_run, horizon, &rule.frequency, rule.day_of_month)
+        else {
             continue;
         };
         let tag_ids: Vec<String> = serde_json::from_str(&rule.tag_ids).unwrap_or_default();
@@ -1336,6 +1368,29 @@ mod tests {
         let orphan_records = posted_records(&conn, &orphan_rule);
         assert_eq!(orphan_records[0].payee_raw, None);
         assert!(orphan_records[0].tag_ids.is_empty());
+        cleanup(&path);
+    }
+
+    #[test]
+    fn typo_start_date_does_not_flood_the_ledger() {
+        let (conn, path) = temp_db();
+        // A weekly rule whose year was mistyped as 0026 instead of 2026.
+        let source = upsert_record(&conn, &recurring_record("0026-03-01", "weekly", vec![]))
+            .expect("save source record");
+        let rule_id = source.recurring_rule_id.clone().expect("rule created");
+        let today = ymd("2026-11-22");
+
+        let posted = post_due_recurring(&conn, today).expect("post due");
+
+        // At most one year of catch-up: 53 weekly occurrences, not ~104,000.
+        assert!(posted <= 53, "posted {posted} records");
+        let oldest = posted_records(&conn, &rule_id)
+            .iter()
+            .map(|r| r.local_date.clone())
+            .min()
+            .unwrap_or_default();
+        assert!(oldest.as_str() >= "2025-11-21", "oldest posted {oldest}");
+        assert!(next_run(&conn, &rule_id).as_str() > "2026-11-22");
         cleanup(&path);
     }
 }

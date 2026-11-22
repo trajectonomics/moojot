@@ -692,6 +692,8 @@
     showRecordSheet = false;
     recordLightboxOpen = false;
     editingRecord = null;
+    // A backdated recurring record may already have dates that are due.
+    if (input.recurringFrequency) await postDueRecurring();
     await refreshPeriodData();
     celebrateMascot("Jotted! Nice job!", "จดเรียบร้อยแล้ว เยี่ยมมาก!");
   }
