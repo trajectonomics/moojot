@@ -26,6 +26,11 @@ test("the notices file starts with its header and says what it is", () => {
   has(/node tools\/third-party-notices\.mjs --apk/);
 });
 
+test("the MooJot entry has the app's own version", () => {
+  const { version } = JSON.parse(read("package.json"));
+  assert.ok(listed("MooJot", version), `the notices list a different MooJot version than ${version}: regenerate them`);
+});
+
 test("every Rust crate in Cargo.lock is listed with its locked version", () => {
   const lock = read("src-tauri/Cargo.lock");
   const crates = [];
