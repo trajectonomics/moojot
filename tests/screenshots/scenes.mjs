@@ -151,6 +151,14 @@ export const scenes = [
       await page.waitFor('button[aria-label="Delete rule"]');
     },
   },
+  {
+    name: "settings-about",
+    run: async (page) => {
+      await openSettings(page);
+      await page.clickText("About", "button *");
+      await page.waitForText("Open-source licenses", "button *");
+    },
+  },
 
   // ------------------------------------------------------------ onboarding ---
   {
