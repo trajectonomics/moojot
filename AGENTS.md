@@ -26,5 +26,19 @@ Work flows through GitHub issues and labels. Read `.factory/README.md` (workflow
    what decision you need. Don't guess on product decisions.
 9. Never put secrets, tokens or real personal financial data in code, tests, issues or logs.
 
+## Working with subagents
+Keep cost down: work mostly through cheaper, faster subagents, and keep the main session for
+planning, decisions and the final check.
+- **Hand off** searches, reading through files, research, mechanical edits, test and build runs,
+  and other well-scoped work to a cheaper model (e.g. Claude Haiku or Sonnet, or a read-only
+  explore agent). Give each one a self-contained brief: goal, files, constraints, and what to report back.
+- **Keep in the main session**: product and architecture decisions, the approved spec,
+  security-sensitive changes, and anything the hard rules above call for judgement on.
+- **Check their work.** Read the diff or result a subagent hands back before committing or
+  reporting it as done. A subagent's output is input to you, not a decision.
+- Run independent subagents in parallel. Don't spawn one for a task you can finish in a couple
+  of tool calls; the handoff costs more than it saves.
+- Subagents follow this file too, and don't spawn subagents of their own unless their brief says so.
+
 ## Labels
 Exactly one `type:*` and one `status:*` per open issue. Full list: `.github/labels.yml`.
