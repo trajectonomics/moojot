@@ -12,7 +12,7 @@ Trajectonomics เป็นผู้เผยแพร่ MooJot แอปจด
 
 ## เราคือใคร
 
-ประกาศลิขสิทธิ์ของ MooJot ระบุชื่อ Trajectonomics ส่วนที่เก็บโค้ดไม่ได้ระบุที่ตั้งสำนักงานที่จดทะเบียน ในนโยบายนี้ คำว่า "เรา" หมายถึงโครงการ MooJot ที่ Trajectonomics เผยแพร่ที่ <https://github.com/trajectonomics/moojot> ติดต่อเราเรื่องความเป็นส่วนตัวได้ที่ [privacy@trajectonomics.com](mailto:privacy@trajectonomics.com)
+MooJot เผยแพร่โดย Supakone Kongprapan ภายใต้ชื่อ Trajectonomics ที่ <https://github.com/trajectonomics/moojot> ในนโยบายนี้ คำว่า "เรา" และ "Trajectonomics" หมายถึง Supakone Kongprapan ซึ่งเป็นผู้ควบคุมข้อมูลส่วนบุคคลสำหรับข้อมูลที่นโยบายนี้อธิบาย ติดต่อเราเรื่องความเป็นส่วนตัวได้ที่ [privacy@trajectonomics.com](mailto:privacy@trajectonomics.com)
 
 เนื่องจากบัญชีรายรับรายจ่ายไม่เคยส่งมาถึงเรา เราจึงมองไม่เห็น แก้ไข หรือลบข้อมูลนั้นจากฝั่งเราไม่ได้ ข้อมูลอยู่กับคุณในมือถือ
 

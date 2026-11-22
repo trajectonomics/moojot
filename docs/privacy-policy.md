@@ -10,7 +10,7 @@ This policy is written so a person can read it. It is the project's description 
 
 ## Who we are
 
-The copyright notice on MooJot names Trajectonomics. The repository does not list a registered office. For this policy, "we" means the MooJot project published by Trajectonomics at <https://github.com/trajectonomics/moojot>. You can reach us about privacy at [privacy@trajectonomics.com](mailto:privacy@trajectonomics.com).
+MooJot is published by Supakone Kongprapan under the name Trajectonomics, at <https://github.com/trajectonomics/moojot>. In this policy, "we" and "Trajectonomics" mean Supakone Kongprapan, who is the data controller for the personal data this policy describes. You can reach us about privacy at [privacy@trajectonomics.com](mailto:privacy@trajectonomics.com).
 
 Because the ledger never reaches us, we cannot see it, correct it, or delete it from our side. You hold it on your phone.
 

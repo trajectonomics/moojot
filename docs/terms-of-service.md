@@ -2,9 +2,9 @@
 
 **Last updated: 23 November 2026**
 
-These terms are a contract between you and Trajectonomics for the MooJot app. They are written in plain language. They are not a promise that a court will enforce every sentence, and they do not replace advice from your own lawyer.
+These terms are a contract between you and Supakone Kongprapan, who publishes the MooJot app under the name Trajectonomics. In these terms, "Trajectonomics", "we" and "us" mean Supakone Kongprapan. They are written in plain language. They are not a promise that a court will enforce every sentence, and they do not replace advice from your own lawyer.
 
-The copyright notice in the project license names Trajectonomics. The repository does not list a registered office or a company suffix such as Ltd. or Inc. Notices under these terms go to the GitHub repository named below.
+The copyright notice in the project license names Trajectonomics. Notices under these terms go to the GitHub repository named below.
 
 ## 1. What MooJot is
 
