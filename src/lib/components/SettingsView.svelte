@@ -30,6 +30,8 @@
   import MooMascot, { type MascotMood } from "./MooMascot.svelte";
   import termsMarkdown from "../../../docs/terms-of-service.md?raw";
   import privacyMarkdown from "../../../docs/privacy-policy.md?raw";
+  import termsMarkdownTh from "../../../docs/terms-of-service.th.md?raw";
+  import privacyMarkdownTh from "../../../docs/privacy-policy.th.md?raw";
   import { t } from "$lib/i18n";
   import type { AppTheme, HandMode } from "$lib/theme";
   import type { Account, AppSettings, Category, Tag } from "$lib/types";
@@ -1162,12 +1164,12 @@
 
       {:else if subPage === "terms"}
         <section class="rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-4 shadow-xs">
-          <LegalText markdown={termsMarkdown} />
+          <LegalText markdown={lang === "th" ? termsMarkdownTh : termsMarkdown} />
         </section>
 
       {:else if subPage === "privacy"}
         <section class="rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-4 shadow-xs">
-          <LegalText markdown={privacyMarkdown} />
+          <LegalText markdown={lang === "th" ? privacyMarkdownTh : privacyMarkdown} />
         </section>
       {/if}
     </div>
