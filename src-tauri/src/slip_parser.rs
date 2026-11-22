@@ -755,6 +755,34 @@ fn extract_masked_account_last4(line: &str) -> Option<String> {
     }
 }
 
+/// A lone token of at most three Latin letters, such as `UUD`. This is how ML Kit
+/// reads the bank or shop icon printed beside a name, so it is never a name.
+fn is_icon_noise(line: &str) -> bool {
+    let t = line.trim();
+    t.chars().count() <= 3 && t.chars().all(|c| c.is_ascii_alphabetic())
+}
+
+/// Receiver name from the lines between the sender's and the receiver's masked
+/// accounts. Walks up from the receiver's account, skipping icon noise, and keeps
+/// the line above the name too when the name wraps onto a second line.
+fn positional_receiver(between: &[String]) -> Option<String> {
+    let mut parts: Vec<String> = Vec::new();
+    for line in between.iter().rev().filter(|l| !is_icon_noise(l)).take(4) {
+        match clean_name(line) {
+            Some(name) => {
+                parts.push(name);
+                if parts.len() == 2 {
+                    break;
+                }
+            }
+            None if parts.is_empty() => continue,
+            None => break,
+        }
+    }
+    parts.reverse();
+    (!parts.is_empty()).then(|| parts.join(" "))
+}
+
 /// Extracts `(sender_name, receiver_name, sender_last4, receiver_last4)` from
 /// masked-account positional structure (handles K PLUS label-less slips,
 /// Dime! two-column slips, Krungthai NEXT, etc.).
@@ -796,11 +824,7 @@ fn extract_parties_positional(
                 });
             return (sender, card_name, Some(first_last4.clone()), None);
         }
-        // Walk backwards from second masked account (after first masked account)
-        let receiver = ((*first_idx + 1)..*second_idx)
-            .rev()
-            .take(4)
-            .find_map(|i| clean_name(&lines[i]));
+        let receiver = positional_receiver(&lines[*first_idx + 1..*second_idx]);
         return (
             sender,
             receiver,
@@ -1839,5 +1863,40 @@ XXX XXX 5246
         assert_eq!(p.amount_satang, Some(398_111));
         assert_eq!(p.receiver_acct_last4.as_deref(), Some("5246"));
         assert!(p.needs_thai_ocr);
+    }
+
+    // --- "make by KBank" slips (#39) -----------------------------------------
+    // ML Kit reads the grey receiver-bank icon as a short stray line ("UUD") that
+    // sorts between the receiver name and the receiver's masked account.
+
+    fn make_slip(receiver_lines: &str) -> String {
+        format!(
+            "PAYMENT COMPLETED\nmake\n22 Nov 2026 12:47\nSOMCHAI K\nxxx-x-x1234-x\n\
+             {receiver_lines}\nxxx-x-xxxxxx5678-x\nAmount\n48.00 Baht\nFee\n0.00 Baht\n\
+             Transaction ID: 0123456abcdeFGHij\nScan to verify"
+        )
+    }
+
+    #[test]
+    fn make_slip_icon_noise_is_not_the_receiver() {
+        let p = parse(&make_slip("SKYTRAIN TVM\nUUD"));
+        assert_eq!(p.receiver_name.as_deref(), Some("SKYTRAIN TVM"));
+        assert_eq!(p.sender_name.as_deref(), Some("SOMCHAI K"));
+        assert_eq!(p.receiver_acct_last4.as_deref(), Some("5678"));
+    }
+
+    #[test]
+    fn make_slip_thai_receiver_is_not_replaced_by_icon_noise() {
+        let p = parse(&make_slip("ร้านกาแฟ ดอยสวย-สาขาสุขุมวิท\nUUD"));
+        assert_eq!(p.receiver_name.as_deref(), Some("ร้านกาแฟ ดอยสวย-สาขาสุขุมวิท"));
+    }
+
+    #[test]
+    fn make_slip_two_line_receiver_name_is_joined() {
+        let want = Some("SUNNY PLANET COMPANY LIMITED");
+        let p = parse(&make_slip("SUNNY PLANET\nUUD\nCOMPANY LIMITED"));
+        assert_eq!(p.receiver_name.as_deref(), want);
+        let p = parse(&make_slip("UUD\nSUNNY PLANET\nCOMPANY LIMITED"));
+        assert_eq!(p.receiver_name.as_deref(), want);
     }
 }
