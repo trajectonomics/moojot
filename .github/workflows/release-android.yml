@@ -1,4 +1,8 @@
 name: release-android
+# Pushing a `v*` tag builds a signed arm64 APK + AAB and publishes a GitHub
+# Release. Running it by hand (Actions → release-android → Run workflow) is a
+# dry run: it builds the same files and uploads them as workflow artifacts
+# without publishing anything. See docs/release/android.md.
 
 on:
   push:
@@ -9,11 +13,43 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release-android-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # Fixed asset names, so releases/latest/download/<name> always works.
+  APK_NAME: moojot-android-arm64.apk
+  AAB_NAME: moojot-android-arm64.aab
+  NDK_VERSION: 28.2.13676358
+  BUILD_TOOLS: 36.0.0
+
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Release or dry run
+        id: mode
+        run: |
+          app_version="$(node -p "require('./package.json').version")"
+          cargo_version="$(sed -n 's/^version = "\(.*\)"/\1/p' src-tauri/Cargo.toml | head -n 1)"
+          tauri_version="$(node -p "require('./src-tauri/tauri.conf.json').version")"
+          if [ "$app_version" != "$cargo_version" ] || [ "$app_version" != "$tauri_version" ]; then
+            echo "Versions differ: package.json $app_version, Cargo.toml $cargo_version, tauri.conf.json $tauri_version"
+            exit 1
+          fi
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            if [ "$GITHUB_REF_NAME" != "v$app_version" ]; then
+              echo "Tag $GITHUB_REF_NAME does not match the app version v$app_version."
+              exit 1
+            fi
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$app_version" >> "$GITHUB_OUTPUT"
 
       - uses: pnpm/action-setup@v4
         with:
@@ -21,10 +57,21 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
 
       - name: Linux libraries for host tests
         run: sudo apt-get update && sudo apt-get install -y pkg-config libdbus-1-dev libgtk-3-dev libwebkit2gtk-4.1-dev
@@ -35,28 +82,44 @@ jobs:
       - name: Typecheck
         run: pnpm check
 
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Frontend build
+        run: pnpm build
+
       - name: Rust tests
         working-directory: src-tauri
         run: cargo test --lib
 
+      # The default package list includes the retired `tools` package, which
+      # sdkmanager can no longer find, so name only what we need.
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: Android SDK and NDK r28
-        run: sdkmanager --install "platforms;android-37" "build-tools;35.0.0" "ndk;28.2.13676358"
+        run: |
+          sdkmanager --install "platforms;android-37.0" "build-tools;$BUILD_TOOLS" "ndk;$NDK_VERSION"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/$NDK_VERSION" >> "$GITHUB_ENV"
 
-      - name: Decode release keystore
+      - name: Release keystore
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          PUBLISH: ${{ steps.mode.outputs.publish }}
         run: |
           if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
-            echo "Set the ANDROID_KEYSTORE_BASE64 secret before tagging a release."
-            exit 1
+            if [ "$PUBLISH" = "true" ]; then
+              echo "Set the ANDROID_KEYSTORE_* secrets before tagging a release (docs/release/android.md)."
+              exit 1
+            fi
+            echo "::warning::No keystore secret: this dry run builds an UNSIGNED APK."
+            exit 0
           fi
           echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/moojot-release.jks"
           echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/moojot-release.jks" >> "$GITHUB_ENV"
-          echo "NDK_HOME=$ANDROID_HOME/ndk/28.2.13676358" >> "$GITHUB_ENV"
 
-      - name: Signed APK and AAB
+      - name: Build APK and AAB
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -64,18 +127,27 @@ jobs:
         run: |
           pnpm tauri android build --apk --target aarch64
           pnpm tauri android build --aab --target aarch64
+          outputs=src-tauri/gen/android/app/build/outputs
+          apk="$(find "$outputs/apk" -type f -name '*.apk' -path '*release*' | head -n 1)"
+          aab="$(find "$outputs/bundle" -type f -name '*.aab' -path '*elease*' | head -n 1)"
+          if [ -z "$apk" ] || [ -z "$aab" ]; then
+            echo "Release APK or AAB not found:"; find "$outputs" -type f
+            exit 1
+          fi
           mkdir -p dist-release
-          find src-tauri/gen/android/app/build/outputs -type f \( -name '*.apk' -o -name '*.aab' \) -path '*release*' -print0 |
-            xargs -0 -I{} cp {} dist-release/
-          cd dist-release
-          sha256sum ./* > SHA256SUMS
+          cp "$apk" "dist-release/$APK_NAME"
+          cp "$aab" "dist-release/$AAB_NAME"
+
+      - name: Check signature
+        if: steps.mode.outputs.publish == 'true'
+        run: |
+          "$ANDROID_HOME/build-tools/$BUILD_TOOLS/apksigner" verify --print-certs "dist-release/$APK_NAME" | grep -E "Signer #1 certificate (DN|SHA-256)"
 
       - name: Check 16 KB ELF alignment
         run: |
           readelf="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
           tmp="$(mktemp -d)"
-          apk="$(find dist-release -name '*.apk' | head -n 1)"
-          unzip -q "$apk" -d "$tmp"
+          unzip -q "dist-release/$APK_NAME" -d "$tmp"
           bad=0
           while IFS= read -r -d '' so; do
             if ! "$readelf" -l "$so" | awk '/LOAD/ { align = strtonum($NF); if (align < 16384) bad = 1 } END { exit bad }'; then
@@ -85,10 +157,36 @@ jobs:
           done < <(find "$tmp/lib" -name '*.so' -print0)
           exit "$bad"
 
+      - name: Checksums
+        working-directory: dist-release
+        run: sha256sum "$APK_NAME" "$AAB_NAME" > SHA256SUMS && cat SHA256SUMS
+
+      - name: Upload dry-run build
+        if: steps.mode.outputs.publish != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: moojot-${{ steps.mode.outputs.version }}-dry-run
+          path: dist-release/
+          retention-days: 7
+
       - name: Publish GitHub Release
+        if: steps.mode.outputs.publish == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.mode.outputs.version }}
         run: |
+          repo_url="https://github.com/${GITHUB_REPOSITORY}"
+          cat > "$RUNNER_TEMP/notes.md" <<EOF
+          MooJot ${VERSION} for Android (arm64). 🐷
+
+          **Install:** download \`${APK_NAME}\` on your phone, open it, and allow installing from this source when Android asks. The app works offline, and your records stay on your phone.
+
+          Check the download against \`SHA256SUMS\`. The \`.aab\` file is the Google Play upload.
+
+          Privacy policy: ${repo_url}/blob/${GITHUB_REF_NAME}/docs/privacy-policy.md · Terms: ${repo_url}/blob/${GITHUB_REF_NAME}/docs/terms-of-service.md
+          EOF
           gh release create "$GITHUB_REF_NAME" dist-release/* \
-            --title "MooJot $GITHUB_REF_NAME" \
-            --notes "Signed Android build. Privacy policy: docs/privacy-policy.md"
+            --title "MooJot ${VERSION}" \
+            --notes-file "$RUNNER_TEMP/notes.md" \
+            --generate-notes \
+            --latest
