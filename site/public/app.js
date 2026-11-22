@@ -43,8 +43,16 @@
     root.setAttribute("data-release", "ready");
     var android = root.lang === "th" ? "Android 7.0 ขึ้นไป (64 บิต)" : "Android 7.0+, 64-bit";
     var meta = document.querySelector(".js-release-meta");
-    var parts = [release.version, release.apk.size ? formatSize(release.apk.size) : "", android];
-    if (meta) meta.textContent = parts.filter(Boolean).join(" · ");
+    if (meta) {
+      // "What's new in v1.1.0" links to that version's release notes on GitHub.
+      var notes = document.createElement("a");
+      notes.href = release.pageUrl;
+      notes.textContent = (root.lang === "th" ? "มีอะไรใหม่ใน " : "What's new in ") + release.version;
+      var rest = [release.apk.size ? formatSize(release.apk.size) : "", android].filter(Boolean);
+      meta.textContent = "";
+      meta.appendChild(release.pageUrl ? notes : document.createTextNode(release.version));
+      meta.appendChild(document.createTextNode(" · " + rest.join(" · ")));
+    }
     if (release.checksumsUrl) {
       var sums = document.querySelectorAll(".js-checksums");
       for (var j = 0; j < sums.length; j++) sums[j].setAttribute("href", release.checksumsUrl);

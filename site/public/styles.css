@@ -121,6 +121,7 @@ html[data-inapp] .inapp-note { display: block; }
 .lead { margin-top: 16px; max-width: 34em; font-size: 18px; color: var(--hero-text-2); }
 .cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
 .meta { margin-top: 12px; font-size: 14px; color: var(--hero-text-2); }
+.meta a { color: inherit; font-weight: 600; text-decoration: underline; }
 .meta-stores { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .store-pill { padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; font-size: 13px; font-weight: 700; opacity: 0.85; }
 html[data-ios] .ios-pill { opacity: 1; background: rgba(255, 255, 255, 0.2); }
