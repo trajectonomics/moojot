@@ -1,6 +1,6 @@
 # Android release
 
-The version lives in `package.json`, `src-tauri/Cargo.toml`, and `src-tauri/tauri.conf.json`. The Android `versionName` comes from the Tauri build. `versionCode` is `major * 10000 + minor * 100 + patch` unless `tauri.android.versionCode` is set (1.0.0 → 10000, 1.1.0 → 10100).
+The version lives in `package.json`, `src-tauri/Cargo.toml`, and `src-tauri/tauri.conf.json`. The Android `versionName` comes from the Tauri build. `versionCode` is `major * 10000 + minor * 100 + patch` unless `tauri.android.versionCode` is set (1.0.0 → 10000, 1.2.0 → 10200).
 
 ## Signing key
 
@@ -116,8 +116,8 @@ The APK, AAB and `SHA256SUMS` are attached to the run as an artifact for 7 days.
 2. Tag `main` and push the tag:
 
    ```bash
-   git tag v1.1.0 origin/main
-   git push origin v1.1.0
+   git tag v1.2.0 origin/main
+   git push origin v1.2.0
    ```
 
 3. The workflow signs the build with the release keystore (it fails if the secrets are missing), checks the signature, and publishes a GitHub Release with:
