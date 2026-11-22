@@ -4,16 +4,22 @@ MooJot 1.0.0 is versioned in `package.json`, `src-tauri/Cargo.toml`, and `src-ta
 
 ## Signing key
 
-Create the keystore once, on a machine you control. Do not commit it.
+Create the keystore once, on a machine you control, outside the repo. Do not commit it.
 
 ```bash
+mkdir -p ~/moojot-keys && cd ~/moojot-keys
 keytool -genkeypair -v \
   -keystore moojot-release.jks \
   -alias moojot \
   -keyalg RSA \
-  -keysize 2048 \
-  -validity 10000
+  -keysize 4096 \
+  -validity 10000 \
+  -dname "CN=MooJot"
 ```
+
+keytool asks for the password twice. The keystore is PKCS12, so the key uses the same password: `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_PASSWORD` are equal. The certificate name (`-dname`) is public, because anyone can read it from the APK.
+
+**Back up `moojot-release.jks` and its password** (a password manager is fine). Every future update must be signed with this key. If you lose it, people can only install a new version after uninstalling the old one, which deletes their records.
 
 `src-tauri/gen/android/app/build.gradle.kts` signs release builds when these are set. Environment variables win over `keystore.properties`.
 
@@ -32,6 +38,17 @@ GitHub Actions secrets for tag builds:
 - `ANDROID_KEYSTORE_PASSWORD`
 - `ANDROID_KEY_ALIAS` (for example `moojot`)
 - `ANDROID_KEY_PASSWORD`
+
+Set them with `gh`. Without `--body`, `gh secret set` asks you to paste the value, so the password never lands in your shell history:
+
+```bash
+cd ~/moojot-keys
+base64 -w0 moojot-release.jks | gh secret set ANDROID_KEYSTORE_BASE64 -R trajectonomics/moojot
+gh secret set ANDROID_KEY_ALIAS -R trajectonomics/moojot --body moojot
+gh secret set ANDROID_KEYSTORE_PASSWORD -R trajectonomics/moojot
+gh secret set ANDROID_KEY_PASSWORD -R trajectonomics/moojot
+gh secret list -R trajectonomics/moojot
+```
 
 ## Build
 
