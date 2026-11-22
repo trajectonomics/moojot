@@ -75,6 +75,23 @@ find /tmp/moojot-apk/lib -name '*.so' -print0 |
 
 `.github/workflows/ci.yml` runs on every pull request and every push to `main`. It runs `pnpm check`, `pnpm test`, `pnpm build`, `pnpm test:e2e` (headless Chrome) and `cargo test --lib`.
 
+## Third-party notices
+
+The app shows an "Open-source licenses" page (My Moo → About). It displays `static/third-party-notices.txt`, a generated list of everything bundled in the app (Rust crates, web packages, Android libraries, ONNX Runtime, the OCR model and the font) with each copyright notice and license text. MIT, Apache-2.0, BSD and OFL all require those to ship with copies of the software.
+
+**Regenerate it before each release**, and whenever a dependency changes (`Cargo.lock`, `pnpm-lock.yaml`, `build.gradle.kts`):
+
+```bash
+pnpm tauri android build --apk --target aarch64
+node tools/third-party-notices.mjs --apk "$(find src-tauri/gen/android/app/build/outputs/apk -name '*.apk' -path '*release*' | head -n 1)"
+```
+
+Use the release APK you are about to ship (the `find` picks Tauri's output; the dry-run APK from `release-android` works too). The generator reads the library list from the APK and the lockfiles, downloads each package's license files from crates.io, npm, Maven Central, Google Maven and Hugging Face, and writes the file in the same order every time, so a run with no dependency change leaves no diff. It needs a network, uses only Node built-ins, and keeps a download cache in the temp folder (`--cache <dir>` to move it). `--check` rewrites nothing and fails if the file on disk is out of date.
+
+Commit the regenerated file. `pnpm test` fails when `Cargo.lock` or `pnpm-lock.yaml` names a crate or package that the file does not list at that version, and `MOOJOT_APK=<apk> node --test tests/unit/release-apk.test.mjs` fails when the APK bundles a library the file does not list. A new native library, or a library whose POM names an unfamiliar license, stops the generator with a message instead of slipping through.
+
+Google ML Kit and the Google Play services libraries are proprietary (ML Kit Terms of Service). They are listed as such, together with the open-source notices Google ships inside them.
+
 ## Releasing
 
 `.github/workflows/release-android.yml` builds the arm64 APK and AAB. Before it does, it checks that the versions agree and runs the typecheck and the unit and Rust tests. After the build, it checks 16 KB alignment and runs `tests/unit/release-apk.test.mjs` on the APK, which fails if R8 stripped code that ML Kit or ONNX Runtime needs (#45). Nothing is published when a check fails.

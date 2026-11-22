@@ -301,6 +301,7 @@ function pageFixture(config) {
     list_known_slip_media_ids: () => [],
     list_payee_rules: () => payeeRules,
     search_records: searchRecords,
+    "plugin:app|version": () => "1.1.0",
   };
 
   window.__moojotUnmocked = [];
