@@ -15,6 +15,11 @@
 // and look at the new PNG before committing it.
 
 const DARK = { theme: "orange-black" };
+// A first run on Android with photo access already allowed.
+const FIRST_RUN_ANDROID = { data: "empty", onboarding: "pending", android: "granted" };
+// The first scan covers this month and the two before it (FIRST_SCAN_MONTHS): from
+// 1 January 2026, 00:00 in Bangkok, because the fixture's clock is 18 March 2026.
+const FIRST_SCAN_SINCE = Date.parse("2026-01-01T00:00:00+07:00") / 1000;
 const THAI = { lang: "th" };
 
 // Bottom navigation: Home, Summary, My Moo. The buttons have no labels, and
@@ -182,6 +187,34 @@ export const scenes = [
     run: async (page) => {
       await page.click('button[aria-label="Go to step 4"]');
       await page.waitFor("#onb-title-3");
+    },
+  },
+  {
+    // The last step says the first scan starts on "Let's go" (#47).
+    name: "onboarding-done-scan",
+    fixture: FIRST_RUN_ANDROID,
+    ready: "#onb-title-0",
+    run: async (page) => {
+      await page.click('button[aria-label="Go to step 6"]');
+      await page.waitFor("#onb-title-5");
+    },
+  },
+  {
+    // Finishing the first tour starts the scan by itself (#47).
+    name: "onboarding-first-scan",
+    fixture: FIRST_RUN_ANDROID,
+    ready: "#onb-title-0",
+    run: async (page) => {
+      await page.click('button[aria-label="Go to step 6"]');
+      await page.waitFor("#onb-title-5");
+      await page.clickText("Let's go");
+      await page.waitForText("Scanning new slips...", "*");
+      await page.evaluate(`(() => {
+        const scans = window.__moojotScans;
+        if (scans.length !== 1 || scans[0].sinceSec !== ${FIRST_SCAN_SINCE}) {
+          throw new Error("expected one scan since ${FIRST_SCAN_SINCE}, got " + JSON.stringify(scans));
+        }
+      })()`);
     },
   },
 ];

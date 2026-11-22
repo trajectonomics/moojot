@@ -36,6 +36,12 @@ function write(value: "done" | "pending") {
 export const markOnboardingPending = () => write("pending");
 export const markOnboardingDone = () => write("done");
 
+/**
+ * When the first welcome tour ends with photo access allowed, the app scans this many
+ * months of slips straight away (this month included), so nobody has to start it again (#47).
+ */
+export const FIRST_SCAN_MONTHS = 3;
+
 /** Thai when the device language is Thai, otherwise English. */
 export function deviceLanguage(): "en" | "th" {
   if (typeof navigator === "undefined") return "en";

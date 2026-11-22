@@ -36,6 +36,7 @@
   } from "$lib/analytics";
   import {
     deviceLanguage,
+    FIRST_SCAN_MONTHS,
     markOnboardingDone,
     markOnboardingPending,
     onboardingState,
@@ -387,10 +388,16 @@
   }
 
   function closeOnboarding() {
+    const firstRun = !onboardingReplay;
     markOnboardingDone();
     showOnboarding = false;
     activeTab = "home";
     settingsSubPage = null;
+    // The first tour ends by reading the slips it just got access to, so nobody has to
+    // start the scan again (#47). A replayed tour leaves scanning alone.
+    if (firstRun && !isScanning && hasAndroidBridge() && window.MooJotAndroid?.hasGalleryPermission()) {
+      void startSlipScan(monthStartSec(1 - FIRST_SCAN_MONTHS));
+    }
   }
 
   // First run: show the welcome tour unless this install already has data.
