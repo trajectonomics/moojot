@@ -681,6 +681,21 @@ pub fn build_budgets(
     Ok(out)
 }
 
+/// First characters that make a spreadsheet app read a cell as a formula
+/// (OWASP "CSV Injection").
+const CSV_FORMULA_PREFIXES: [char; 6] = ['=', '+', '-', '@', '\t', '\r'];
+
+/// Makes a text cell safe to open in a spreadsheet: if it starts with a
+/// formula character, a leading `'` makes the app show it as plain text.
+/// Only for text columns; the date, time and amount columns are written as is.
+fn csv_text_cell(text: String) -> String {
+    if text.starts_with(CSV_FORMULA_PREFIXES) {
+        format!("'{text}")
+    } else {
+        text
+    }
+}
+
 pub fn export_csv(conn: &Connection) -> Result<String, String> {
     let mut wtr = csv::Writer::from_writer(vec![]);
     wtr.write_record([
@@ -717,15 +732,15 @@ pub fn export_csv(conn: &Connection) -> Result<String, String> {
             Ok([
                 r.get::<_, String>(0)?,
                 r.get::<_, String>(1)?,
-                r.get::<_, String>(2)?,
+                csv_text_cell(r.get(2)?),
                 format!("{:.2}", satang as f64 / 100.0),
-                r.get::<_, String>(4)?,
-                r.get::<_, String>(5)?,
-                r.get::<_, String>(6)?,
-                r.get::<_, String>(7)?,
-                r.get::<_, String>(8)?,
-                r.get::<_, String>(9)?,
-                r.get::<_, String>(10)?,
+                csv_text_cell(r.get(4)?),
+                csv_text_cell(r.get(5)?),
+                csv_text_cell(r.get(6)?),
+                csv_text_cell(r.get(7)?),
+                csv_text_cell(r.get(8)?),
+                csv_text_cell(r.get(9)?),
+                csv_text_cell(r.get(10)?),
             ])
         })
         .map_err(|e| e.to_string())?;
@@ -843,6 +858,89 @@ mod account_filter_tests {
         assert_eq!(budget(&one, "b_total"), (100_000, 1_000_000));
         assert_eq!(budget(&one, "b_food"), (100_000, 800_000));
         assert_eq!(budget(&one, "b_tag"), (100_000, 600_000));
+
+        cleanup(&path);
+    }
+}
+
+#[cfg(test)]
+mod csv_export_tests {
+    use super::*;
+    use crate::db::init_db;
+
+    fn temp_db() -> (Connection, std::path::PathBuf) {
+        let path =
+            std::env::temp_dir().join(format!("moojot-csv-{}.sqlite3", uuid::Uuid::new_v4()));
+        let conn = init_db(&path).expect("init db");
+        (conn, path)
+    }
+
+    fn cleanup(path: &std::path::Path) {
+        for suffix in ["", "-wal", "-shm"] {
+            let mut file = path.as_os_str().to_os_string();
+            file.push(suffix);
+            let _ = std::fs::remove_file(file);
+        }
+    }
+
+    fn add_record(conn: &Connection, id: &str, date: &str, payee: &str, note: &str) {
+        conn.execute(
+            "INSERT INTO records (id, kind, amount_satang, local_date, account_id, category_id,
+                                  payee_raw, note, created_at, updated_at)
+             VALUES (?1, 'spending', 1250, ?2, 'test_acct', 'test_cat', ?3, ?4, ?2, ?2)",
+            params![id, date, payee, note],
+        )
+        .unwrap();
+    }
+
+    /// Exported rows, keyed by date, parsed back with a CSV reader.
+    fn export_rows(conn: &Connection) -> BTreeMap<String, csv::StringRecord> {
+        let text = export_csv(conn).unwrap();
+        csv::Reader::from_reader(text.as_bytes())
+            .records()
+            .map(|row| {
+                let row = row.unwrap();
+                (row[0].to_string(), row)
+            })
+            .collect()
+    }
+
+    #[test]
+    fn text_cells_that_look_like_formulas_are_exported_as_text() {
+        let (conn, path) = temp_db();
+        conn.execute(
+            "INSERT INTO accounts (id, name_en, name_th, kind, color)
+             VALUES ('test_acct', '-Test account', '-Test account', 'bank', '#000000')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO categories (id, name_en, name_th, kind, icon, color)
+             VALUES ('test_cat', '+Test category', '+Test category', 'spending', 'leaf', '#000000')",
+            [],
+        )
+        .unwrap();
+        add_record(&conn, "r1", "2026-01-01", "=1+2", "@A1");
+        add_record(&conn, "r2", "2026-01-02", "\t1", "\r1");
+        add_record(&conn, "r3", "2026-01-03", "Cafe 1+1", "");
+
+        let rows = export_rows(&conn);
+        // Columns: date, time, kind, amount_thb, currency, category, account, payee, note, ...
+        let first = &rows["2026-01-01"];
+        assert_eq!(&first[3], "12.50");
+        assert_eq!(&first[5], "'+Test category");
+        assert_eq!(&first[6], "'-Test account");
+        assert_eq!(&first[7], "'=1+2");
+        assert_eq!(&first[8], "'@A1");
+
+        let second = &rows["2026-01-02"];
+        assert_eq!(&second[7], "'\t1");
+        assert_eq!(&second[8], "'\r1");
+
+        // Text that doesn't start with a formula character is unchanged.
+        let third = &rows["2026-01-03"];
+        assert_eq!(&third[7], "Cafe 1+1");
+        assert_eq!(&third[8], "");
 
         cleanup(&path);
     }
