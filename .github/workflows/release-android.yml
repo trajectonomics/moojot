@@ -138,6 +138,11 @@ jobs:
           cp "$apk" "dist-release/$APK_NAME"
           cp "$aab" "dist-release/$AAB_NAME"
 
+      # R8 once stripped what ML Kit and ONNX Runtime look up at runtime, so every
+      # slip imported as 0 baht (#45). Debug builds skip R8, so check the real APK.
+      - name: Check the APK keeps what OCR needs
+        run: MOOJOT_APK="dist-release/$APK_NAME" node --test tests/unit/release-apk.test.mjs
+
       - name: Check signature
         if: steps.mode.outputs.publish == 'true'
         run: |
