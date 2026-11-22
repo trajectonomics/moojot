@@ -21,6 +21,7 @@
     Info,
     Scale,
     GitFork,
+    ChartNoAxesColumn,
   } from "@lucide/svelte";
   import { openUrl } from "@tauri-apps/plugin-opener";
   import CategoryIcon from "./CategoryIcon.svelte";
@@ -54,9 +55,11 @@
     mascotMood = "idle",
     theme = "pink-white",
     hand = "right",
+    shareStats = false,
     subPage = $bindable<SettingsSubPage>(null),
     onChangeTheme,
     onChangeHand,
+    onChangeShareStats,
     onSaveSettings,
     onToggleAccount,
     onScanNow,
@@ -80,9 +83,12 @@
     mascotMood?: MascotMood;
     theme?: AppTheme;
     hand?: HandMode;
+    /** Anonymous usage stats switch (opt-in, off by default). See $lib/analytics. */
+    shareStats?: boolean;
     subPage?: SettingsSubPage;
     onChangeTheme: (next: AppTheme) => void;
     onChangeHand: (next: HandMode) => void;
+    onChangeShareStats: (on: boolean) => void;
     onSaveSettings: (next: AppSettings) => Promise<void>;
     onToggleAccount: (id: string, enabled: boolean) => Promise<void>;
     onScanNow: () => Promise<void>;
@@ -491,7 +497,26 @@
           <ChevronRight class="size-4 text-[var(--text-muted)] shrink-0" />
         </button>
 
-        <!-- 7. About -->
+        <!-- 7. Anonymous usage stats (opt-in) -->
+        <label class="w-full px-4 py-3.5 flex items-center justify-between gap-3 text-left">
+          <div class="flex items-center gap-3 min-w-0">
+            <span class="size-9 rounded-2xl bg-[var(--brand-soft)] text-[var(--brand)] flex items-center justify-center shrink-0">
+              <ChartNoAxesColumn class="size-4" />
+            </span>
+            <div class="min-w-0">
+              <div class="text-sm font-bold text-[var(--text-primary)]">{t(lang, "shareStats")}</div>
+              <div class="text-xs text-[var(--text-muted)]">{t(lang, "shareStatsHint")}</div>
+            </div>
+          </div>
+          <input
+            type="checkbox"
+            checked={shareStats}
+            onchange={(e) => onChangeShareStats(e.currentTarget.checked)}
+            class="size-5 shrink-0 accent-[var(--brand)]"
+          />
+        </label>
+
+        <!-- 8. About -->
         <button
           type="button"
           onclick={() => (subPage = "about")}
@@ -516,7 +541,7 @@
         </button>
 
         {#if onReplayOnboarding}
-          <!-- 8. Replay the first-run welcome tour -->
+          <!-- 9. Replay the first-run welcome tour -->
           <button
             type="button"
             onclick={onReplayOnboarding}

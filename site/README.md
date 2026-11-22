@@ -6,10 +6,11 @@ The page is plain HTML, CSS and JS with no build step and no dependencies. It's 
 
 | Path | What it is |
 |---|---|
-| `public/` | The static site: `index.html`, `styles.css`, `boot.js` (sets the language before paint), `app.js` (language switch, release info, animated Moo), `_headers`, `404.html`, `img/`, `fonts/` |
-| `worker.js` | Worker entry. It only runs for `/download` and `/api/*` (see `run_worker_first`). |
-| `release.js` | Looks up the latest GitHub release. It uses the API first and falls back to github.com when Cloudflare's shared IPs are rate limited, then caches the answer for 5 minutes. |
-| `release.test.js` | Tests for `release.js` |
+| `public/` | The static site: `index.html`, `styles.css`, `boot.js` (sets the language before paint), `app.js` (language switch, release info, animated Moo), `analytics.js` (cookie banner, then PostHog), `_headers`, `404.html`, `img/`, `fonts/` |
+| `worker.js` | Worker entry. It only runs for `/download*`, `/go*`, `/api/*` and `/ingest/*` (see `run_worker_first`). |
+| `release.js` | Request router, and the latest GitHub release lookup. It uses the API first and falls back to github.com when Cloudflare's shared IPs are rate limited, then caches the answer for 5 minutes. |
+| `tracking.js` | Source links (`/go/…`, `/download/…`), cookieless counting of clicks and downloads, and the `/ingest` proxy to PostHog |
+| `release.test.js`, `tracking.test.js` | Tests |
 | `wrangler.jsonc` | Worker `moojot-site` on the custom domain `moojot.trajectonomics.com` |
 
 ## Links that matter
@@ -17,6 +18,37 @@ The page is plain HTML, CSS and JS with no build step and no dependencies. It's 
 - `https://moojot.trajectonomics.com/download` redirects (302) to the `.apk` in the latest GitHub release. Use this short link in reels and bios. Before the first release it lands on `/#coming-soon`.
 - `https://moojot.trajectonomics.com/api/release` returns `{ "release": null | { version, apk: { name, size, url }, checksumsUrl, … } }`.
 - `?lang=th` / `?lang=en` forces a language. Otherwise the page uses the visitor's saved choice, then the browser language. Thai is the no-JS default.
+
+## Source links
+
+Use a different link for every place you post, so PostHog can tell which one brings people in. Each click and each download is counted by the Worker, without cookies, even when the visitor declines the cookie banner.
+
+- `/go/<source>` opens the landing page tagged with `utm_source` / `utm_medium` (best for bios: the page explains how to install).
+- `/download/<source>` downloads the APK straight away (best when the post already explains the install).
+- Add a campaign as a second part, for example `/go/ig/reel-12` or `/download/tiktok/launch`. Use lowercase letters, digits, `-` and `_`, up to 40 characters.
+- `/go/ig?lang=en` also forces the page language.
+
+| Where | Landing page | Direct download |
+|---|---|---|
+| Instagram | `moojot.trajectonomics.com/go/ig` | `moojot.trajectonomics.com/download/ig` |
+| Facebook | `moojot.trajectonomics.com/go/fb` | `moojot.trajectonomics.com/download/fb` |
+| X | `moojot.trajectonomics.com/go/x` | `moojot.trajectonomics.com/download/x` |
+| Threads | `moojot.trajectonomics.com/go/threads` | `moojot.trajectonomics.com/download/threads` |
+| TikTok | `moojot.trajectonomics.com/go/tiktok` | `moojot.trajectonomics.com/download/tiktok` |
+| YouTube | `moojot.trajectonomics.com/go/yt` | `moojot.trajectonomics.com/download/yt` |
+| LINE | `moojot.trajectonomics.com/go/line` | `moojot.trajectonomics.com/download/line` |
+| GitHub | `moojot.trajectonomics.com/go/gh` | `moojot.trajectonomics.com/download/gh` |
+| QR code / print | `moojot.trajectonomics.com/go/qr` | `moojot.trajectonomics.com/download/qr` |
+
+Any other slug works too and becomes its own source (`/go/pantip` → `utm_source=pantip`). The known slugs and their mediums are `SOURCES` in `tracking.js`.
+
+In PostHog, the events are:
+
+- `link_clicked`: a `/go/…` link. Properties `source`, `medium`, `campaign`, `link`, `country`, `platform`, `in_app_browser`.
+- `apk_download`: any `/download…` hit, with the same properties plus `via` (`link` for `/download/<source>`, `page` for a button on the landing page, `direct` otherwise), `outcome` (`apk`, `coming_soon`, `releases_page`) and `apk_version`. A button click on the landing page takes its source from the page's own `utm_*` tags.
+- Visitors who allow cookies also get PostHog's normal web analytics (`$pageview`, autocapture), with the `utm_*` tags as the referrer source. Download buttons carry `data-ph-capture-attribute-cta` (`hero`, `install`, `final`).
+
+Bots and link-preview fetchers (Facebook, WhatsApp, Telegram, Slack, Discord, …) are not counted.
 
 ## Commands
 
@@ -28,13 +60,17 @@ cd site && npx wrangler@4 deploy            # deploy (needs a Cloudflare login f
 
 `wrangler` is run with `npx` on purpose, so the repo's `package.json` doesn't gain a dependency.
 
+The PostHog project key and region are `vars` in `wrangler.jsonc`. The same key is in `public/analytics.js` and `src/lib/analytics.ts`, and `tracking.test.js` checks that they match. It is a public project key that can only send events, so it is not a secret.
+
 ## Content rules
 
 - Every piece of copy exists in Thai and English as sibling elements marked `lang="th"` and `lang="en"`. CSS hides whichever language isn't active, so add both when you change text.
 - Only claim what the app actually does. Check `docs/prd/PRD.md` and `docs/privacy-policy.md`.
 - Screenshots in `img/shot-*.webp` were taken from the real Svelte UI using invented sample data. Never use a real ledger.
 - The roadmap section links to GitHub issues. Update it when those issues close.
-- No analytics, cookies or third-party requests. That's part of the privacy promise on the page.
+- No cookies and no analytics scripts until the visitor taps "Allow" on the cookie banner. "No thanks" must stay as easy as "Allow". The Worker's cookieless counts send only the labels listed in `tracking.js`: never an IP address, a user agent, or a persistent ID.
+- No third-party requests from the browser. PostHog is served from this domain through `/ingest`, so the CSP in `_headers` stays `'self'`.
+- If what is collected changes, update `docs/privacy-policy.md` (sections "Anonymous usage statistics" and "Website") in the same PR.
 
 ## Assets
 

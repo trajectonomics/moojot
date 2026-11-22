@@ -27,6 +27,14 @@
   import ThumbSheet from "$lib/components/ThumbSheet.svelte";
   import Onboarding from "$lib/components/Onboarding.svelte";
   import {
+    analyticsEnabled,
+    setAnalyticsContext,
+    setAnalyticsEnabled,
+    startAnalytics,
+    track,
+    trackScreen,
+  } from "$lib/analytics";
+  import {
     deviceLanguage,
     markOnboardingDone,
     markOnboardingPending,
@@ -70,7 +78,19 @@
   // Read before the theme effect saves its keys: see onboardingState().
   const firstRunState = onboardingState();
   let showOnboarding = $state(false);
+  let onboardingReplay = $state(false);
   let onboardingLanguage = $state<"en" | "th">("en");
+
+  // Anonymous usage stats are opt-in (see $lib/analytics): nothing loads or sends until the
+  // user turns them on in the welcome tour or in My Moo.
+  let shareStats = $state(analyticsEnabled());
+  void startAnalytics();
+  track("app_opened", { first_run: firstRunState === "new" });
+
+  function changeShareStats(on: boolean, where: "onboarding" | "settings") {
+    shareStats = on;
+    setAnalyticsEnabled(on, where);
+  }
   let onboardingBack = $state<(() => void) | null>(null);
   let theme = $state<AppTheme>(loadSavedTheme());
   let hand = $state<HandMode>(loadSavedHand());
@@ -123,6 +143,8 @@
   let monthPicker = $state(false);
   let scannedMonths = $state<string[]>([]);
   let scanSinceSec = 0;
+  let scanTotals = { imported: 0, duplicates: 0 };
+  let scanTrigger: "album" | "photo" = "album";
   const monthSheet = { current: null as (() => void) | null };
   const filterSheet = { current: null as (() => void) | null };
   const scanSheet = { current: null as (() => void) | null };
@@ -175,6 +197,16 @@
       theme === "pink-white" &&
       (showOnboarding || (!hasColoredTopBar && activeTab !== "home"));
     window.MooJotAndroid?.setStatusBarLight?.(isLightStatusBar);
+  });
+
+  $effect(() => {
+    setAnalyticsContext({ ui_language: lang, theme });
+  });
+
+  // One screen view per tab or My Moo page. The welcome tour tracks its own steps.
+  $effect(() => {
+    if (showOnboarding) return;
+    trackScreen(activeTab === "settings" && settingsSubPage ? `settings/${settingsSubPage}` : activeTab);
   });
 
   // Pin the compact header once the monthly hero has left the viewport.
@@ -350,6 +382,7 @@
     onboardingLanguage =
       firstRun && firstRunState === "new" ? deviceLanguage() : settings.language;
     if (firstRun) markOnboardingPending();
+    onboardingReplay = !firstRun;
     showOnboarding = true;
   }
 
@@ -426,9 +459,10 @@
     budgets = bdgs;
   }
 
-  async function handleCandidates(candidates: SlipScanCandidate[]) {
+  async function handleCandidates(candidates: SlipScanCandidate[], trigger: "photo" | "shared") {
     try {
       const report: SlipScanReport = await api.importSlipCandidates(candidates);
+      track("slip_scan_finished", { trigger, imported: report.imported, duplicates: report.duplicates });
       scanBanner =
         lang === "th"
           ? `สแกน ${report.scanned} · นำเข้า ${report.imported} · ซ้ำ ${report.duplicates}`
@@ -439,6 +473,7 @@
         report.imported > 0 ? `นำเข้าสลิปใหม่ ${report.imported} รายการแล้ว!` : "สลิปทั้งหมดอัปเดตล่าสุดแล้ว!"
       );
     } catch (e) {
+      track("slip_scan_failed", { trigger });
       scanBanner = `Scan error: ${String(e)}`;
     } finally {
       isScanning = false;
@@ -503,6 +538,9 @@
     scanSinceSec = sinceSec;
     scanStartPrompt = false;
     isScanning = true;
+    scanTotals = { imported: 0, duplicates: 0 };
+    scanTrigger = "album";
+    track("slip_scan_started", { trigger: "album" });
     scanBanner = lang === "th" ? "กำลังสแกนสลิปใหม่..." : "Scanning new slips...";
     const [keywords, knownIds] = await Promise.all([
       api.getAlbumScanKeywords(),
@@ -520,6 +558,8 @@
     showFabMenu = false;
     if (hasAndroidBridge() && window.MooJotAndroid) {
       isScanning = true;
+      scanTrigger = "photo";
+      track("slip_scan_started", { trigger: "photo" });
       window.MooJotAndroid.pickSlipPhoto(false);
     }
   }
@@ -611,19 +651,21 @@
 
     const onCandidates = (ev: Event) => {
       const detail = (ev as CustomEvent<SlipScanCandidate[]>).detail;
-      if (Array.isArray(detail)) handleCandidates(detail);
+      if (Array.isArray(detail)) handleCandidates(detail, "photo");
     };
     const onSharedSlips = (ev: Event) => {
       const detail = (ev as CustomEvent<SlipScanCandidate[]>).detail;
-      if (Array.isArray(detail)) handleCandidates(detail);
+      if (Array.isArray(detail)) handleCandidates(detail, "shared");
     };
     const onPerm = (ev: Event) => {
       const detail = (ev as CustomEvent<{ granted: boolean }>).detail;
+      track("photo_permission_answered", { granted: Boolean(detail?.granted) });
       // During onboarding, granting access shouldn't start a scan behind it.
       if (detail?.granted && !showOnboarding) triggerSlipScan();
     };
     const onErr = (ev: Event) => {
       const detail = (ev as CustomEvent<{ error: string }>).detail;
+      track("slip_scan_failed", { trigger: scanTrigger });
       isScanning = false;
       scanBanner = detail?.error ?? "Scan error";
       setTimeout(() => (scanBanner = null), 3500);
@@ -664,6 +706,8 @@
           const candidates = detail?.candidates ?? [];
           if (candidates.length > 0) {
             const report = await api.importSlipCandidates(candidates);
+            scanTotals.imported += report.imported;
+            scanTotals.duplicates += report.duplicates;
             scanBanner =
               lang === "th"
                 ? `นำเข้า ${report.imported} · ซ้ำ ${report.duplicates}`
@@ -677,6 +721,7 @@
             }
           }
           if (detail?.done) {
+            track("slip_scan_finished", { trigger: "album", ...scanTotals });
             const covered = monthKeysFromSince(scanSinceSec);
             if (covered.length > 0) {
               await api.rememberScannedMonths(covered);
@@ -744,6 +789,7 @@
 
   async function handleSaveRecord(input: RecordInput) {
     await api.saveRecord(input);
+    track("record_saved", { kind: input.kind, is_new: !input.id, recurring: Boolean(input.recurringFrequency) });
     showRecordSheet = false;
     recordLightboxOpen = false;
     editingRecord = null;
@@ -755,6 +801,7 @@
 
   async function handleDeleteRecord(id: string) {
     await api.deleteRecord(id);
+    track("record_deleted", { via: "sheet" });
     showRecordSheet = false;
     recordLightboxOpen = false;
     editingRecord = null;
@@ -765,6 +812,7 @@
     deleteChain = deleteChain
       .then(async () => {
         await api.deleteRecord(id);
+        track("record_deleted", { via: "swipe" });
       })
       .catch(() => {});
   }
@@ -826,6 +874,7 @@
       }
       pdfPrompt = null;
       pdfPassword = "";
+      track("statement_imported", { imported: report.imported, duplicates: report.duplicates });
       await refreshPeriodData();
       activeTab = "home";
       scanBanner =
@@ -1312,16 +1361,26 @@
       {mascotMood}
       {theme}
       {hand}
+      {shareStats}
       bind:subPage={settingsSubPage}
       onReplayOnboarding={() => openOnboarding(false)}
       onChangeTheme={(nextTheme) => {
+        if (nextTheme !== theme) track("setting_changed", { setting: "theme", value: nextTheme });
         theme = nextTheme;
       }}
       onChangeHand={(nextHand) => {
+        if (nextHand !== hand) track("setting_changed", { setting: "hand", value: nextHand });
         hand = nextHand;
       }}
+      onChangeShareStats={(on) => changeShareStats(on, "settings")}
       onSaveSettings={async (next) => {
         await api.updateSettings(next);
+        if (next.language !== settings.language) {
+          track("setting_changed", { setting: "language", value: next.language });
+        }
+        if (next.monthStartDay !== settings.monthStartDay) {
+          track("setting_changed", { setting: "month_start_day", value: next.monthStartDay });
+        }
         settings = next;
         await refreshPeriodData();
       }}
@@ -1376,10 +1435,12 @@
       onExportCsv={async () => {
         const csv = await api.exportRecordsCsv();
         triggerAndroidDownloadOrShare("moojot-records.csv", "text/csv", csv);
+        track("data_exported", { format: "csv" });
       }}
       onExportJson={async () => {
         const json = await api.exportBackupJson();
         triggerAndroidDownloadOrShare("moojot-backup.json", "application/json", json);
+        track("data_exported", { format: "json" });
       }}
     />
   {/if}
@@ -1743,6 +1804,9 @@
     {theme}
     {hand}
     initialLanguage={onboardingLanguage}
+    replay={onboardingReplay}
+    {shareStats}
+    onChangeShareStats={(on) => changeShareStats(on, "onboarding")}
     bind:backHandler={onboardingBack}
     onChangeTheme={(next) => (theme = next)}
     onChangeHand={(next) => (hand = next)}
