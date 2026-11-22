@@ -382,12 +382,7 @@ fn parse_statement_date(raw: &str) -> Option<NaiveDate> {
     }
     let day: u32 = parts[0].parse().ok()?;
     let month: u32 = parts[1].parse().ok()?;
-    let mut year: i32 = parts[2].parse().ok()?;
-    if year < 100 {
-        year += 2000;
-    } else if year > 2400 {
-        year -= 543;
-    }
+    let year = crate::slip_parser::year_to_ce(parts[2].parse().ok()?, false);
     NaiveDate::from_ymd_opt(year, month, day)
 }
 
@@ -683,6 +678,22 @@ mod tests {
             .collect();
         assert_eq!(repair_thai_pua(&legacy), "ไทย");
         assert_eq!(repair_thai_pua("7-ELEVEN"), "7-ELEVEN");
+    }
+
+    #[test]
+    fn two_digit_be_year_in_a_statement_is_not_read_as_2069() {
+        assert_eq!(
+            parse_statement_date("15/10/69"),
+            NaiveDate::from_ymd_opt(2026, 10, 15)
+        );
+        assert_eq!(
+            parse_statement_date("15/10/26"),
+            NaiveDate::from_ymd_opt(2026, 10, 15)
+        );
+        assert_eq!(
+            parse_statement_date("02/11/2569"),
+            NaiveDate::from_ymd_opt(2026, 11, 2)
+        );
     }
 
     #[test]
