@@ -32,7 +32,7 @@ MooJot stores the following in the app's private files. None of it is sent to a 
 | Theme (pink or dark) and hand (left or right) | localStorage on the phone | Remember appearance. These two keys are not tracking cookies. |
 | The usage-statistics switch and, while it is on, a random anonymous ID and the queue of events not yet sent | localStorage on the phone | Remember your choice, and send the statistics described below |
 
-Slip photos and statement lines can contain names, account details, amounts, and other information that is sensitive under Thailand's Personal Data Protection Act (PDPA). That sensitivity is why it stays in the app's private storage unless you export it or turn on the optional OCR key described below.
+Slip photos and statement lines can contain names, account details, amounts, and other personal data protected by Thailand's Personal Data Protection Act (PDPA). That is why it stays in the app's private storage unless you export it or turn on the optional OCR key described below.
 
 ## How information gets there
 
