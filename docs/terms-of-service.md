@@ -28,6 +28,8 @@ MooJot is not a bank, a payment service, a wallet, a broker, an investment advis
 
 Amounts, categories, budgets, payee names, slip text, and statement lines can be wrong. On-device text recognition, QR reading, and automatic categories are helpers. They are not a check against your bank. A credit-card statement import can misread a line. You are responsible for comparing MooJot with your bank, your card issuer, and any filing you make to the Revenue Department or anyone else.
 
+MooJot is not affiliated with, endorsed by, or sponsored by any bank, e-wallet, card issuer, or app it can read slips or statements from. Their names belong to their owners, and MooJot uses them only to say what it can read.
+
 Nothing in the app is financial, tax, accounting, or legal advice. Do not use a figure from MooJot as the only basis for a loan, a tax return, a dispute with a bank, or any other decision that matters. Check the source, or ask a qualified person.
 
 ## 5. Your records stay yours
