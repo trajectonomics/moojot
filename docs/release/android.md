@@ -77,7 +77,13 @@ find /tmp/moojot-apk/lib -name '*.so' -print0 |
 
 ## Releasing
 
-`.github/workflows/release-android.yml` builds the arm64 APK and AAB. Before it does, it checks that the versions agree, runs the typecheck and the unit and Rust tests, and checks 16 KB alignment.
+`.github/workflows/release-android.yml` builds the arm64 APK and AAB. Before it does, it checks that the versions agree and runs the typecheck and the unit and Rust tests. After the build, it checks 16 KB alignment and runs `tests/unit/release-apk.test.mjs` on the APK, which fails if R8 stripped code that ML Kit or ONNX Runtime needs (#45). Nothing is published when a check fails.
+
+To run that APK check on a build you have locally:
+
+```bash
+MOOJOT_APK=path/to/moojot-android-arm64.apk node --test tests/unit/release-apk.test.mjs
+```
 
 **Dry run** (publishes nothing): Actions → `release-android` → Run workflow, or
 
