@@ -5,8 +5,12 @@
 //
 //   /download     302 to the APK in the latest GitHub release, so a reel can say
 //                 "moojot.trajectonomics.com/download" and the link never goes stale.
+//                 /download/<source> does the same and records where the click came from.
 //   /api/release  JSON describing that release, used by the page for the version,
 //                 size and "coming soon" state.
+//   /go/*, /ingest/*  Source links and the PostHog proxy: see tracking.js.
+
+import { count, downloadSource, handleGo, proxyIngest, redirect } from "./tracking.js";
 
 export const REPO = "trajectonomics/moojot";
 export const RELEASES_URL = `https://github.com/${REPO}/releases/latest`;
@@ -117,15 +121,28 @@ export async function fromWeb(fetchImpl) {
 export async function handle(request, env, ctx, deps = {}) {
   const { pathname } = new URL(request.url);
 
-  if (pathname === "/download" || pathname === "/download/") {
+  if (pathname === "/download" || pathname.startsWith("/download/")) {
+    let to = RELEASES_URL;
+    let outcome = "releases_page";
+    let version = null;
     try {
       const release = await latestRelease(ctx, deps);
-      const to = release ? release.apk.url : new URL(NO_RELEASE_PATH, request.url).toString();
-      return redirect(to);
+      to = release ? release.apk.url : new URL(NO_RELEASE_PATH, request.url).toString();
+      outcome = release ? "apk" : "coming_soon";
+      version = release ? release.version : null;
     } catch {
-      return redirect(RELEASES_URL);
+      // GitHub is unavailable: send people to the releases page.
     }
+    await count(request, env, ctx, deps, "apk_download", {
+      ...downloadSource(request),
+      outcome,
+      apk_version: version,
+    });
+    return redirect(to);
   }
+
+  if (pathname === "/go" || pathname.startsWith("/go/")) return handleGo(request, env, ctx, deps);
+  if (pathname.startsWith("/ingest/")) return proxyIngest(request, env, deps);
 
   if (pathname === "/api/release") {
     try {
@@ -143,11 +160,4 @@ export async function handle(request, env, ctx, deps = {}) {
   }
 
   return env.ASSETS.fetch(request);
-}
-
-function redirect(location) {
-  return new Response(null, {
-    status: 302,
-    headers: { location, "cache-control": "no-store" },
-  });
 }

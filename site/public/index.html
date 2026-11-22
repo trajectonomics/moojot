@@ -28,6 +28,7 @@
   <link rel="stylesheet" href="/styles.css">
   <script src="/boot.js"></script>
   <script src="/app.js" defer></script>
+  <script src="/analytics.js" defer></script>
 </head>
 <body>
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -95,7 +96,7 @@
           <p class="lead" lang="en">MooJot reads the payment slips your banking apps save to your phone, then logs and sorts every expense for you. It all happens on your phone: no sign-up, no ads, every feature free.</p>
 
           <div class="cta-row">
-            <a class="btn btn-primary js-download" href="/download">
+            <a class="btn btn-primary js-download" href="/download" data-ph-capture-attribute-cta="hero">
               <svg class="icon"><use href="#i-download"/></svg>
               <span class="when-ready"><span lang="th">ดาวน์โหลดสำหรับ Android</span><span lang="en">Download for Android</span></span>
               <span class="when-soon"><span lang="th">เวอร์ชันแรกใกล้มาแล้ว</span><span lang="en">First release coming soon</span></span>
@@ -156,7 +157,7 @@
             <h3><span lang="th">ดาวน์โหลดไฟล์</span><span lang="en">Download the file</span></h3>
             <p lang="th">แตะปุ่มดาวน์โหลด ถ้า Chrome ขึ้นว่า “ไฟล์นี้อาจเป็นอันตราย” ให้แตะ <b>“ดาวน์โหลดต่อ”</b> ไฟล์มาจากหน้า Releases บน GitHub ของโปรเจกต์โดยตรง</p>
             <p lang="en">Tap the download button. If Chrome says the file might be harmful, tap <b>“Download anyway”</b>. It comes straight from the project's GitHub releases.</p>
-            <a class="btn btn-primary btn-small js-download" href="/download">
+            <a class="btn btn-primary btn-small js-download" href="/download" data-ph-capture-attribute-cta="install">
               <svg class="icon"><use href="#i-download"/></svg>
               <span class="when-ready"><span lang="th">ดาวน์โหลด APK</span><span lang="en">Download APK</span></span>
               <span class="when-soon"><span lang="th">เร็วๆ นี้</span><span lang="en">Coming soon</span></span>
@@ -288,9 +289,9 @@
           <li>
             <svg class="icon"><use href="#i-eye-off"/></svg>
             <div>
-              <h3><span lang="th">ไม่มีโฆษณา ไม่มีตัวติดตาม</span><span lang="en">No ads, no trackers</span></h3>
-              <p lang="th">แอปไม่มี SDK เก็บสถิติ และเว็บนี้ก็ไม่ใช้คุกกี้</p>
-              <p lang="en">The app has no analytics SDK, and this website sets no cookies.</p>
+              <h3><span lang="th">ไม่มีโฆษณา ไม่แอบเก็บข้อมูล</span><span lang="en">No ads, no tracking unless you say yes</span></h3>
+              <p lang="th">แอปไม่ส่งข้อมูลการใช้งานเลย เว้นแต่คุณเลือกเปิดส่งสถิติแบบไม่ระบุตัวตนเอง และจะไม่ส่งรายการหรือยอดเงินแน่นอน ส่วนเว็บนี้ใช้คุกกี้เฉพาะเมื่อคุณอนุญาต</p>
+              <p lang="en">The app sends no usage data unless you choose to share anonymous stats, and never your records or amounts. This website uses cookies only if you allow them.</p>
             </div>
           </li>
         </ul>
@@ -305,8 +306,8 @@
       <div class="wrap">
         <p class="eyebrow"><span lang="th">เป้าหมาย</span><span lang="en">Roadmap</span></p>
         <h2 id="roadmap-title" class="section-title"><span lang="th">เรากำลังไปทางไหน</span><span lang="en">Where we're headed</span></h2>
-        <p class="section-lead" lang="th">แอปจดรายรับรายจ่ายที่เข้าใจธนาคารไทยที่สุด ฟรีทุกฟีเจอร์ตลอดไป และข้อมูลไม่ออกจากเครื่องคุณ</p>
-        <p class="section-lead" lang="en">The money tracker that understands Thai banks best. Every feature free forever, and your data never leaves your phone.</p>
+        <p class="section-lead" lang="th">แอปจดรายรับรายจ่ายที่เข้าใจธนาคารไทยที่สุด ฟรีทุกฟีเจอร์ตลอดไป และรายการเงินของคุณไม่ออกจากเครื่อง</p>
+        <p class="section-lead" lang="en">The money tracker that understands Thai banks best. Every feature free forever, and your records never leave your phone.</p>
 
         <div class="roadmap">
           <div class="lane lane-done">
@@ -363,8 +364,8 @@
           </details>
           <details>
             <summary><span lang="th">ต้องต่ออินเทอร์เน็ตไหม?</span><span lang="en">Does it need the internet?</span></summary>
-            <p lang="th">ไม่ต้อง การอ่านสลิป OCR และการแยกหมวดทำในเครื่องทั้งหมด</p>
-            <p lang="en">No. Slip reading, OCR and categories all run on the phone.</p>
+            <p lang="th">ไม่ต้อง การอ่านสลิป OCR และการแยกหมวดทำในเครื่องทั้งหมด ถ้าคุณเลือกเปิดส่งสถิติการใช้งานแบบไม่ระบุตัวตน (ไม่มีรายการหรือยอดเงิน) แอปจะส่งเมื่อต่อเน็ตอยู่</p>
+            <p lang="en">No. Slip reading, OCR and categories all run on the phone. If you choose to share anonymous usage stats (never your records or amounts), the app sends them when you're online.</p>
           </details>
           <details>
             <summary><span lang="th">เสียเงินไหม?</span><span lang="en">Does it cost anything?</span></summary>
@@ -384,7 +385,7 @@
       <div class="wrap final-inner">
         <img class="final-moo" src="/img/moo-still.webp" width="160" height="160" loading="lazy" alt="">
         <h2 id="final-title"><span lang="th">ให้มูช่วยจดตั้งแต่วันนี้</span><span lang="en">Let Moo start jotting today</span></h2>
-        <a class="btn btn-primary js-download" href="/download">
+        <a class="btn btn-primary js-download" href="/download" data-ph-capture-attribute-cta="final">
           <svg class="icon"><use href="#i-download"/></svg>
           <span class="when-ready"><span lang="th">ดาวน์โหลดสำหรับ Android</span><span lang="en">Download for Android</span></span>
           <span class="when-soon"><span lang="th">เวอร์ชันแรกใกล้มาแล้ว</span><span lang="en">First release coming soon</span></span>
@@ -405,10 +406,25 @@
         <a href="https://github.com/trajectonomics/moojot/blob/main/docs/privacy-policy.md"><span lang="th">ความเป็นส่วนตัว</span><span lang="en">Privacy</span></a>
         <a href="https://github.com/trajectonomics/moojot/blob/main/docs/terms-of-service.md"><span lang="th">ข้อตกลง</span><span lang="en">Terms</span></a>
         <a href="https://github.com/trajectonomics/moojot/blob/main/LICENSE">MIT License</a>
+        <button type="button" class="linklike js-consent-open" hidden><span lang="th">ตั้งค่าคุกกี้</span><span lang="en">Cookie settings</span></button>
       </nav>
       <p class="fineprint" lang="th">MooJot ไม่ได้เกี่ยวข้องกับธนาคารใด ชื่อธนาคารและแอปเป็นของเจ้าของแต่ละราย</p>
       <p class="fineprint" lang="en">MooJot isn't affiliated with any bank. Bank and app names belong to their owners.</p>
     </div>
   </footer>
+
+  <div class="consent js-consent" role="dialog" aria-labelledby="consent-title" aria-describedby="consent-body" hidden>
+    <div class="consent-card">
+      <p id="consent-title" class="consent-title"><span lang="th">ขอใช้คุกกี้เก็บสถิติได้ไหม?</span><span lang="en">Can we use cookies to count visits?</span></p>
+      <p id="consent-body" class="consent-body">
+        <span lang="th">เราอยากรู้ว่าคนเจอ MooJot จากที่ไหน และหน้านี้ใช้ง่ายไหม ถ้าคุณอนุญาต เว็บนี้จะใช้คุกกี้ของ PostHog นับการเข้าชม ไม่เกี่ยวกับข้อมูลในแอป <a href="https://github.com/trajectonomics/moojot/blob/main/docs/privacy-policy.md#website">อ่านเพิ่ม</a></span>
+        <span lang="en">We'd like to know how people find MooJot and whether this page works. If you allow it, this site uses PostHog cookies to count visits. It has nothing to do with the data in the app. <a href="https://github.com/trajectonomics/moojot/blob/main/docs/privacy-policy.md#website">Learn more</a></span>
+      </p>
+      <div class="consent-actions">
+        <button type="button" class="btn btn-small consent-no" data-consent="denied"><span lang="th">ไม่อนุญาต</span><span lang="en">No thanks</span></button>
+        <button type="button" class="btn btn-small btn-primary" data-consent="granted"><span lang="th">อนุญาต</span><span lang="en">Allow</span></button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

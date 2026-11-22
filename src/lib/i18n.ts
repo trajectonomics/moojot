@@ -187,7 +187,7 @@ const en = {
   onbWelcomeTitle: "Hi, I'm Moo!",
   onbWelcomeBody: "MooJot is a simple, cute money diary. Jot down what comes in and what goes out, and I'll keep it all tidy for you.",
   onbPrivateTitle: "Your money stays with you",
-  onbPrivateBody: "Everything is saved on this phone only. Nothing is uploaded anywhere.",
+  onbPrivateBody: "Your records are saved on this phone only. They are never uploaded.",
   onbPrivatePoint1: "No account, no sign-in",
   onbPrivatePoint2: "Works offline",
   onbPrivatePoint3: "Export CSV or JSON any time",
@@ -217,6 +217,11 @@ const en = {
   onbDoneBody: "Your money diary is ready. Let's jot the first one together.",
   onbReplay: "Replay intro",
   onbReplayHint: "See the welcome tour again",
+
+  // Anonymous usage stats (opt-in)
+  shareStats: "Share anonymous usage stats",
+  shareStatsHint: "Off unless you turn it on. Tells us which screens and features get used. Never your records, amounts or slips.",
+  onbStatsHint: "Optional. Helps Moo see which features get used. Never your money data. Change it any time in My Moo.",
 
   // Misc
   loading: "Loading...",
@@ -414,7 +419,7 @@ const th: Record<I18nKey, string> = {
   onbWelcomeTitle: "สวัสดี เราชื่อมู!",
   onbWelcomeBody: "MooJot คือสมุดจดเงินแบบง่าย ๆ น่ารัก ๆ จดเงินเข้า เงินออก แล้วมูจะช่วยเก็บให้เป็นระเบียบเอง",
   onbPrivateTitle: "เงินของคุณ อยู่กับคุณ",
-  onbPrivateBody: "ทุกอย่างเก็บไว้ในมือถือเครื่องนี้เท่านั้น ไม่มีการอัปโหลดไปที่ไหน",
+  onbPrivateBody: "รายการทั้งหมดเก็บไว้ในมือถือเครื่องนี้เท่านั้น ไม่มีการอัปโหลดไปที่ไหน",
   onbPrivatePoint1: "ไม่ต้องสมัคร ไม่ต้องล็อกอิน",
   onbPrivatePoint2: "ใช้งานออฟไลน์ได้",
   onbPrivatePoint3: "ส่งออก CSV หรือ JSON ได้ทุกเมื่อ",
@@ -444,6 +449,11 @@ const th: Record<I18nKey, string> = {
   onbDoneBody: "สมุดจดเงินของคุณพร้อมแล้ว มาจดรายการแรกด้วยกันเลย",
   onbReplay: "ดูแนะนำแอปอีกครั้ง",
   onbReplayHint: "ดูหน้าต้อนรับอีกรอบ",
+
+  // Anonymous usage stats (opt-in)
+  shareStats: "ส่งสถิติการใช้งานแบบไม่ระบุตัวตน",
+  shareStatsHint: "ปิดไว้จนกว่าคุณจะเปิดเอง บอกเราว่าหน้าไหนและฟีเจอร์ไหนถูกใช้ ไม่ส่งรายการ ยอดเงิน หรือสลิปของคุณ",
+  onbStatsHint: "ไม่บังคับ ช่วยให้มูรู้ว่าฟีเจอร์ไหนถูกใช้ ไม่มีข้อมูลเงินของคุณ เปลี่ยนได้ทุกเมื่อในหน้ามูของฉัน",
 
   // Misc
   loading: "กำลังโหลด...",
