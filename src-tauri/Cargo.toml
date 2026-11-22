@@ -1,6 +1,6 @@
 [package]
 name = "moojot"
-version = "1.1.0"
+version = "1.2.0"
 description = "MooJot — Open-source personal income/expense tracker & Thai e-slip manager"
 authors = ["MooJot Contributors"]
 edition = "2024"
