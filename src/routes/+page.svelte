@@ -25,6 +25,13 @@
   import SettingsView, { type SettingsSubPage } from "$lib/components/SettingsView.svelte";
   import RulesModal from "$lib/components/RulesModal.svelte";
   import ThumbSheet from "$lib/components/ThumbSheet.svelte";
+  import Onboarding from "$lib/components/Onboarding.svelte";
+  import {
+    deviceLanguage,
+    markOnboardingDone,
+    markOnboardingPending,
+    onboardingState,
+  } from "$lib/onboarding";
   import {
     api,
     hasAndroidBridge,
@@ -60,6 +67,11 @@
     Tag,
   } from "$lib/types";
 
+  // Read before the theme effect saves its keys: see onboardingState().
+  const firstRunState = onboardingState();
+  let showOnboarding = $state(false);
+  let onboardingLanguage = $state<"en" | "th">("en");
+  let onboardingBack = $state<(() => void) | null>(null);
   let theme = $state<AppTheme>(loadSavedTheme());
   let hand = $state<HandMode>(loadSavedHand());
   let activeTab = $state<"home" | "summary" | "settings">("home");
@@ -144,7 +156,8 @@
     showFilterSheet ||
     pdfPrompt !== null ||
     scanStartPrompt ||
-    monthPicker
+    monthPicker ||
+    showOnboarding
   );
 
   // Apply theme attribute & sync Android status bar icon contrast cleanly per screen!
@@ -159,7 +172,8 @@
       showSearch ||
       recordLightboxOpen;
     const isLightStatusBar =
-      theme === "pink-white" && !hasColoredTopBar && activeTab !== "home";
+      theme === "pink-white" &&
+      (showOnboarding || (!hasColoredTopBar && activeTab !== "home"));
     window.MooJotAndroid?.setStatusBarLight?.(isLightStatusBar);
   });
 
@@ -211,8 +225,8 @@
     const [h, sum, cmp, bdgs] = await Promise.all([
       api.getHomeData(offset, filterAccountIds),
       api.getSummaryData(offset, summaryKind, filterAccountIds),
-      api.getCompareData(offset, summaryKind, 6),
-      api.getBudgets(offset),
+      api.getCompareData(offset, summaryKind, 6, filterAccountIds),
+      api.getBudgets(offset, filterAccountIds),
     ]);
     if (request !== periodRequest) return;
     home = h;
@@ -329,6 +343,49 @@
     pullArmed = false;
   }
 
+  function openOnboarding(firstRun: boolean) {
+    // Only a brand-new install starts in the device language. A tour resumed after the
+    // app was closed (or replayed) keeps the language already saved, including one the
+    // user picked in Quick setup before closing.
+    onboardingLanguage =
+      firstRun && firstRunState === "new" ? deviceLanguage() : settings.language;
+    if (firstRun) markOnboardingPending();
+    showOnboarding = true;
+  }
+
+  function closeOnboarding() {
+    markOnboardingDone();
+    showOnboarding = false;
+    activeTab = "home";
+    settingsSubPage = null;
+  }
+
+  // First run: show the welcome tour unless this install already has data.
+  $effect(() => {
+    if (firstRunState === "done" || firstRunState === "returning") {
+      if (firstRunState === "returning") markOnboardingDone();
+      return;
+    }
+    void (async () => {
+      try {
+        const [s, h, months] = await Promise.all([
+          api.getSettings(),
+          api.getHomeData(0),
+          api.listScannedMonths(),
+        ]);
+        settings = s;
+        const hasData = h.dayGroups.length > 0 || h.futureRecords.length > 0 || months.length > 0;
+        if (firstRunState === "new" && hasData) {
+          markOnboardingDone();
+          return;
+        }
+      } catch (e) {
+        console.warn("onboarding: could not check existing data", e);
+      }
+      openOnboarding(true);
+    })();
+  });
+
   async function refreshAll() {
     const [s, accs, cats, tgs] = await Promise.all([
       api.getSettings(),
@@ -348,8 +405,8 @@
     const [h, sum, cmp, bdgs] = await Promise.all([
       api.getHomeData(periodOffset, filterAccountIds),
       api.getSummaryData(periodOffset, summaryKind, filterAccountIds),
-      api.getCompareData(periodOffset, summaryKind, 6),
-      api.getBudgets(periodOffset),
+      api.getCompareData(periodOffset, summaryKind, 6, filterAccountIds),
+      api.getBudgets(periodOffset, filterAccountIds),
     ]);
     home = h;
     summary = sum;
@@ -478,6 +535,11 @@
   // Wire Android hardware/gesture Back button handler
   $effect(() => {
     window.__moojotHandleBack = () => {
+      // The tour covers everything else, so Back belongs to it first.
+      if (showOnboarding) {
+        onboardingBack?.();
+        return "handled";
+      }
       if (monthPicker) {
         monthSheet.current?.();
         return "handled";
@@ -545,7 +607,8 @@
     };
     const onPerm = (ev: Event) => {
       const detail = (ev as CustomEvent<{ granted: boolean }>).detail;
-      if (detail?.granted) triggerSlipScan();
+      // During onboarding, granting access shouldn't start a scan behind it.
+      if (detail?.granted && !showOnboarding) triggerSlipScan();
     };
     const onErr = (ev: Event) => {
       const detail = (ev as CustomEvent<{ error: string }>).detail;
@@ -1227,6 +1290,7 @@
       {theme}
       {hand}
       bind:subPage={settingsSubPage}
+      onReplayOnboarding={() => openOnboarding(false)}
       onChangeTheme={(nextTheme) => {
         theme = nextTheme;
       }}
@@ -1649,3 +1713,21 @@
     </ThumbSheet>
   {/if}
 </div>
+
+{#if showOnboarding}
+  <Onboarding
+    {settings}
+    {theme}
+    {hand}
+    initialLanguage={onboardingLanguage}
+    bind:backHandler={onboardingBack}
+    onChangeTheme={(next) => (theme = next)}
+    onChangeHand={(next) => (hand = next)}
+    onSaveSettings={async (next) => {
+      await api.updateSettings(next);
+      settings = next;
+      await refreshPeriodData();
+    }}
+    onFinish={closeOnboarding}
+  />
+{/if}
