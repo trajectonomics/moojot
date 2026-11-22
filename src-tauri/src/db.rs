@@ -924,7 +924,7 @@ pub fn add_one_month(date: NaiveDate) -> NaiveDate {
 }
 
 #[cfg(test)]
-mod tests {
+mod payee_rule_tests {
     use super::*;
     use crate::categorizer::{classify_local, upsert_user_rule};
 
