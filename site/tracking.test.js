@@ -180,7 +180,17 @@ test("without POSTHOG_KEY nothing is sent, and links still work", async () => {
 test("/ingest proxies events to PostHog EU without cookies, passing the visitor IP", async () => {
   const net = network();
   const res = await handle(
-    req("/ingest/e/?compression=gzip-js", { cookie: "ph_x=1", "cf-connecting-ip": "203.0.113.9" }, { method: "POST", body: "payload" }),
+    req(
+      "/ingest/e/?compression=gzip-js",
+      {
+        cookie: "ph_x=1",
+        "cf-connecting-ip": "203.0.113.9",
+        "x-forwarded-for": "198.51.100.1",
+        "x-real-ip": "198.51.100.2",
+        "content-type": "text/plain",
+      },
+      { method: "POST", body: "payload" },
+    ),
     env,
     null,
     net.deps,
@@ -191,7 +201,16 @@ test("/ingest proxies events to PostHog EU without cookies, passing the visitor 
   assert.equal(call.init.method, "POST");
   assert.equal(new TextDecoder().decode(call.init.body), "payload");
   assert.equal(call.init.headers.get("cookie"), null);
+  assert.equal(call.init.headers.get("x-real-ip"), null);
   assert.equal(call.init.headers.get("x-forwarded-for"), "203.0.113.9");
+  assert.equal(call.init.headers.get("content-type"), "text/plain");
+});
+
+test("/ingest only proxies the methods PostHog needs", async () => {
+  const net = network();
+  const res = await handle(req("/ingest/e/", {}, { method: "PUT", body: "x" }), env, null, net.deps);
+  assert.equal(res.status, 405);
+  assert.equal(net.proxied.length, 0);
 });
 
 test("/ingest/static and /ingest/array come from the assets host", async () => {

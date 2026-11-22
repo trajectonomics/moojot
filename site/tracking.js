@@ -40,6 +40,9 @@ const ALIASES = {
 };
 
 const SLUG = /^[a-z0-9][a-z0-9_-]{0,39}$/;
+/** Request headers the /ingest proxy passes on. Everything else (cookies, spoofable IP headers) is dropped. */
+const PROXY_HEADERS = ["accept", "accept-encoding", "accept-language", "content-encoding", "content-type", "origin", "user-agent"];
+const PROXY_METHODS = ["GET", "HEAD", "POST", "OPTIONS"];
 const HOST = /^[a-z0-9.-]{1,100}$/;
 const BOT =
   /bot|crawl|spider|slurp|preview|facebookexternalhit|facebot|embedly|whatsapp|telegram|discord|slack|skype|headless|lighthouse|curl|wget|python|go-http|node-fetch|axios/i;
@@ -207,22 +210,27 @@ export function downloadSource(request) {
 
 /**
  * /ingest/* -> PostHog. Scripts (/static, /array) come from the assets host and are
- * cached at the edge. Cookies are not forwarded. The visitor's IP is passed on as
- * X-Forwarded-For so PostHog can estimate the country, as it would without a proxy.
+ * cached at the edge. Only the headers in PROXY_HEADERS are forwarded, so no cookies.
+ * The visitor's IP, as Cloudflare saw it, is passed on as X-Forwarded-For so PostHog can
+ * estimate the country, as it would without a proxy.
  */
 export async function proxyIngest(request, env, deps = {}) {
+  if (!PROXY_METHODS.includes(request.method)) {
+    return new Response("method not allowed", { status: 405, headers: { allow: PROXY_METHODS.join(", ") } });
+  }
   const fetchImpl = deps.fetch ?? fetch;
   const url = new URL(request.url);
   const path = url.pathname.slice("/ingest".length) || "/";
   const isAsset = path.startsWith("/static/") || path.startsWith("/array/");
   const host = `${region(env)}${isAsset ? "-assets" : ""}.i.posthog.com`;
 
-  const headers = new Headers(request.headers);
-  headers.delete("cookie");
-  headers.delete("host");
+  const headers = new Headers();
+  for (const name of PROXY_HEADERS) {
+    const value = request.headers.get(name);
+    if (value !== null) headers.set(name, value);
+  }
   const ip = request.headers.get("cf-connecting-ip");
   if (ip) headers.set("x-forwarded-for", ip);
-  else headers.delete("x-forwarded-for");
 
   const init = { method: request.method, headers, redirect: "manual" };
   if (request.method !== "GET" && request.method !== "HEAD") init.body = await request.arrayBuffer();

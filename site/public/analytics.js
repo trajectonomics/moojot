@@ -52,6 +52,8 @@
   // Remove everything PostHog stored. The caller reloads, so no PostHog script keeps running.
   function forgetPostHog() {
     var ph = window.posthog;
+    // Still loading: empty the init queue so array.js has nothing to start if it lands now.
+    if (ph && !ph.__loaded && ph._i) ph._i.length = 0;
     if (ph && ph.__loaded) {
       try {
         ph.opt_out_capturing();

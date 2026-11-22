@@ -32,6 +32,7 @@ let client: PostHog | null = null;
 let starting: Promise<void> | null = null;
 let pending: [AnalyticsEvent, AnalyticsProps | undefined][] = [];
 let context: Record<string, string> = {};
+let appVersion = "unknown";
 
 function read(key: string): string | null {
   try {
@@ -87,14 +88,16 @@ export function startAnalytics(): Promise<void> {
   if (client) {
     client.__loaded = true; // see setAnalyticsEnabled(false)
     if (client.has_opted_out_capturing()) client.opt_in_capturing({ captureEventName: false });
+    client.register(baseProperties()); // reset() dropped them when stats were turned off
     return Promise.resolve();
   }
   starting ??= (async () => {
     try {
-      const [{ default: posthog }, appVersion] = await Promise.all([
+      const [{ default: posthog }, version] = await Promise.all([
         import("posthog-js/no-external"),
         getVersion().catch(() => "unknown"),
       ]);
+      appVersion = version;
       if (!analyticsEnabled()) return; // turned off while loading
       posthog.init(POSTHOG_KEY, {
         api_host: API_HOST,
@@ -126,7 +129,7 @@ export function startAnalytics(): Promise<void> {
       // A choice of "off" in an earlier session leaves PostHog opted out. The user has
       // since turned stats back on (or this wouldn't run), so follow the new choice.
       if (posthog.has_opted_out_capturing()) posthog.opt_in_capturing({ captureEventName: false });
-      posthog.register({ platform: "android", app_version: appVersion, ...context });
+      posthog.register(baseProperties());
       client = posthog;
       const queued = pending;
       pending = [];
@@ -139,6 +142,10 @@ export function startAnalytics(): Promise<void> {
     }
   })();
   return starting;
+}
+
+function baseProperties(): Record<string, string> {
+  return { platform: "android", app_version: appVersion, ...context };
 }
 
 /** Send one allowlisted event. Does nothing when analytics is off or unsupported. */
