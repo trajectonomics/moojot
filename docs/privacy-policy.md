@@ -4,7 +4,7 @@
 
 Trajectonomics publishes MooJot, a personal income and expense tracker. This policy says what the Android app does with information. The same text is shown in My Moo → About → Privacy.
 
-The short version: the ledger stays on your phone. Trajectonomics has no account server and no analytics SDK, and does not receive your records. The only upload the code can make is optional. It happens only if an AksonOCR API key is already stored in the local database. The settings screen does not ask for that key.
+The short version: the ledger stays on your phone. Trajectonomics has no account server and does not receive your records. To read English text on slips, the app uses Google ML Kit. ML Kit reads the photo on the phone, but it sends Google metrics about its own performance and use, such as your device model and a per-installation identifier. MooJot cannot switch that off. The section "Google ML Kit metrics" below lists what is sent. The only upload of a slip image the code can make is optional. It happens only if an AksonOCR API key is already stored in the local database. The settings screen does not ask for that key.
 
 This policy is written so a person can read it. It is the project's description of its own behavior. It is not a certificate of compliance, and it is not legal advice.
 
@@ -39,9 +39,26 @@ You type a record, you scan a bank album, you pick one photo, or you pick a stat
 
 You can import one slip or one PDF with the system picker instead of granting album access. Shared albums stay off until you turn them on. The scanner looks for a slip QR before it treats a photo as a slip. Camera and Screenshots folders are not the scan target.
 
-On-device tools read the slip locally: a QR decoder, ML Kit Latin for English text, and AksonOCR-Lite (an ONNX model) for Thai text. Those steps do not send the photo to Trajectonomics or to Google as part of MooJot's design.
+On-device tools read the slip locally: a QR decoder, ML Kit Latin for English text, and AksonOCR-Lite (an ONNX model) for Thai text. Those steps do not send the photo to Trajectonomics or to Google as part of MooJot's design. ML Kit does send Google metrics about how it runs, described in the next section.
 
-The manifest declares `INTERNET` so the optional OCR request below can use HTTPS. The manifest also declares `POST_NOTIFICATIONS`. The current app does not send notification content anywhere and does not use notifications to collect data.
+The manifest declares `INTERNET` so ML Kit can send those metrics and the optional OCR request below can use HTTPS. The manifest also declares `POST_NOTIFICATIONS`. The current app does not send notification content anywhere and does not use notifications to collect data.
+
+## Google ML Kit metrics
+
+MooJot uses Google ML Kit text recognition to read English text on a slip. ML Kit is a library made by Google. It is not open source, and Google's ML Kit Terms of Service apply to it: <https://developers.google.com/ml-kit/terms>
+
+ML Kit reads the photo on the phone. Google states that ML Kit does not send the image, or the text it reads, to Google servers. It does send Google metrics about the performance and use of ML Kit in the app. Google's ML Kit data disclosure (<https://developers.google.com/ml-kit/android-data-disclosure>) lists these kinds of data:
+
+- device information, such as the manufacturer, model, Android version and build
+- app information: the package name and app version
+- a per-installation identifier, which Google says is not intended to identify a user or a physical device
+- performance metrics, such as how long recognition took
+- the API configuration, such as the image format and resolution, and the size of the input and output
+- the ML Kit feature version, the type of event (such as start-up, a recognition run, or a release), and error codes
+
+Google says ML Kit sends this over HTTPS, uses it for diagnostics and usage analytics, and does not transfer it to third parties. Google's Privacy Policy (<https://policies.google.com/privacy>) applies to it. Trajectonomics does not receive these metrics and cannot delete them.
+
+MooJot has no setting that switches these metrics off, and Google's documentation does not describe one. ML Kit's text reader runs when you scan bank albums, pick a slip photo, share a slip to MooJot, or re-parse slips. Typing a record by hand does not use it.
 
 ## Optional AksonOCR upload
 
@@ -61,6 +78,8 @@ We do not collect:
 - your contacts, location, or microphone
 - the ledger, by any automatic upload
 
+Google receives the ML Kit metrics described above. We do not.
+
 We do not sell personal information. We do not share it for cross-context advertising. We do not train a model on your records.
 
 ## When information leaves the phone
@@ -68,10 +87,11 @@ We do not sell personal information. We do not share it for cross-context advert
 Information leaves the phone only in these cases:
 
 - You export CSV or JSON, or you use the Android share sheet. The file goes to the app you pick. We do not upload it.
+- ML Kit reads a slip, and sends Google the metrics described in "Google ML Kit metrics". This does not include the photo or the text read from it.
 - You stored an AksonOCR API key, and the app sends one slip image to AksonOCR as described above.
 - You copy text into a GitHub issue or a security report yourself. Do not put real account numbers, slip photos, or a full ledger in a public issue.
 
-Banks, Google Play, Android, and AksonOCR are third parties. Their own terms apply when you use them. We are not responsible for their outages or their privacy practices.
+Banks, Google (including Google Play and ML Kit), Android, and AksonOCR are third parties. Their own terms apply when you use them. We are not responsible for their outages or their privacy practices.
 
 ## How long it stays
 
@@ -101,7 +121,7 @@ Those are the practical ways to access, correct, and delete the ledger. We canno
 
 ### Thailand (PDPA)
 
-If the PDPA applies to you, the personal data in MooJot is processed on your device for your own household ledger. Trajectonomics does not collect that ledger onto its own system. For the optional AksonOCR send, you cause the transfer by having a key stored, and AksonOCR is the recipient.
+If the PDPA applies to you, the personal data in MooJot is processed on your device for your own household ledger. Trajectonomics does not collect that ledger onto its own system. For the optional AksonOCR send, you cause the transfer by having a key stored, and AksonOCR is the recipient. ML Kit metrics go to Google, under Google's Privacy Policy.
 
 You may ask questions about this policy through the contact links below. A request to delete data we do not hold can only be answered by pointing you back to the app, the uninstall step, and, if you used it, AksonOCR.
 
@@ -109,11 +129,11 @@ You may ask questions about this policy through the contact links below. A reque
 
 If you use the app from the EEA or the UK, the same facts apply. We do not operate a server that holds your ledger, so we are not in a position to act as a remote controller of that ledger. The legal basis for any optional image you send to AksonOCR is the step you take by storing a key and scanning. You can stop that path by clearing the key or leaving it empty. Rights of access, correction, deletion, and portability for the ledger are exercised on the device, including by export and uninstall.
 
-We do not transfer your ledger outside your phone. An optional AksonOCR request goes to that provider, which may process it in whatever country it uses. That provider's safeguards are its own.
+We do not transfer your ledger outside your phone. ML Kit metrics go to Google, and an optional AksonOCR request goes to that provider. Each may process the data in whatever country it uses, under its own safeguards.
 
 ### California
 
-We do not sell personal information and we do not share it for cross-context behavioral advertising. We do not offer a financial incentive for personal information. Categories that can exist on the device are identifiers inside a slip (such as a name or account reference), financial information you enter, photos you import, and the local settings listed above. We do not collect those categories onto a MooJot server.
+We do not sell personal information and we do not share it for cross-context behavioral advertising. We do not offer a financial incentive for personal information. Categories that can exist on the device are identifiers inside a slip (such as a name or account reference), financial information you enter, photos you import, and the local settings listed above. We do not collect those categories onto a MooJot server. Google receives ML Kit metrics, including a per-installation identifier, as described above.
 
 ## Children
 
