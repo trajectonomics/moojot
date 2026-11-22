@@ -6,13 +6,24 @@ Use this when filling the Google Play Data safety form and the Photo and Video P
 
 | Question | Answer |
 |---|---|
-| Does the app collect or share user data? | No data is sent to a MooJot server. The bundled Google ML Kit SDK sends Google usage and performance metrics (see below), and Play counts data an SDK sends as collected by the app. |
-| Is data encrypted in transit? | Yes. ML Kit sends its metrics over HTTPS. If the user saves an AksonOCR API key, that optional request also uses HTTPS. |
-| Can users ask for deletion? | They delete records in the app, or uninstall. The ledger is not held off-device. ML Kit metrics are held by Google, and MooJot cannot delete them. |
-| Financial info | Entered or imported by the user and stored only on the device. Not shared. |
+| Does the app collect or share user data? | **Collects**, from two sources: anonymous usage analytics, only after the user opts in, and the usage and performance metrics the bundled Google ML Kit SDK sends Google whenever it reads a slip (see both sections below). Play counts data an SDK sends as collected by the app. The ledger is not sent to a MooJot server. PostHog receives the analytics events as our service provider, which Play does not count as sharing. |
+| Is data encrypted in transit? | Yes. Usage events go over HTTPS to `moojot.trajectonomics.com`, which forwards them to PostHog EU Cloud. ML Kit sends its metrics over HTTPS. The optional AksonOCR request also uses HTTPS. |
+| Is collection optional? | Analytics: yes. It is off by default. Users opt in with "Share anonymous usage stats" in the welcome tour or My Moo, and can turn it off there. ML Kit metrics: no. The app cannot turn them off. |
+| Can users ask for deletion? | They delete records in the app, or uninstall. The ledger is not held off-device. Turning analytics off deletes the anonymous ID on the phone; deletion of past events can be requested through GitHub issues. ML Kit metrics are held by Google, and MooJot cannot delete them. |
+| Financial info | Entered or imported by the user and stored only on the device. Not collected, not shared. |
 | Photos | Read to import Thai bank slips. Stored as private copies inside the app. Not shared. |
 
 Declare **Photos and videos** as collected for app functionality, not shared, processed on device.
+
+### Opt-in usage analytics (PostHog)
+
+Declare these as **collected**, **not shared**, **optional** (off until the user opts in), purpose **Analytics**, processed ephemerally: no; linked to the user's identity: no.
+
+- **App activity → App interactions**: screen views, welcome-tour steps, slip scan started/finished/failed, record saved/deleted (kind only), statement imported (counts only), export format, settings changed.
+- **Device or other IDs**: a random ID generated on the phone for analytics (not the advertising ID).
+- PostHog sends no app performance data: exception capture and session replay are off. ML Kit does send performance data; see the next section.
+
+The exact event list is `src/lib/analyticsEvents.ts`. Re-check this form whenever that file changes.
 
 ### Google ML Kit metrics
 
@@ -23,7 +34,7 @@ ML Kit (English slip text) sends Google metrics whenever it reads a slip. Google
 - Encrypted in transit (HTTPS). Google says it does not transfer this data to third parties.
 - Users cannot turn it off in the app, so mark it as required collection.
 
-In the form this most closely matches **App info and performance** (diagnostics, other performance data) and **Device or other IDs**, collected for **Analytics**. Check the current Play data-type definitions when you fill it in.
+In the form this most closely matches **App info and performance** (diagnostics, other performance data) and **Device or other IDs**, collected for **Analytics**. Because ML Kit's collection is required, **Device or other IDs** is required overall, even though the PostHog ID is optional. Check the current Play data-type definitions when you fill it in.
 
 If the optional AksonOCR key stays in the product, also declare that photos may be sent to the OCR provider **only when the user supplies a key**. The default build path does not.
 

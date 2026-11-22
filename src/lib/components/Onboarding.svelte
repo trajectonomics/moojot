@@ -16,12 +16,14 @@
     Palette,
     Plus,
     Calendar,
+    ChartNoAxesColumn,
     ShieldCheck,
     UserRoundX,
     WifiOff,
   } from "@lucide/svelte";
   import MooMascot from "./MooMascot.svelte";
   import { hasAndroidBridge } from "$lib/api";
+  import { track } from "$lib/analytics";
   import { t, type I18nKey } from "$lib/i18n";
   import type { AppTheme, HandMode } from "$lib/theme";
   import type { AppSettings } from "$lib/types";
@@ -31,8 +33,11 @@
     theme,
     hand,
     initialLanguage,
+    replay = false,
+    shareStats = false,
     onChangeTheme,
     onChangeHand,
+    onChangeShareStats,
     onSaveSettings,
     onFinish,
     backHandler = $bindable<(() => void) | null>(null),
@@ -42,8 +47,13 @@
     hand: HandMode;
     /** Language to show first (the device language on a first run). */
     initialLanguage: "en" | "th";
+    /** Opened again from My Moo rather than on a first run. */
+    replay?: boolean;
+    /** Anonymous usage stats switch (opt-in, off by default), shown on the "private" step. */
+    shareStats?: boolean;
     onChangeTheme: (next: AppTheme) => void;
     onChangeHand: (next: HandMode) => void;
+    onChangeShareStats: (on: boolean) => void;
     onSaveSettings: (next: AppSettings) => Promise<void>;
     onFinish: () => void;
     /** Set by this component: what the Android back button should do. */
@@ -107,6 +117,7 @@
   }
 
   async function finish() {
+    track("onboarding_finished", { completed: step === LAST, last_step: STEPS[step], replay });
     if (monthTimer) flushMonthStart();
     // Keep the language the tour was shown in (the device language on a first run).
     await save({ language: lang });
@@ -117,8 +128,13 @@
     const target = Math.min(LAST, Math.max(0, next));
     if (target === step) return;
     step = target;
+    stepViewed(target);
     await tick();
     headings[target]?.focus({ preventScroll: true });
+  }
+
+  function stepViewed(index: number) {
+    track("onboarding_step_viewed", { step: STEPS[index], step_number: index + 1, replay });
   }
 
   function requestGallery() {
@@ -197,6 +213,8 @@
   onMount(() => {
     const previouslyFocused = document.activeElement as HTMLElement | null;
     headings[0]?.focus({ preventScroll: true });
+    track("onboarding_started", { replay });
+    stepViewed(0);
     if (onAndroid) galleryGranted = Boolean(window.MooJotAndroid?.hasGalleryPermission());
     const onPerm = (ev: Event) => {
       const detail = (ev as CustomEvent<{ granted: boolean }>).detail;
@@ -330,6 +348,21 @@
                   </li>
                 {/each}
               </ul>
+              <label class="flex w-full items-center gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-4 py-3 text-left shadow-xs">
+                <span class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand)]">
+                  <ChartNoAxesColumn class="size-4" />
+                </span>
+                <span class="min-w-0 flex-1">
+                  <span class="block text-sm font-semibold">{tr("shareStats")}</span>
+                  <span class="block text-[11px] text-[var(--text-muted)]">{tr("onbStatsHint")}</span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={shareStats}
+                  onchange={(e) => onChangeShareStats(e.currentTarget.checked)}
+                  class="size-5 shrink-0 accent-[var(--brand)]"
+                />
+              </label>
             {:else if id === "scan"}
               <div class="relative w-full max-w-[16rem] rounded-[2rem] border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 shadow-sm">
                 <div

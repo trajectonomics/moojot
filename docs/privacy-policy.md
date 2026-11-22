@@ -2,9 +2,9 @@
 
 **Last updated: 22 November 2026**
 
-Trajectonomics publishes MooJot, a personal income and expense tracker. This policy says what the Android app does with information. The same text is shown in My Moo → About → Privacy.
+Trajectonomics publishes MooJot, a personal income and expense tracker. This policy says what the Android app and the website at <https://moojot.trajectonomics.com> do with information. The same text is shown in My Moo → About → Privacy.
 
-The short version: the ledger stays on your phone. Trajectonomics has no account server and does not receive your records. To read English text on slips, the app uses Google ML Kit. ML Kit reads the photo on the phone, but it sends Google metrics about its own performance and use, such as your device model and a per-installation identifier. MooJot cannot switch that off. The section "Google ML Kit metrics" below lists what is sent. The only upload of a slip image the code can make is optional. It happens only if an AksonOCR API key is already stored in the local database. The settings screen does not ask for that key.
+The short version: the ledger stays on your phone. Trajectonomics has no account server and does not receive your records. MooJot sends us nothing about how you use it unless you choose to share anonymous usage statistics (which screens and features get used, never your records, amounts, or slips). That switch is off until you turn it on. Separately, to read English text on slips, the app uses Google ML Kit. ML Kit reads the photo on the phone, but it sends Google metrics about its own performance and use, such as your device model and a per-installation identifier. MooJot cannot switch that off. The section "Google ML Kit metrics" below lists what is sent. The website uses cookies only if you allow them. The only upload of a slip image the code can make is optional. It happens only if an AksonOCR API key is already stored in the local database. The settings screen does not ask for that key.
 
 This policy is written so a person can read it. It is the project's description of its own behavior. It is not a certificate of compliance, and it is not legal advice.
 
@@ -16,7 +16,7 @@ Because the ledger never reaches us, we cannot see it, correct it, or delete it 
 
 ## Information that stays on the phone
 
-MooJot stores the following in the app's private files. None of it is sent to a MooJot server.
+MooJot stores the following in the app's private files. None of it is sent to a MooJot server, except the random usage-statistics ID and events described in "Anonymous usage statistics", if you turn that switch on.
 
 | Data | Where | Why |
 | --- | --- | --- |
@@ -30,6 +30,7 @@ MooJot stores the following in the app's private files. None of it is sent to a 
 | Ids of photos already scanned, and months already scanned | SQLite on the phone | Do not repeat work |
 | Daily counts of slips synced and records categorized | SQLite on the phone | A local activity count, not a remote log |
 | Theme (pink or dark) and hand (left or right) | localStorage on the phone | Remember appearance. These two keys are not tracking cookies. |
+| The usage-statistics switch and, while it is on, a random anonymous ID and the queue of events not yet sent | localStorage on the phone | Remember your choice, and send the statistics described below |
 
 Slip photos and statement lines can contain names, account details, amounts, and other information that is sensitive under Thailand's Personal Data Protection Act (PDPA). That sensitivity is why it stays in the app's private storage unless you export it or turn on the optional OCR key described below.
 
@@ -41,7 +42,7 @@ You can import one slip or one PDF with the system picker instead of granting al
 
 On-device tools read the slip locally: a QR decoder, ML Kit Latin for English text, and AksonOCR-Lite (an ONNX model) for Thai text. Those steps do not send the photo to Trajectonomics or to Google as part of MooJot's design. ML Kit does send Google metrics about how it runs, described in the next section.
 
-The manifest declares `INTERNET` so ML Kit can send those metrics and the optional OCR request below can use HTTPS. The manifest also declares `POST_NOTIFICATIONS`. The current app does not send notification content anywhere and does not use notifications to collect data.
+The manifest declares `INTERNET` so ML Kit can send those metrics, and so the optional OCR request below and the optional anonymous usage statistics can use HTTPS. The manifest also declares `POST_NOTIFICATIONS`. The current app does not send notification content anywhere and does not use notifications to collect data.
 
 ## Google ML Kit metrics
 
@@ -58,7 +59,7 @@ ML Kit reads the photo on the phone. Google states that ML Kit does not send the
 
 Google says ML Kit sends this over HTTPS, uses it for diagnostics and usage analytics, and does not transfer it to third parties. Google's Privacy Policy (<https://policies.google.com/privacy>) applies to it. Trajectonomics does not receive these metrics and cannot delete them.
 
-MooJot has no setting that switches these metrics off, and Google's documentation does not describe one. ML Kit's text reader runs when you scan bank albums, pick a slip photo, share a slip to MooJot, or re-parse slips. Typing a record by hand does not use it.
+MooJot has no setting that switches these metrics off, and Google's documentation does not describe one. The "Share anonymous usage stats" switch controls only MooJot's own statistics, not ML Kit. ML Kit's text reader runs when you scan bank albums, pick a slip photo, share a slip to MooJot, or re-parse slips. Typing a record by hand does not use it.
 
 ## Optional AksonOCR upload
 
@@ -68,13 +69,37 @@ We do not operate AksonOCR. We do not get a copy of the image back onto a server
 
 The My Moo screen that describes local OCR is about the on-device model. It does not switch this optional path off if a key is already in the database.
 
+## Anonymous usage statistics
+
+This is optional and off by default. The welcome tour asks on its privacy step, and the switch "Share anonymous usage stats" in My Moo changes it at any time. Until you turn it on, the code that sends statistics is not loaded at all, and nothing is collected to send later. If you turn it on, the app sends a small set of usage events so we can see which features people use and where they get stuck.
+
+What an event can contain:
+
+- its name, for example that you turned the statistics on, that the app was opened, a screen was viewed, a welcome-tour step was viewed, photo access was allowed or refused, a slip scan started, finished or failed, a record was saved or deleted, a statement was imported, data was exported, or a setting changed
+- for some events, a short label or count: the screen name, the kind of record (spending, income or transfer), whether it was new or recurring, how many slips or statement lines were imported or skipped as duplicates, the export format, or the new value of the theme, hand, language or month-start setting
+- the app version, the app's language and theme, and technical details the analytics library adds, such as the Android and WebView version, device type, screen size, and time zone
+- a random ID created on the phone, so events from the same install can be counted together, and a session ID
+
+The list of allowed events and labels is in the app's source code (`src/lib/analyticsEvents.ts`), and the app drops anything not on it before sending. Events never contain amounts, payees, notes, category, tag or account names, slip images, OCR text, file names, or anything you type. We do not link the random ID to your name, email, phone number, or advertising ID. There is no session recording and no automatic capture of what is on the screen.
+
+Events go over HTTPS to `moojot.trajectonomics.com`, which passes them to PostHog, our analytics provider, on its EU Cloud. PostHog receives the IP address of the connection and uses it to estimate your country and city. Turning the switch off stops sending at once and resets the random ID, so if you turn it on again, the app starts with a new ID. Because the ID is not linked to you, we usually cannot find past events for one person. Ask through the contact links below if you want us to try.
+
+## Website
+
+The website counts clicks on its links and downloads of the app without cookies. For each one, the site's server records only where the click came from (for example, which social post or campaign link), the country our hosting provider (Cloudflare) resolved, a coarse platform (Android, iPhone, desktop, or other), and which in-app browser was used, if any. It sends that to PostHog with a new random ID every time, so clicks cannot be tied together. It does not send your IP address or browser details for these counts.
+
+If you tap "Allow" on the cookie banner, the site also loads PostHog's web analytics from its own domain. PostHog then sets a cookie and uses local storage to count your visits and see which pages and buttons you use, and it receives your IP address to estimate your location. If you tap "No thanks", or ignore the banner, none of that loads. You can change your choice at any time with "Cookie settings" at the bottom of the page. Saying no again deletes the PostHog cookie and storage.
+
+The site remembers your language and your cookie choice in local storage.
+
 ## What we do not collect
 
 We do not collect:
 
 - a MooJot account, email, or password
 - a payment card for Trajectonomics (the app is free and we take no payment)
-- advertising identifiers, analytics events, or crash reports
+- advertising identifiers or crash reports
+- any analytics event that contains your records, amounts, payees, notes, or slips
 - your contacts, location, or microphone
 - the ledger, by any automatic upload
 
@@ -89,15 +114,18 @@ Information leaves the phone only in these cases:
 - You export CSV or JSON, or you use the Android share sheet. The file goes to the app you pick. We do not upload it.
 - ML Kit reads a slip, and sends Google the metrics described in "Google ML Kit metrics". This does not include the photo or the text read from it.
 - You stored an AksonOCR API key, and the app sends one slip image to AksonOCR as described above.
+- You turned on usage statistics, and the app sends the anonymous events described above.
 - You copy text into a GitHub issue or a security report yourself. Do not put real account numbers, slip photos, or a full ledger in a public issue.
 
-Banks, Google (including Google Play and ML Kit), Android, and AksonOCR are third parties. Their own terms apply when you use them. We are not responsible for their outages or their privacy practices.
+Banks, Google (including Google Play and ML Kit), Android, AksonOCR, PostHog, and Cloudflare are third parties. Their own terms apply when you use them. We are not responsible for their outages or their privacy practices.
 
 ## How long it stays
 
 Records stay on the phone until you delete them, clear the app's storage, or uninstall MooJot. Android normally deletes the app's private storage on uninstall. A backup you made, or a file you exported, is outside the app and stays until you delete that copy.
 
-We have no server copy, so we have no server retention period. We also have no server backup we could restore for you.
+We have no server copy of the ledger, so the ledger has no server retention period. We also have no server backup we could restore for you.
+
+Usage statistics and website counts are kept in PostHog for as long as our PostHog plan retains data, and we may delete them sooner.
 
 ## Security
 
@@ -105,7 +133,7 @@ The database sits in the app's private storage, which other apps are not suppose
 
 No method of storage is perfectly safe. Someone who unlocks your phone, or who has a backup of it, may be able to read the database. If you save an AksonOCR key, it is stored in that database as plain text.
 
-The optional OCR call uses HTTPS. A PDF password is used in memory to decrypt the file and is not saved.
+The optional OCR call and the usage statistics use HTTPS. A PDF password is used in memory to decrypt the file and is not saved.
 
 ## Your choices
 
@@ -114,6 +142,7 @@ On the phone you can:
 - edit or delete a record
 - turn banks and shared albums on or off
 - refuse photo access and use the picker instead
+- turn anonymous usage statistics on or off in My Moo
 - export a copy
 - uninstall the app and remove its private storage
 
@@ -121,23 +150,23 @@ Those are the practical ways to access, correct, and delete the ledger. We canno
 
 ### Thailand (PDPA)
 
-If the PDPA applies to you, the personal data in MooJot is processed on your device for your own household ledger. Trajectonomics does not collect that ledger onto its own system. For the optional AksonOCR send, you cause the transfer by having a key stored, and AksonOCR is the recipient. ML Kit metrics go to Google, under Google's Privacy Policy.
+If the PDPA applies to you, the personal data in MooJot is processed on your device for your own household ledger. Trajectonomics does not collect that ledger onto its own system. For the optional AksonOCR send, you cause the transfer by having a key stored, and AksonOCR is the recipient. ML Kit metrics go to Google, under Google's Privacy Policy. Anonymous usage statistics are sent to PostHog for us only if you turn them on, and website analytics only run after you allow cookies.
 
 You may ask questions about this policy through the contact links below. A request to delete data we do not hold can only be answered by pointing you back to the app, the uninstall step, and, if you used it, AksonOCR.
 
 ### European Economic Area and the United Kingdom
 
-If you use the app from the EEA or the UK, the same facts apply. We do not operate a server that holds your ledger, so we are not in a position to act as a remote controller of that ledger. The legal basis for any optional image you send to AksonOCR is the step you take by storing a key and scanning. You can stop that path by clearing the key or leaving it empty. Rights of access, correction, deletion, and portability for the ledger are exercised on the device, including by export and uninstall.
+If you use the app from the EEA or the UK, the same facts apply. We do not operate a server that holds your ledger, so we are not in a position to act as a remote controller of that ledger. The legal basis for any optional image you send to AksonOCR is the step you take by storing a key and scanning. You can stop that path by clearing the key or leaving it empty. Rights of access, correction, deletion, and portability for the ledger are exercised on the device, including by export and uninstall. Anonymous usage statistics and website analytics both run only with your consent, and you can withdraw it at any time: the switch in My Moo for the app, and "Cookie settings" on the website. PostHog processes those events on its EU Cloud.
 
 We do not transfer your ledger outside your phone. ML Kit metrics go to Google, and an optional AksonOCR request goes to that provider. Each may process the data in whatever country it uses, under its own safeguards.
 
 ### California
 
-We do not sell personal information and we do not share it for cross-context behavioral advertising. We do not offer a financial incentive for personal information. Categories that can exist on the device are identifiers inside a slip (such as a name or account reference), financial information you enter, photos you import, and the local settings listed above. We do not collect those categories onto a MooJot server. Google receives ML Kit metrics, including a per-installation identifier, as described above.
+We do not sell personal information and we do not share it for cross-context behavioral advertising. We do not offer a financial incentive for personal information. Categories that can exist on the device are identifiers inside a slip (such as a name or account reference), financial information you enter, photos you import, and the local settings listed above. We do not collect those categories onto a MooJot server. The anonymous usage statistics and website counts described above are internet activity information, sent to PostHog as our service provider. Google receives ML Kit metrics, including a per-installation identifier, as described above.
 
 ## Children
 
-MooJot is not directed at children under 13, and we do not knowingly collect personal information from children on a server. The app has no account that a child could register with us. If a child uses a phone where the app is installed, the records remain on that phone.
+MooJot is not directed at children under 13, and we do not knowingly collect personal information from children on a server. Anonymous usage statistics are not linked to a person. The app has no account that a child could register with us. If a child uses a phone where the app is installed, the records remain on that phone.
 
 ## Changes to this policy
 
