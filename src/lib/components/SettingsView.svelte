@@ -23,6 +23,7 @@
     GitFork,
     ChartNoAxesColumn,
   } from "@lucide/svelte";
+  import { getVersion } from "@tauri-apps/api/app";
   import { openUrl } from "@tauri-apps/plugin-opener";
   import CategoryIcon from "./CategoryIcon.svelte";
   import LegalText from "./LegalText.svelte";
@@ -190,6 +191,15 @@
     }
   });
 
+  // The installed version, shown under the legal links. Asked for only when About opens.
+  let appVersion = $state("");
+  $effect(() => {
+    if (subPage !== "about" || appVersion) return;
+    getVersion()
+      .then((v) => (appVersion = v))
+      .catch(() => {});
+  });
+
   const lang = $derived(settings.language);
   const bankAccounts = $derived(accounts.filter((a) => a.kind !== "cash"));
   const enabledBankCount = $derived(bankAccounts.filter((b) => b.enabled).length);
@@ -320,8 +330,8 @@
             </h1>
             <p class="text-xs font-medium text-white/85 mt-0.5">
               {lang === "th"
-                ? "โอเพนซอร์ส 100% · ข้อมูลอยู่ในเครื่องคุณ"
-                : "100% Open Source · Local-First"}
+                ? "โอเพนซอร์ส · บัญชีอยู่ในเครื่องคุณ"
+                : "Open source · Your ledger stays on your phone"}
             </p>
           </div>
         </div>
@@ -1146,8 +1156,8 @@
         </section>
         <p class="px-1 text-[11px] leading-relaxed text-[var(--text-muted)]">
           {lang === "th"
-            ? "MooJot 1.0.0 เผยแพร่โดย Trajectonomics ภายใต้สัญญาอนุญาต MIT ข้อความกฎหมายฉบับภาษาอังกฤษเป็นฉบับที่มีผล"
-            : "MooJot 1.0.0 is published by Trajectonomics under the MIT License. The English legal text is the official version."}
+            ? `MooJot${appVersion ? ` ${appVersion}` : ""} เผยแพร่โดย Trajectonomics ภายใต้สัญญาอนุญาต MIT ข้อความกฎหมายฉบับภาษาอังกฤษเป็นฉบับที่มีผล`
+            : `MooJot${appVersion ? ` ${appVersion}` : ""} is published by Trajectonomics under the MIT License. The English legal text is the official version.`}
         </p>
 
       {:else if subPage === "terms"}
