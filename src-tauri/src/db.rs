@@ -179,6 +179,8 @@ pub fn init_db(db_path: &Path) -> Result<Connection, String> {
             category_id TEXT,
             account_id TEXT,
             note TEXT,
+            payee_raw TEXT,
+            tag_ids TEXT NOT NULL DEFAULT '[]',
             frequency TEXT NOT NULL,
             day_of_month INTEGER,
             next_run_date TEXT NOT NULL,
@@ -279,9 +281,51 @@ pub fn init_db(db_path: &Path) -> Result<Connection, String> {
 
     // Safe additive migration for existing SQLite databases
     let _ = conn.execute("ALTER TABLE slips ADD COLUMN image_path TEXT", []);
+    add_recurring_rule_templates(&conn)?;
 
     seed_defaults(&conn)?;
     Ok(conn)
+}
+
+/// Recurring rules store the payee and tags they post with. Rules saved before
+/// these columns existed copy them from the record they were created from.
+fn add_recurring_rule_templates(conn: &Connection) -> Result<(), String> {
+    let has_payee: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM pragma_table_info('recurring_rules') WHERE name = 'payee_raw'",
+            [],
+            |r| r.get(0),
+        )
+        .map_err(|e| format!("inspect recurring rules: {e}"))?;
+    if has_payee > 0 {
+        return Ok(());
+    }
+    let tx = conn
+        .unchecked_transaction()
+        .map_err(|e| format!("migrate recurring rules: {e}"))?;
+    tx.execute_batch(
+        r#"
+        ALTER TABLE recurring_rules ADD COLUMN payee_raw TEXT;
+        ALTER TABLE recurring_rules ADD COLUMN tag_ids TEXT NOT NULL DEFAULT '[]';
+        UPDATE recurring_rules SET
+            payee_raw = (
+                SELECT r.payee_raw FROM records r
+                WHERE r.recurring_rule_id = recurring_rules.id
+                ORDER BY r.created_at LIMIT 1
+            ),
+            tag_ids = (
+                SELECT json_group_array(rt.tag_id) FROM record_tags rt
+                WHERE rt.record_id = (
+                    SELECT r.id FROM records r
+                    WHERE r.recurring_rule_id = recurring_rules.id
+                    ORDER BY r.created_at LIMIT 1
+                )
+            );
+        "#,
+    )
+    .map_err(|e| format!("migrate recurring rules: {e}"))?;
+    tx.commit()
+        .map_err(|e| format!("migrate recurring rules: {e}"))
 }
 
 fn seed_defaults(conn: &Connection) -> Result<(), String> {
@@ -758,15 +802,11 @@ pub fn upsert_record(conn: &Connection, input: &RecordInput) -> Result<RecordIte
         let rule_id = Uuid::new_v4().to_string();
         let base_date = NaiveDate::parse_from_str(&input.local_date, "%Y-%m-%d")
             .unwrap_or_else(|_| Local::now().date_naive());
-        let next_date = match freq {
-            "weekly" => base_date + Duration::days(7),
-            "biweekly" => base_date + Duration::days(14),
-            "yearly" => base_date.with_year(base_date.year() + 1).unwrap_or(base_date + Duration::days(365)),
-            _ => add_one_month(base_date),
-        };
+        let next_date = next_occurrence(base_date, freq, Some(base_date.day() as i32));
+        let tag_ids = serde_json::to_string(&input.tag_ids).map_err(|e| e.to_string())?;
         conn.execute(
-            "INSERT INTO recurring_rules (id, kind, amount_satang, category_id, account_id, note, frequency, day_of_month, next_run_date, active)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 1)",
+            "INSERT INTO recurring_rules (id, kind, amount_satang, category_id, account_id, note, payee_raw, tag_ids, frequency, day_of_month, next_run_date, active)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, 1)",
             params![
                 rule_id,
                 input.kind,
@@ -774,6 +814,8 @@ pub fn upsert_record(conn: &Connection, input: &RecordInput) -> Result<RecordIte
                 input.category_id,
                 input.account_id,
                 input.note,
+                input.payee_raw,
+                tag_ids,
                 freq,
                 base_date.day() as i32,
                 next_date.format("%Y-%m-%d").to_string()
@@ -901,18 +943,399 @@ pub fn get_record_by_id(conn: &Connection, id: &str) -> Result<Option<RecordItem
     }))
 }
 
-pub fn add_one_month(date: NaiveDate) -> NaiveDate {
-    let (y, m) = if date.month() == 12 {
-        (date.year() + 1, 1)
-    } else {
-        (date.year(), date.month() + 1)
+/// The occurrence after `date` for a rule with this frequency. Monthly and
+/// yearly rules land on `anchor_day`, the rule's day of month, or on the last
+/// day of a shorter month: a rule on the 31st posts on Feb 28, then on Mar 31.
+pub fn next_occurrence(date: NaiveDate, frequency: &str, anchor_day: Option<i32>) -> NaiveDate {
+    let (year, month) = match frequency {
+        "weekly" => return date + Duration::days(7),
+        "biweekly" => return date + Duration::days(14),
+        "yearly" => (date.year() + 1, date.month()),
+        _ if date.month() == 12 => (date.year() + 1, 1),
+        _ => (date.year(), date.month() + 1),
     };
-    let mut day = date.day();
-    while day >= 28 {
-        if let Some(d) = NaiveDate::from_ymd_opt(y, m, day) {
-            return d;
+    let day = anchor_day.map_or(date.day(), |d| d.clamp(1, 31) as u32);
+    (1..=day)
+        .rev()
+        .find_map(|d| NaiveDate::from_ymd_opt(year, month, d))
+        .unwrap_or(NaiveDate::MAX)
+}
+
+struct DueRule {
+    id: String,
+    kind: String,
+    amount_satang: i64,
+    category_id: Option<String>,
+    account_id: Option<String>,
+    note: Option<String>,
+    payee_raw: Option<String>,
+    tag_ids: String,
+    frequency: String,
+    day_of_month: Option<i32>,
+    next_run_date: String,
+}
+
+/// Posts a record for every occurrence of an active recurring rule dated on or
+/// before `today`, catching up on missed runs, and moves each rule's
+/// `next_run_date` past `today`. Everything happens in one transaction, so a
+/// second call posts nothing new. Returns the number of records posted.
+pub fn post_due_recurring(conn: &Connection, today: NaiveDate) -> Result<usize, String> {
+    let tx = conn
+        .unchecked_transaction()
+        .map_err(|e| format!("begin recurring posting: {e}"))?;
+    let rules: Vec<DueRule> = {
+        let mut stmt = tx
+            .prepare(
+                "SELECT id, kind, amount_satang, category_id, account_id, note, payee_raw, tag_ids,
+                        frequency, day_of_month, next_run_date
+                 FROM recurring_rules WHERE active = 1 AND next_run_date <= ?1",
+            )
+            .map_err(|e| e.to_string())?;
+        stmt.query_map(params![today.format("%Y-%m-%d").to_string()], |r| {
+            Ok(DueRule {
+                id: r.get(0)?,
+                kind: r.get(1)?,
+                amount_satang: r.get(2)?,
+                category_id: r.get(3)?,
+                account_id: r.get(4)?,
+                note: r.get(5)?,
+                payee_raw: r.get(6)?,
+                tag_ids: r.get(7)?,
+                frequency: r.get(8)?,
+                day_of_month: r.get(9)?,
+                next_run_date: r.get(10)?,
+            })
+        })
+        .map_err(|e| e.to_string())?
+        .collect::<Result<_, _>>()
+        .map_err(|e| e.to_string())?
+    };
+
+    let now = Local::now().to_rfc3339();
+    let mut posted = 0;
+    for rule in rules {
+        let Ok(mut due) = NaiveDate::parse_from_str(&rule.next_run_date, "%Y-%m-%d") else {
+            continue;
+        };
+        let tag_ids: Vec<String> = serde_json::from_str(&rule.tag_ids).unwrap_or_default();
+        let payee_norm = rule.payee_raw.as_deref().map(normalize_payee);
+        while due <= today {
+            let id = Uuid::new_v4().to_string();
+            tx.execute(
+                "INSERT INTO records (
+                    id, kind, amount_satang, currency, local_date, local_time,
+                    account_id, category_id, payee_raw, payee_normalized, note,
+                    source, parse_status, is_reviewed, recurring_rule_id, created_at, updated_at
+                 ) VALUES (?1, ?2, ?3, 'THB', ?4, NULL, ?5, ?6, ?7, ?8, ?9, 'recurring', 'ok', 1, ?10, ?11, ?11)",
+                params![
+                    id,
+                    rule.kind,
+                    rule.amount_satang,
+                    due.format("%Y-%m-%d").to_string(),
+                    rule.account_id,
+                    rule.category_id,
+                    rule.payee_raw,
+                    payee_norm,
+                    rule.note,
+                    rule.id,
+                    now
+                ],
+            )
+            .map_err(|e| format!("post recurring record: {e}"))?;
+            for tag_id in &tag_ids {
+                let _ = tx.execute(
+                    "INSERT OR IGNORE INTO record_tags (record_id, tag_id) VALUES (?1, ?2)",
+                    params![id, tag_id],
+                );
+            }
+            posted += 1;
+            due = next_occurrence(due, &rule.frequency, rule.day_of_month);
         }
-        day -= 1;
+        tx.execute(
+            "UPDATE recurring_rules SET next_run_date = ?2 WHERE id = ?1",
+            params![rule.id, due.format("%Y-%m-%d").to_string()],
+        )
+        .map_err(|e| format!("advance recurring rule: {e}"))?;
     }
-    NaiveDate::from_ymd_opt(y, m, day).unwrap_or(date + Duration::days(30))
+    tx.commit()
+        .map_err(|e| format!("commit recurring posting: {e}"))?;
+    Ok(posted)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn temp_db() -> (Connection, std::path::PathBuf) {
+        let path = std::env::temp_dir().join(format!("moojot-db-{}.sqlite3", Uuid::new_v4()));
+        let conn = init_db(&path).expect("init db");
+        (conn, path)
+    }
+
+    fn cleanup(path: &Path) {
+        for suffix in ["", "-wal", "-shm"] {
+            let mut file = path.as_os_str().to_os_string();
+            file.push(suffix);
+            let _ = std::fs::remove_file(file);
+        }
+    }
+
+    fn ymd(s: &str) -> NaiveDate {
+        NaiveDate::parse_from_str(s, "%Y-%m-%d").expect("valid date")
+    }
+
+    fn add_tag(conn: &Connection, name: &str) -> String {
+        let id = format!("tag_{name}");
+        conn.execute(
+            "INSERT INTO tags (id, name, color, disabled, sort_order) VALUES (?1, ?2, '#3b82f6', 0, 50)",
+            params![id, name],
+        )
+        .expect("insert tag");
+        id
+    }
+
+    fn recurring_record(date: &str, frequency: &str, tag_ids: Vec<String>) -> RecordInput {
+        RecordInput {
+            id: None,
+            kind: "spending".to_string(),
+            amount_satang: 1_250_000,
+            local_date: date.to_string(),
+            local_time: None,
+            account_id: Some("cash".to_string()),
+            category_id: Some("cat_home".to_string()),
+            payee_raw: Some("Test Landlord".to_string()),
+            note: Some("rent".to_string()),
+            tag_ids,
+            recurring_frequency: Some(frequency.to_string()),
+        }
+    }
+
+    fn posted_records(conn: &Connection, rule_id: &str) -> Vec<RecordItem> {
+        let mut stmt = conn
+            .prepare(
+                "SELECT id FROM records
+                 WHERE recurring_rule_id = ?1 AND source = 'recurring'
+                 ORDER BY local_date",
+            )
+            .expect("prepare posted");
+        let ids: Vec<String> = stmt
+            .query_map(params![rule_id], |r| r.get(0))
+            .expect("query posted")
+            .collect::<Result<_, _>>()
+            .expect("read posted");
+        ids.iter()
+            .map(|id| get_record_by_id(conn, id).expect("get").expect("exists"))
+            .collect()
+    }
+
+    fn next_run(conn: &Connection, rule_id: &str) -> String {
+        conn.query_row(
+            "SELECT next_run_date FROM recurring_rules WHERE id = ?1",
+            params![rule_id],
+            |r| r.get(0),
+        )
+        .expect("rule exists")
+    }
+
+    fn chain(start: &str, frequency: &str, anchor_day: i32, steps: usize) -> Vec<String> {
+        let mut date = ymd(start);
+        (0..steps)
+            .map(|_| {
+                date = next_occurrence(date, frequency, Some(anchor_day));
+                date.to_string()
+            })
+            .collect()
+    }
+
+    #[test]
+    fn monthly_rule_keeps_its_day_of_month() {
+        assert_eq!(
+            chain("2026-01-31", "monthly", 31, 4),
+            ["2026-02-28", "2026-03-31", "2026-04-30", "2026-05-31"]
+        );
+        assert_eq!(
+            chain("2028-01-30", "monthly", 30, 2),
+            ["2028-02-29", "2028-03-30"]
+        );
+        assert_eq!(chain("2026-12-31", "monthly", 31, 1), ["2027-01-31"]);
+        assert_eq!(
+            chain("2026-01-15", "monthly", 15, 2),
+            ["2026-02-15", "2026-03-15"]
+        );
+    }
+
+    #[test]
+    fn yearly_rule_on_feb_29_uses_feb_28_in_other_years() {
+        assert_eq!(
+            chain("2024-02-29", "yearly", 29, 4),
+            ["2025-02-28", "2026-02-28", "2027-02-28", "2028-02-29"]
+        );
+    }
+
+    #[test]
+    fn weekly_and_biweekly_rules_step_by_days() {
+        assert_eq!(
+            chain("2026-01-28", "weekly", 28, 2),
+            ["2026-02-04", "2026-02-11"]
+        );
+        assert_eq!(
+            chain("2026-12-25", "biweekly", 25, 2),
+            ["2027-01-08", "2027-01-22"]
+        );
+    }
+
+    #[test]
+    fn due_rule_posts_each_missed_occurrence_and_advances() {
+        let (conn, path) = temp_db();
+        let tag = add_tag(&conn, "bills");
+        let source = upsert_record(
+            &conn,
+            &recurring_record("2026-01-31", "monthly", vec![tag.clone()]),
+        )
+        .expect("save source record");
+        let rule_id = source.recurring_rule_id.clone().expect("rule created");
+
+        let posted = post_due_recurring(&conn, ymd("2026-05-15")).expect("post due");
+
+        let records = posted_records(&conn, &rule_id);
+        let dates: Vec<&str> = records.iter().map(|r| r.local_date.as_str()).collect();
+        assert_eq!(posted, 3);
+        assert_eq!(dates, ["2026-02-28", "2026-03-31", "2026-04-30"]);
+        for rec in &records {
+            assert_eq!(rec.kind, "spending");
+            assert_eq!(rec.amount_satang, 1_250_000);
+            assert_eq!(rec.account_id.as_deref(), Some("cash"));
+            assert_eq!(rec.category_id.as_deref(), Some("cat_home"));
+            assert_eq!(rec.payee_raw.as_deref(), Some("Test Landlord"));
+            assert_eq!(rec.note.as_deref(), Some("rent"));
+            assert_eq!(rec.tag_ids, vec![tag.clone()]);
+            assert_eq!(rec.parse_status, "ok");
+            assert_ne!(rec.id, source.id);
+        }
+        assert_eq!(next_run(&conn, &rule_id), "2026-05-31");
+        cleanup(&path);
+    }
+
+    #[test]
+    fn posting_again_creates_no_duplicates() {
+        let (conn, path) = temp_db();
+        let source = upsert_record(&conn, &recurring_record("2026-03-10", "weekly", Vec::new()))
+            .expect("save source record");
+        let rule_id = source.recurring_rule_id.expect("rule created");
+
+        assert_eq!(
+            post_due_recurring(&conn, ymd("2026-04-01")).expect("first run"),
+            3
+        );
+        assert_eq!(
+            post_due_recurring(&conn, ymd("2026-04-01")).expect("second run"),
+            0
+        );
+        assert_eq!(posted_records(&conn, &rule_id).len(), 3);
+        assert_eq!(next_run(&conn, &rule_id), "2026-04-07");
+
+        assert_eq!(
+            post_due_recurring(&conn, ymd("2026-04-07")).expect("next week"),
+            1
+        );
+        assert_eq!(posted_records(&conn, &rule_id).len(), 4);
+        assert_eq!(next_run(&conn, &rule_id), "2026-04-14");
+        cleanup(&path);
+    }
+
+    #[test]
+    fn rules_not_yet_due_or_stopped_do_not_post() {
+        let (conn, path) = temp_db();
+        let future = upsert_record(
+            &conn,
+            &recurring_record("2026-06-01", "monthly", Vec::new()),
+        )
+        .expect("save future source");
+        let stopped = upsert_record(
+            &conn,
+            &recurring_record("2026-01-01", "monthly", Vec::new()),
+        )
+        .expect("save stopped source");
+        let stopped_rule = stopped.recurring_rule_id.expect("rule created");
+        conn.execute(
+            "UPDATE recurring_rules SET active = 0 WHERE id = ?1",
+            params![stopped_rule],
+        )
+        .expect("stop rule");
+
+        assert_eq!(
+            post_due_recurring(&conn, ymd("2026-06-15")).expect("post due"),
+            0
+        );
+        assert_eq!(
+            next_run(&conn, &future.recurring_rule_id.expect("rule")),
+            "2026-07-01"
+        );
+        assert_eq!(next_run(&conn, &stopped_rule), "2026-02-01");
+        cleanup(&path);
+    }
+
+    #[test]
+    fn deleting_the_source_record_keeps_the_series() {
+        let (conn, path) = temp_db();
+        let tag = add_tag(&conn, "home");
+        let source = upsert_record(
+            &conn,
+            &recurring_record("2026-02-01", "monthly", vec![tag.clone()]),
+        )
+        .expect("save source record");
+        let rule_id = source.recurring_rule_id.clone().expect("rule created");
+        conn.execute("DELETE FROM records WHERE id = ?1", params![source.id])
+            .expect("delete source record");
+
+        assert_eq!(
+            post_due_recurring(&conn, ymd("2026-03-01")).expect("post due"),
+            1
+        );
+        let records = posted_records(&conn, &rule_id);
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].payee_raw.as_deref(), Some("Test Landlord"));
+        assert_eq!(records[0].tag_ids, vec![tag]);
+        cleanup(&path);
+    }
+
+    #[test]
+    fn rules_from_older_databases_keep_their_payee_and_tags() {
+        let (conn, path) = temp_db();
+        let tag = add_tag(&conn, "rent");
+        let source = upsert_record(
+            &conn,
+            &recurring_record("2026-02-01", "monthly", vec![tag.clone()]),
+        )
+        .expect("save source record");
+        let rule_id = source.recurring_rule_id.clone().expect("rule created");
+        let orphan = upsert_record(
+            &conn,
+            &recurring_record("2026-02-10", "monthly", Vec::new()),
+        )
+        .expect("save second source record");
+        let orphan_rule = orphan.recurring_rule_id.clone().expect("rule created");
+        conn.execute("DELETE FROM records WHERE id = ?1", params![orphan.id])
+            .expect("delete second source record");
+        // Make the rules look like ones saved before rules stored a payee and tags.
+        conn.execute_batch(
+            "ALTER TABLE recurring_rules DROP COLUMN payee_raw;
+             ALTER TABLE recurring_rules DROP COLUMN tag_ids;",
+        )
+        .expect("drop new columns");
+        drop(conn);
+
+        let conn = init_db(&path).expect("reopen db");
+        assert_eq!(
+            post_due_recurring(&conn, ymd("2026-03-10")).expect("post due"),
+            2
+        );
+        let records = posted_records(&conn, &rule_id);
+        assert_eq!(records[0].payee_raw.as_deref(), Some("Test Landlord"));
+        assert_eq!(records[0].tag_ids, vec![tag]);
+        let orphan_records = posted_records(&conn, &orphan_rule);
+        assert_eq!(orphan_records[0].payee_raw, None);
+        assert!(orphan_records[0].tag_ids.is_empty());
+        cleanup(&path);
+    }
 }

@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::db::{
     compute_streaks, fetch_tags_for_record, list_categories, list_tags, load_settings,
-    FutureRecordItem, RecordItem,
+    next_occurrence, FutureRecordItem, RecordItem,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -301,29 +301,7 @@ pub fn build_home_payload(
         });
     }
 
-    // Future recurring records due in this period or upcoming 30 days
-    let mut future_stmt = conn
-        .prepare(
-            "SELECT id, kind, amount_satang, next_run_date, category_id, note, frequency, day_of_month
-             FROM recurring_rules WHERE active = 1 ORDER BY next_run_date ASC",
-        )
-        .map_err(|e| e.to_string())?;
-    let future_records: Vec<FutureRecordItem> = future_stmt
-        .query_map([], |r| {
-            Ok(FutureRecordItem {
-                rule_id: r.get(0)?,
-                kind: r.get(1)?,
-                amount_satang: r.get(2)?,
-                due_date: r.get(3)?,
-                category_id: r.get(4)?,
-                note: r.get(5)?,
-                frequency: r.get(6)?,
-                day_of_month: r.get(7)?,
-            })
-        })
-        .map_err(|e| e.to_string())?
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| e.to_string())?;
+    let future_records = upcoming_occurrences(conn, start, end)?;
     let future_total_satang: i64 = future_records
         .iter()
         .filter(|f| f.kind == "spending")
@@ -712,4 +690,147 @@ pub fn export_csv(conn: &Connection) -> Result<String, String> {
     }
     let bytes = wtr.into_inner().map_err(|e| e.to_string())?;
     String::from_utf8(bytes).map_err(|e| e.to_string())
+}
+
+/// Occurrences of active recurring rules that fall between `start` and `end`.
+/// A rule's first unposted occurrence is its `next_run_date`.
+fn upcoming_occurrences(
+    conn: &Connection,
+    start: NaiveDate,
+    end: NaiveDate,
+) -> Result<Vec<FutureRecordItem>, String> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT id, kind, amount_satang, next_run_date, category_id, note, frequency, day_of_month
+             FROM recurring_rules WHERE active = 1 AND next_run_date <= ?1",
+        )
+        .map_err(|e| e.to_string())?;
+    let rules = stmt
+        .query_map(params![end.format("%Y-%m-%d").to_string()], |r| {
+            Ok(FutureRecordItem {
+                rule_id: r.get(0)?,
+                kind: r.get(1)?,
+                amount_satang: r.get(2)?,
+                due_date: r.get(3)?,
+                category_id: r.get(4)?,
+                note: r.get(5)?,
+                frequency: r.get(6)?,
+                day_of_month: r.get(7)?,
+            })
+        })
+        .map_err(|e| e.to_string())?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())?;
+
+    let mut out = Vec::new();
+    for rule in rules {
+        let Ok(mut due) = NaiveDate::parse_from_str(&rule.due_date, "%Y-%m-%d") else {
+            continue;
+        };
+        while due <= end {
+            if due >= start {
+                out.push(FutureRecordItem {
+                    due_date: due.format("%Y-%m-%d").to_string(),
+                    ..rule.clone()
+                });
+            }
+            due = next_occurrence(due, &rule.frequency, rule.day_of_month);
+        }
+    }
+    out.sort_by(|a, b| a.due_date.cmp(&b.due_date));
+    Ok(out)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db::init_db;
+
+    fn temp_db() -> (Connection, std::path::PathBuf) {
+        let path =
+            std::env::temp_dir().join(format!("moojot-analytics-{}.sqlite3", uuid::Uuid::new_v4()));
+        let conn = init_db(&path).expect("init db");
+        (conn, path)
+    }
+
+    fn cleanup(path: &std::path::Path) {
+        for suffix in ["", "-wal", "-shm"] {
+            let mut file = path.as_os_str().to_os_string();
+            file.push(suffix);
+            let _ = std::fs::remove_file(file);
+        }
+    }
+
+    fn ymd(s: &str) -> NaiveDate {
+        NaiveDate::parse_from_str(s, "%Y-%m-%d").expect("valid date")
+    }
+
+    fn add_rule(conn: &Connection, kind: &str, amount: i64, frequency: &str, next_run: NaiveDate) {
+        conn.execute(
+            "INSERT INTO recurring_rules
+                (id, kind, amount_satang, frequency, day_of_month, next_run_date, active)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, 1)",
+            params![
+                uuid::Uuid::new_v4().to_string(),
+                kind,
+                amount,
+                frequency,
+                next_run.day() as i32,
+                next_run.format("%Y-%m-%d").to_string()
+            ],
+        )
+        .expect("insert rule");
+    }
+
+    #[test]
+    fn future_records_only_count_the_viewed_period() {
+        let (conn, path) = temp_db();
+        let (_, end, _) = compute_month_period(0, 1);
+        add_rule(&conn, "spending", 50_000, "yearly", end);
+        add_rule(
+            &conn,
+            "spending",
+            70_000,
+            "yearly",
+            end + Duration::days(400),
+        );
+
+        let home = build_home_payload(&conn, 0, None).expect("home payload");
+
+        let due: Vec<&str> = home
+            .future_records
+            .iter()
+            .map(|f| f.due_date.as_str())
+            .collect();
+        assert_eq!(due, [end.format("%Y-%m-%d").to_string()]);
+        assert_eq!(home.future_total_satang, 50_000);
+        cleanup(&path);
+    }
+
+    #[test]
+    fn future_records_list_each_occurrence_in_the_period() {
+        let (conn, path) = temp_db();
+        add_rule(&conn, "spending", 10_000, "weekly", ymd("2026-03-04"));
+        add_rule(&conn, "income", 990_000, "monthly", ymd("2026-01-31"));
+        add_rule(&conn, "spending", 20_000, "monthly", ymd("2026-04-01"));
+
+        let items = upcoming_occurrences(&conn, ymd("2026-03-01"), ymd("2026-03-31"))
+            .expect("upcoming occurrences");
+
+        let due: Vec<(&str, &str)> = items
+            .iter()
+            .map(|f| (f.due_date.as_str(), f.kind.as_str()))
+            .collect();
+        assert_eq!(
+            due,
+            [
+                ("2026-03-04", "spending"),
+                ("2026-03-11", "spending"),
+                ("2026-03-18", "spending"),
+                ("2026-03-25", "spending"),
+                ("2026-03-31", "income"),
+            ]
+        );
+        cleanup(&path);
+    }
 }

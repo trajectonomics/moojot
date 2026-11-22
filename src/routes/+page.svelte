@@ -320,7 +320,18 @@
     pullArmed = false;
   }
 
+  // Post the recurring records that have come due, so Home shows them.
+  async function postDueRecurring(): Promise<number> {
+    try {
+      return await api.postDueRecurringRecords();
+    } catch (error) {
+      console.error("post due recurring records", error);
+      return 0;
+    }
+  }
+
   async function refreshAll() {
+    await postDueRecurring();
     const [s, accs, cats, tgs] = await Promise.all([
       api.getSettings(),
       api.getAccounts(),
@@ -634,6 +645,10 @@
       const pdfBase64 = detail?.pdfBase64;
       if (pdfBase64) void importPdfBase64(pdfBase64, null);
     };
+    const onVisibilityChange = async () => {
+      if (document.visibilityState !== "visible") return;
+      if ((await postDueRecurring()) > 0) await refreshPeriodData();
+    };
 
     window.addEventListener("moojot:scan-candidates", onCandidates);
     window.addEventListener("moojot:scan-batch", onScanBatch);
@@ -642,6 +657,7 @@
     window.addEventListener("moojot:scan-error", onErr);
     window.addEventListener("moojot:backfill-done", onBackfill);
     window.addEventListener("moojot:shared-pdf", onSharedPdf);
+    document.addEventListener("visibilitychange", onVisibilityChange);
     return () => {
       window.removeEventListener("moojot:scan-candidates", onCandidates);
       window.removeEventListener("moojot:scan-batch", onScanBatch);
@@ -650,6 +666,7 @@
       window.removeEventListener("moojot:scan-error", onErr);
       window.removeEventListener("moojot:backfill-done", onBackfill);
       window.removeEventListener("moojot:shared-pdf", onSharedPdf);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   });
 
@@ -1107,6 +1124,9 @@
                       <div class="flex items-center gap-2 shrink-0">
                         {#if rec.parseStatus !== "ok"}
                           <PenLine class="size-4 text-[var(--brand)]" />
+                        {/if}
+                        {#if rec.source === "recurring"}
+                          <Repeat class="size-3.5 text-[var(--text-muted)]" aria-label={t(lang, "recurring")} />
                         {/if}
                         <span
                           class="text-sm font-bold {rec.kind === 'income'

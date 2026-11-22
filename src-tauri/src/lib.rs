@@ -35,6 +35,7 @@ pub fn run() {
             commands::save_record,
             commands::delete_record,
             commands::delete_recurring_rule,
+            commands::post_due_recurring_records,
             commands::search_records,
             commands::get_accounts,
             commands::toggle_account_enabled,

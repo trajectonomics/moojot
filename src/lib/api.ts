@@ -85,6 +85,8 @@ export const api = {
   deleteRecurringRule: (ruleId: string) =>
     invoke<void>("delete_recurring_rule", { ruleId }),
 
+  postDueRecurringRecords: () => invoke<number>("post_due_recurring_records"),
+
   searchRecords: (query: string) => invoke<RecordItem[]>("search_records", { query }),
 
   getAccounts: () => invoke<Account[]>("get_accounts"),
