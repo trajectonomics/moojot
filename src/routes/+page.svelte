@@ -31,6 +31,7 @@
     triggerAndroidDownloadOrShare,
   } from "$lib/api";
   import { formatBaht } from "$lib/format";
+  import { monthPickerOffsets } from "$lib/monthPicker";
   import { t } from "$lib/i18n";
   import { omitFromCompare, omitFromSummary, omitRecord } from "$lib/ledgerPatch";
   import { loadSavedHand, loadSavedTheme, saveHand, saveTheme, type AppTheme, type HandMode } from "$lib/theme";
@@ -1332,23 +1333,22 @@
       close={monthSheet}
       onClose={() => (monthPicker = false)}
     >
-      <button
-        type="button"
-        class="w-full rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white"
-        onclick={() => goToPeriod(0)}
-      >
-        {lang === "th" ? "เดือนนี้" : "This month"}
-      </button>
-      <div class="mt-2 flex flex-col gap-2">
-        {#each [1, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12] as offset (offset)}
+      <div class="flex flex-col gap-2">
+        {#each monthPickerOffsets() as offset (offset)}
           <button
             type="button"
-            class="rounded-xl py-2.5 text-sm font-bold {offset === periodOffset
-              ? 'border border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand-text)]'
-              : 'border border-[var(--border-subtle)] bg-[var(--bg-card)] text-[var(--text-primary)]'}"
+            aria-current={offset === periodOffset ? "date" : undefined}
+            class="rounded-xl py-2.5 text-sm font-bold {offset === 0
+              ? 'border border-[var(--brand)] bg-[var(--brand)] text-white'
+              : offset === periodOffset
+                ? 'border border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand-text)]'
+                : 'border border-[var(--border-subtle)] bg-[var(--bg-card)] text-[var(--text-primary)]'}"
             onclick={() => goToPeriod(offset)}
           >
             {monthLabel(offset)}
+            {#if offset === 0}
+              <span class="ml-1 text-xs font-semibold opacity-90">· {t(lang, "thisMonth")}</span>
+            {/if}
           </button>
         {/each}
       </div>
