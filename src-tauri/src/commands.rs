@@ -537,7 +537,6 @@ pub async fn import_slip_candidates(
         }
 
         // 5. Insert record + slip row into SQLite
-        let now = Local::now().to_rfc3339();
         let fallback_date = chrono::DateTime::from_timestamp(cand.date_added_sec, 0)
             .map(|dt| dt.with_timezone(&Local).format("%Y-%m-%d").to_string())
             .unwrap_or_else(|| Local::now().format("%Y-%m-%d").to_string());
@@ -552,16 +551,12 @@ pub async fn import_slip_candidates(
         let parse_status = if parsed.amount_satang.unwrap_or(0) > 0 && parsed_qr.is_some() {
             "ok"
         } else {
-            report.needs_review += 1;
             "needs_review"
         };
 
-        let record_id = Uuid::new_v4().to_string();
-        let slip_id = Uuid::new_v4().to_string();
-
-        {
+        let stored = {
             let conn = state.0.lock().map_err(|_| "db lock poisoned".to_string())?;
-            let guessed_cat = if kind == "spending" {
+            let category_id = if kind == "spending" {
                 classify_local(
                     &conn,
                     parsed.receiver_name.as_deref(),
@@ -571,7 +566,6 @@ pub async fn import_slip_candidates(
             } else {
                 None
             };
-            let payee_norm = parsed.receiver_name.as_deref().map(normalize_payee);
             let note = parsed.memo.clone().or_else(|| {
                 if parsed_qr.is_none() {
                     Some("E-slip has no QR code (OCR fallback)".to_string())
@@ -579,56 +573,41 @@ pub async fn import_slip_candidates(
                     None
                 }
             });
-
-            conn.execute(
-                "INSERT INTO records (
-                    id, kind, amount_satang, currency, local_date, local_time,
-                    account_id, category_id, payee_raw, payee_normalized, note,
-                    source, parse_status, is_reviewed, recurring_rule_id, created_at, updated_at
-                 ) VALUES (?1, ?2, ?3, 'THB', ?4, ?5, ?6, ?7, ?8, ?9, ?10, 'slip_auto', ?11, 0, NULL, ?12, ?12)",
-                params![
-                    record_id,
+            store_imported_slip(
+                &conn,
+                &ImportedSlip {
                     kind,
                     amount_satang,
-                    local_date,
-                    parsed.occurred_time,
-                    parsed.bank_id,
-                    guessed_cat,
-                    parsed.receiver_name,
-                    payee_norm,
-                    note,
+                    local_date: &local_date,
+                    local_time: parsed.occurred_time.as_deref(),
+                    account_id: parsed.bank_id.as_deref(),
+                    category_id: category_id.as_deref(),
+                    payee_raw: parsed.receiver_name.as_deref(),
+                    note: note.as_deref(),
                     parse_status,
-                    now
-                ],
-            )
-            .map_err(|e| format!("insert slip record: {e}"))?;
-
-            conn.execute(
-                "INSERT INTO slips (
-                    id, record_id, media_store_id, content_sha256, sending_bank, trans_ref, qr_raw, ocr_text, image_path, parsed_at
-                 ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
-                params![
-                    slip_id,
-                    record_id,
-                    cand.media_store_id,
-                    cand.content_sha256,
-                    parsed_qr
+                    media_store_id: &cand.media_store_id,
+                    content_sha256: &cand.content_sha256,
+                    sending_bank: parsed_qr
                         .as_ref()
-                        .and_then(|q| q.sending_bank.clone())
-                        .or_else(|| parsed.bank_id.clone()),
-                    parsed_qr
+                        .and_then(|q| q.sending_bank.as_deref())
+                        .or(parsed.bank_id.as_deref()),
+                    trans_ref: parsed_qr
                         .as_ref()
-                        .map(|q| q.trans_ref.clone())
-                        .or(parsed.trans_ref),
-                    cand.qr_raw,
-                    combined_ocr,
-                    cand.image_path,
-                    now
-                ],
-            )
-            .map_err(|e| format!("insert slip metadata: {e}"))?;
+                        .map(|q| q.trans_ref.as_str())
+                        .or(parsed.trans_ref.as_deref()),
+                    qr_raw: cand.qr_raw.as_deref(),
+                    ocr_text: &combined_ocr,
+                    image_path: cand.image_path.as_deref(),
+                },
+            )?
+        };
+        if !stored {
+            report.duplicates += 1;
+            continue;
         }
-
+        if parse_status == "needs_review" {
+            report.needs_review += 1;
+        }
         report.imported += 1;
     }
 
@@ -641,6 +620,99 @@ pub async fn import_slip_candidates(
     }
 
     Ok(report)
+}
+
+/// One parsed slip, ready to be written as a record plus its `slips` row.
+struct ImportedSlip<'a> {
+    kind: &'a str,
+    amount_satang: i64,
+    local_date: &'a str,
+    local_time: Option<&'a str>,
+    account_id: Option<&'a str>,
+    category_id: Option<&'a str>,
+    payee_raw: Option<&'a str>,
+    note: Option<&'a str>,
+    parse_status: &'a str,
+    media_store_id: &'a str,
+    content_sha256: &'a str,
+    sending_bank: Option<&'a str>,
+    trans_ref: Option<&'a str>,
+    qr_raw: Option<&'a str>,
+    ocr_text: &'a str,
+    image_path: Option<&'a str>,
+}
+
+/// Writes the record and its slip row. Returns `Ok(false)` when the slip is a duplicate.
+fn store_imported_slip(conn: &rusqlite::Connection, slip: &ImportedSlip<'_>) -> Result<bool, String> {
+    let now = Local::now().to_rfc3339();
+    let record_id = Uuid::new_v4().to_string();
+    let slip_id = Uuid::new_v4().to_string();
+    let payee_norm = slip.payee_raw.map(normalize_payee);
+
+    // Check the same (sending_bank, trans_ref) pair the slips row will carry. The earlier
+    // QR-only check misses OCR-only slips and TrueMoney slips stored under a text-detected bank.
+    if let (Some(bank), Some(trans_ref)) = (slip.sending_bank, slip.trans_ref) {
+        let exists = conn
+            .query_row(
+                "SELECT 1 FROM slips WHERE sending_bank = ?1 AND trans_ref = ?2",
+                params![bank, trans_ref],
+                |_| Ok(true),
+            )
+            .optional()
+            .map_err(|e| format!("check slip reference: {e}"))?
+            .unwrap_or(false);
+        if exists {
+            return Ok(false);
+        }
+    }
+
+    // Record and slip row are written together, so a failed slip insert leaves no record.
+    let tx = conn
+        .unchecked_transaction()
+        .map_err(|e| format!("begin slip insert: {e}"))?;
+    tx.execute(
+        "INSERT INTO records (
+            id, kind, amount_satang, currency, local_date, local_time,
+            account_id, category_id, payee_raw, payee_normalized, note,
+            source, parse_status, is_reviewed, recurring_rule_id, created_at, updated_at
+         ) VALUES (?1, ?2, ?3, 'THB', ?4, ?5, ?6, ?7, ?8, ?9, ?10, 'slip_auto', ?11, 0, NULL, ?12, ?12)",
+        params![
+            record_id,
+            slip.kind,
+            slip.amount_satang,
+            slip.local_date,
+            slip.local_time,
+            slip.account_id,
+            slip.category_id,
+            slip.payee_raw,
+            payee_norm,
+            slip.note,
+            slip.parse_status,
+            now
+        ],
+    )
+    .map_err(|e| format!("insert slip record: {e}"))?;
+
+    tx.execute(
+        "INSERT INTO slips (
+            id, record_id, media_store_id, content_sha256, sending_bank, trans_ref, qr_raw, ocr_text, image_path, parsed_at
+         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+        params![
+            slip_id,
+            record_id,
+            slip.media_store_id,
+            slip.content_sha256,
+            slip.sending_bank,
+            slip.trans_ref,
+            slip.qr_raw,
+            slip.ocr_text,
+            slip.image_path,
+            now
+        ],
+    )
+    .map_err(|e| format!("insert slip metadata: {e}"))?;
+    tx.commit().map_err(|e| format!("commit slip insert: {e}"))?;
+    Ok(true)
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -1124,6 +1196,65 @@ Ref. 202611211728ABC12";
             payback.kind, "spending",
             "paying a friend is not a transfer to yourself"
         );
+        cleanup(&path);
+    }
+
+    /// A slip read by OCR only (no QR): the bank and reference come from the text.
+    fn ocr_only_slip<'a>(media_id: &'a str, sha: &'a str) -> ImportedSlip<'a> {
+        ImportedSlip {
+            kind: "spending",
+            amount_satang: 292_250,
+            local_date: "2026-11-21",
+            local_time: Some("17:28"),
+            account_id: Some("kbank"),
+            category_id: None,
+            payee_raw: Some("MS. TEST RECEIVER"),
+            note: Some("E-slip has no QR code (OCR fallback)"),
+            parse_status: "needs_review",
+            media_store_id: media_id,
+            content_sha256: sha,
+            sending_bank: Some("kbank"),
+            trans_ref: Some("202611211728ABC12"),
+            qr_raw: None,
+            ocr_text: "synthetic slip text",
+            image_path: None,
+        }
+    }
+
+    fn count(conn: &rusqlite::Connection, sql: &str) -> i64 {
+        conn.query_row(sql, [], |r| r.get(0)).unwrap()
+    }
+
+    #[test]
+    fn second_copy_of_a_slip_is_a_duplicate_not_an_orphan_record() {
+        let (conn, path) = temp_db();
+        // The same slip saved twice (e.g. a screenshot and the bank's saved image):
+        // different image bytes, same bank + transaction reference.
+        assert_eq!(store_imported_slip(&conn, &ocr_only_slip("media-1", "sha-1")), Ok(true));
+        assert_eq!(store_imported_slip(&conn, &ocr_only_slip("media-2", "sha-2")), Ok(false));
+
+        assert_eq!(count(&conn, "SELECT COUNT(*) FROM records"), 1);
+        assert_eq!(count(&conn, "SELECT COUNT(*) FROM slips"), 1);
+        assert_eq!(
+            count(
+                &conn,
+                "SELECT COUNT(*) FROM records r WHERE NOT EXISTS (SELECT 1 FROM slips s WHERE s.record_id = r.id)"
+            ),
+            0
+        );
+        cleanup(&path);
+    }
+
+    #[test]
+    fn failed_slip_insert_leaves_no_record_behind() {
+        let (conn, path) = temp_db();
+        assert_eq!(store_imported_slip(&conn, &ocr_only_slip("media-1", "sha-1")), Ok(true));
+        // Same image hash, different reference: the slips row violates its UNIQUE hash.
+        let mut again = ocr_only_slip("media-2", "sha-1");
+        again.trans_ref = Some("OTHERREF");
+        assert!(store_imported_slip(&conn, &again).is_err());
+
+        assert_eq!(count(&conn, "SELECT COUNT(*) FROM records"), 1);
         cleanup(&path);
     }
 }
