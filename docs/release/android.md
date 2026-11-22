@@ -125,4 +125,5 @@ The build is arm64 only (`aarch64`), which covers current Android phones.
 
 - Privacy policy: [../privacy-policy.md](../privacy-policy.md)
 - Data safety and photo declaration: [play-data-safety.md](play-data-safety.md)
+- Store text, settings, declarations and the signing-key choice: [play-listing.md](play-listing.md)
 - Upload the `.aab` from the release build. The GitHub Release is the APK channel.
