@@ -632,7 +632,9 @@
       }
       if (activeTab === "settings" && settingsSubPage !== null) {
         settingsSubPage =
-          settingsSubPage === "terms" || settingsSubPage === "privacy" ? "about" : null;
+          settingsSubPage === "terms" || settingsSubPage === "privacy" || settingsSubPage === "licenses"
+            ? "about"
+            : null;
         return "handled";
       }
       if (activeTab !== "home") {
