@@ -17,6 +17,8 @@ export const TIMEZONE = "Asia/Bangkok";
  * @param {"left" | "right"} [options.hand]
  * @param {"full" | "empty"} [options.data] "empty" is a month with no records.
  * @param {"done" | "pending"} [options.onboarding] "pending" opens the first-run tour.
+ * @param {"granted" | "denied"} [options.android] Adds a fake Android bridge with photo access
+ *   granted or not. Scans it is asked to start are recorded in `window.__moojotScans`.
  */
 export function fixtureScript(options = {}) {
   const config = {
@@ -306,6 +308,24 @@ function pageFixture(config) {
 
   window.__moojotUnmocked = [];
   let callbackId = 0;
+
+  // ------------------------------------------------------- android bridge ---
+  if (config.android) {
+    window.__moojotScans = [];
+    window.MooJotAndroid = {
+      isAndroidNative: () => true,
+      setStatusBarLight: () => {},
+      hasGalleryPermission: () => config.android === "granted",
+      requestGalleryPermission: () => {},
+      // Records the scan and never answers, so the app stays in its "scanning" state.
+      scanBankSlips: (keywordsJson, includeShared, sinceSec) => void window.__moojotScans.push({ sinceSec, includeShared }),
+      pickSlipPhoto: () => {},
+      backfillExistingSlips: () => {},
+      readSlipImageDataUrl: () => null,
+      shareTextFile: () => false,
+      pickStatementPdf: () => {},
+    };
+  }
   window.__TAURI_INTERNALS__ = {
     invoke: async (cmd, args = {}) => {
       const handler = handlers[cmd];

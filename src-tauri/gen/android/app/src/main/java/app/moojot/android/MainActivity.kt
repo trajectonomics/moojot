@@ -229,7 +229,6 @@ class MainActivity : TauriActivity() {
                     context = this@MainActivity,
                     albumKeywords = keywords,
                     includeSharedAlbum = includeShared,
-                    limit = 80,
                     skipIds = skipIds,
                     sinceSec = sinceSec,
                     batchSize = 8

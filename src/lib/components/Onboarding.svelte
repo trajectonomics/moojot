@@ -23,6 +23,7 @@
   } from "@lucide/svelte";
   import MooMascot from "./MooMascot.svelte";
   import { hasAndroidBridge } from "$lib/api";
+  import { FIRST_SCAN_MONTHS } from "$lib/onboarding";
   import { track } from "$lib/analytics";
   import { t, type I18nKey } from "$lib/i18n";
   import type { AppTheme, HandMode } from "$lib/theme";
@@ -330,6 +331,17 @@
                 {tr("onbWelcomeTitle")}
               </h2>
               <p class="max-w-xs text-base leading-relaxed text-[var(--text-secondary)]">{tr("onbWelcomeBody")}</p>
+              <!-- Language comes first, so the rest of the tour is in the language people read (#48). -->
+              <fieldset class="w-full max-w-xs rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 text-left shadow-xs">
+                <legend class="sr-only">{t(lang, "language")}</legend>
+                <div class="mb-2.5 flex items-center gap-2 text-sm font-bold" aria-hidden="true">
+                  <Globe class="size-4 text-[var(--brand)]" />{t(lang, "language")}
+                </div>
+                <div class="flex gap-2">
+                  <button type="button" aria-pressed={lang === "th"} onclick={() => setLanguage("th")} class={optionClass(lang === "th")}>ภาษาไทย</button>
+                  <button type="button" aria-pressed={lang === "en"} onclick={() => setLanguage("en")} class={optionClass(lang === "en")}>English</button>
+                </div>
+              </fieldset>
             {:else if id === "private"}
               <span class="flex size-24 items-center justify-center rounded-[2rem] bg-[var(--brand-soft)] text-[var(--brand)]">
                 <ShieldCheck class="size-12" strokeWidth={1.8} />
@@ -408,17 +420,6 @@
                 </div>
               </div>
               <div class="w-full space-y-3 text-left">
-                <fieldset class="rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 shadow-xs">
-                  <legend class="sr-only">{t(lang, "language")}</legend>
-                  <div class="mb-2.5 flex items-center gap-2 text-sm font-bold" aria-hidden="true">
-                    <Globe class="size-4 text-[var(--brand)]" />{t(lang, "language")}
-                  </div>
-                  <div class="flex gap-2">
-                    <button type="button" aria-pressed={lang === "th"} onclick={() => setLanguage("th")} class={optionClass(lang === "th")}>ภาษาไทย</button>
-                    <button type="button" aria-pressed={lang === "en"} onclick={() => setLanguage("en")} class={optionClass(lang === "en")}>English</button>
-                  </div>
-                </fieldset>
-
                 <fieldset class="rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 shadow-xs">
                   <legend class="sr-only">{tr("onbTheme")}</legend>
                   <div class="mb-2.5 flex items-center gap-2 text-sm font-bold" aria-hidden="true">
@@ -528,6 +529,11 @@
                 {tr("onbDoneTitle")}
               </h2>
               <p class="max-w-xs text-base leading-relaxed text-[var(--text-secondary)]">{tr("onbDoneBody")}</p>
+              {#if onAndroid && galleryGranted && !replay}
+                <p class="flex max-w-xs items-start gap-2 rounded-2xl bg-[var(--brand-soft)] px-4 py-3 text-left text-sm font-semibold text-[var(--brand-text)]">
+                  <Images class="mt-0.5 size-4 shrink-0" />{tr("onbDoneScan", { n: FIRST_SCAN_MONTHS })}
+                </p>
+              {/if}
             {/if}
           </div>
         </section>

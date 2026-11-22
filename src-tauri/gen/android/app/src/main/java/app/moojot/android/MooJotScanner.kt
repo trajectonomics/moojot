@@ -48,7 +48,6 @@ object MooJotScanner {
         context: Context,
         albumKeywords: List<String>,
         includeSharedAlbum: Boolean,
-        limit: Int = 50,
         skipIds: Set<String> = emptySet(),
         sinceSec: Long = 0L,
         batchSize: Int = 8,
@@ -96,7 +95,6 @@ object MooJotScanner {
                 c.getColumnIndex(MediaStore.Images.Media.RELATIVE_PATH)
             } else -1
 
-            var opened = 0
             var batchCandidates = JSONArray()
             var batchSeen = JSONArray()
             val batchLimit = batchSize.coerceIn(1, 20)
@@ -108,7 +106,10 @@ object MooJotScanner {
                 batchSeen = JSONArray()
             }
 
-            while (c.moveToNext() && opened < limit) {
+            // Read every photo in the range. A cap here once stopped a 1-year scan after
+            // about 3 months of slips (#71). Results stream out in batches, so a long
+            // scan doesn't hold them all in memory.
+            while (c.moveToNext()) {
                 val bucket = c.getString(bucketCol) ?: ""
                 val relPath = if (relCol >= 0) (c.getString(relCol) ?: "") else ""
                 val combinedPath = "$bucket $relPath".lowercase()
@@ -151,7 +152,6 @@ object MooJotScanner {
                     id
                 )
 
-                opened++
                 batchSeen.put(mediaId)
                 val candidate = inspectSingleImage(
                     context = context,
@@ -163,8 +163,7 @@ object MooJotScanner {
                     requireSlipQr = (!isBankAlbum && isShared)
                 )
                 if (candidate != null) {
-                    results.put(candidate)
-                    batchCandidates.put(candidate)
+                    if (onBatch == null) results.put(candidate) else batchCandidates.put(candidate)
                 }
                 if (batchSeen.length() >= batchLimit) emitBatch(false)
             }

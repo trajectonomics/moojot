@@ -215,6 +215,7 @@ const en = {
   onbPermWeb: "Slip scanning runs in the Android app. Here you can add records by hand.",
   onbDoneTitle: "All set!",
   onbDoneBody: "Your money diary is ready. Let's jot the first one together.",
+  onbDoneScan: "When you tap Let's go, I'll start reading your slips from the last {n} months.",
   onbReplay: "Replay intro",
   onbReplayHint: "See the welcome tour again",
 
@@ -447,6 +448,7 @@ const th: Record<I18nKey, string> = {
   onbPermWeb: "การสแกนสลิปใช้ได้บนแอป Android ตรงนี้จดเองได้เลย",
   onbDoneTitle: "เรียบร้อย!",
   onbDoneBody: "สมุดจดเงินของคุณพร้อมแล้ว มาจดรายการแรกด้วยกันเลย",
+  onbDoneScan: "กด \"เริ่มจดเลย\" แล้วมูจะเริ่มอ่านสลิป {n} เดือนล่าสุดให้เลย",
   onbReplay: "ดูแนะนำแอปอีกครั้ง",
   onbReplayHint: "ดูหน้าต้อนรับอีกรอบ",
 
