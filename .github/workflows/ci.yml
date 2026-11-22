@@ -48,6 +48,56 @@ jobs:
           CHROME_BIN: /usr/bin/google-chrome
         run: pnpm test:e2e
 
+  screenshots:
+    name: Screenshots
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # Compares every scene in tests/screenshots/scenes.mjs with the committed
+      # baseline. The baselines are made on this runner (see the steps below),
+      # because text rendering differs between machines.
+      - name: Screenshot test
+        id: compare
+        env:
+          CHROME_BIN: /usr/bin/google-chrome
+        run: pnpm test:screenshots
+
+      - name: Upload the diff report
+        if: failure() && steps.compare.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-diff
+          path: tests/screenshots/output
+          if-no-files-found: ignore
+
+      # The baselines as this runner draws them. When the change is intended,
+      # download this artifact over tests/screenshots/baseline and commit it.
+      - name: Make baselines on this runner
+        if: failure() && steps.compare.outcome == 'failure'
+        env:
+          CHROME_BIN: /usr/bin/google-chrome
+        run: pnpm test:screenshots:update --no-build
+
+      - name: Upload the new baselines
+        if: failure() && steps.compare.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-baselines
+          path: tests/screenshots/baseline
+
   rust:
     name: Rust tests
     runs-on: ubuntu-latest
