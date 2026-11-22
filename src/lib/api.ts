@@ -61,11 +61,19 @@ export const api = {
       accountIds: accountIds && accountIds.length > 0 ? accountIds : null,
     }),
 
-  getCompareData: (periodOffset: number, kind: string, months = 6) =>
-    invoke<ComparePayload>("get_compare_data", { periodOffset, kind, months }),
+  getCompareData: (periodOffset: number, kind: string, months = 6, accountIds?: string[]) =>
+    invoke<ComparePayload>("get_compare_data", {
+      periodOffset,
+      kind,
+      months,
+      accountIds: accountIds && accountIds.length > 0 ? accountIds : null,
+    }),
 
-  getBudgets: (periodOffset: number) =>
-    invoke<BudgetItem[]>("get_budgets", { periodOffset }),
+  getBudgets: (periodOffset: number, accountIds?: string[]) =>
+    invoke<BudgetItem[]>("get_budgets", {
+      periodOffset,
+      accountIds: accountIds && accountIds.length > 0 ? accountIds : null,
+    }),
 
   upsertBudget: (input: {
     id?: string;

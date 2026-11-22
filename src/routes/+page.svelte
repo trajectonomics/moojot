@@ -25,12 +25,28 @@
   import SettingsView, { type SettingsSubPage } from "$lib/components/SettingsView.svelte";
   import RulesModal from "$lib/components/RulesModal.svelte";
   import ThumbSheet from "$lib/components/ThumbSheet.svelte";
+  import Onboarding from "$lib/components/Onboarding.svelte";
+  import {
+    deviceLanguage,
+    markOnboardingDone,
+    markOnboardingPending,
+    onboardingState,
+  } from "$lib/onboarding";
   import {
     api,
     hasAndroidBridge,
     triggerAndroidDownloadOrShare,
   } from "$lib/api";
   import { formatBaht } from "$lib/format";
+  import { monthPickerOffsets } from "$lib/monthPicker";
+  import {
+    clampMonthStartDay,
+    monthPeriod,
+    periodForKey,
+    periodKeysSince,
+    periodRangeLabel,
+    type MonthPeriod,
+  } from "$lib/period";
   import { t } from "$lib/i18n";
   import { omitFromCompare, omitFromSummary, omitRecord } from "$lib/ledgerPatch";
   import { loadSavedHand, loadSavedTheme, saveHand, saveTheme, type AppTheme, type HandMode } from "$lib/theme";
@@ -51,6 +67,11 @@
     Tag,
   } from "$lib/types";
 
+  // Read before the theme effect saves its keys: see onboardingState().
+  const firstRunState = onboardingState();
+  let showOnboarding = $state(false);
+  let onboardingLanguage = $state<"en" | "th">("en");
+  let onboardingBack = $state<(() => void) | null>(null);
   let theme = $state<AppTheme>(loadSavedTheme());
   let hand = $state<HandMode>(loadSavedHand());
   let activeTab = $state<"home" | "summary" | "settings">("home");
@@ -135,7 +156,8 @@
     showFilterSheet ||
     pdfPrompt !== null ||
     scanStartPrompt ||
-    monthPicker
+    monthPicker ||
+    showOnboarding
   );
 
   // Apply theme attribute & sync Android status bar icon contrast cleanly per screen!
@@ -150,7 +172,8 @@
       showSearch ||
       recordLightboxOpen;
     const isLightStatusBar =
-      theme === "pink-white" && !hasColoredTopBar && activeTab !== "home";
+      theme === "pink-white" &&
+      (showOnboarding || (!hasColoredTopBar && activeTab !== "home"));
     window.MooJotAndroid?.setStatusBarLight?.(isLightStatusBar);
   });
 
@@ -202,8 +225,8 @@
     const [h, sum, cmp, bdgs] = await Promise.all([
       api.getHomeData(offset, filterAccountIds),
       api.getSummaryData(offset, summaryKind, filterAccountIds),
-      api.getCompareData(offset, summaryKind, 6),
-      api.getBudgets(offset),
+      api.getCompareData(offset, summaryKind, 6, filterAccountIds),
+      api.getBudgets(offset, filterAccountIds),
     ]);
     if (request !== periodRequest) return;
     home = h;
@@ -320,6 +343,49 @@
     pullArmed = false;
   }
 
+  function openOnboarding(firstRun: boolean) {
+    // Only a brand-new install starts in the device language. A tour resumed after the
+    // app was closed (or replayed) keeps the language already saved, including one the
+    // user picked in Quick setup before closing.
+    onboardingLanguage =
+      firstRun && firstRunState === "new" ? deviceLanguage() : settings.language;
+    if (firstRun) markOnboardingPending();
+    showOnboarding = true;
+  }
+
+  function closeOnboarding() {
+    markOnboardingDone();
+    showOnboarding = false;
+    activeTab = "home";
+    settingsSubPage = null;
+  }
+
+  // First run: show the welcome tour unless this install already has data.
+  $effect(() => {
+    if (firstRunState === "done" || firstRunState === "returning") {
+      if (firstRunState === "returning") markOnboardingDone();
+      return;
+    }
+    void (async () => {
+      try {
+        const [s, h, months] = await Promise.all([
+          api.getSettings(),
+          api.getHomeData(0),
+          api.listScannedMonths(),
+        ]);
+        settings = s;
+        const hasData = h.dayGroups.length > 0 || h.futureRecords.length > 0 || months.length > 0;
+        if (firstRunState === "new" && hasData) {
+          markOnboardingDone();
+          return;
+        }
+      } catch (e) {
+        console.warn("onboarding: could not check existing data", e);
+      }
+      openOnboarding(true);
+    })();
+  });
+
   async function refreshAll() {
     const [s, accs, cats, tgs] = await Promise.all([
       api.getSettings(),
@@ -339,8 +405,8 @@
     const [h, sum, cmp, bdgs] = await Promise.all([
       api.getHomeData(periodOffset, filterAccountIds),
       api.getSummaryData(periodOffset, summaryKind, filterAccountIds),
-      api.getCompareData(periodOffset, summaryKind, 6),
-      api.getBudgets(periodOffset),
+      api.getCompareData(periodOffset, summaryKind, 6, filterAccountIds),
+      api.getBudgets(periodOffset, filterAccountIds),
     ]);
     home = h;
     summary = sum;
@@ -368,53 +434,35 @@
     }
   }
 
+  // Month helpers follow the "Month starts on" period, like the backend. Scanned
+  // months are stored as "YYYY-MM" keys: the calendar month a period starts in.
   function monthStartSec(offset: number): number {
-    const start = new Date();
-    start.setDate(1);
-    start.setMonth(start.getMonth() + offset);
-    start.setHours(0, 0, 0, 0);
-    return Math.floor(start.getTime() / 1000);
+    return Math.floor(monthPeriod(offset, settings.monthStartDay).start.getTime() / 1000);
+  }
+
+  function periodLabel(period: MonthPeriod): string {
+    if (clampMonthStartDay(settings.monthStartDay) !== 1) return periodRangeLabel(period);
+    return period.start.toLocaleDateString(lang === "th" ? "th-TH" : "en-US", {
+      month: "short",
+      year: "2-digit",
+    });
   }
 
   function monthLabel(offset: number): string {
-    const start = new Date();
-    start.setDate(1);
-    start.setMonth(start.getMonth() + offset);
-    return start.toLocaleDateString(lang === "th" ? "th-TH" : "en-US", {
-      month: "short",
-      year: "2-digit",
-    });
+    return periodLabel(monthPeriod(offset, settings.monthStartDay));
   }
 
   function monthKey(offset: number): string {
-    const start = new Date();
-    start.setDate(1);
-    start.setMonth(start.getMonth() + offset);
-    return `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`;
+    return monthPeriod(offset, settings.monthStartDay).key;
   }
 
   function formatMonthKey(key: string): string {
-    const [year, month] = key.split("-").map(Number);
-    if (!year || !month) return key;
-    return new Date(year, month - 1, 1).toLocaleDateString(lang === "th" ? "th-TH" : "en-US", {
-      month: "short",
-      year: "2-digit",
-    });
+    const period = periodForKey(key, settings.monthStartDay);
+    return period ? periodLabel(period) : key;
   }
 
   function monthKeysFromSince(sinceSec: number): string[] {
-    const cursor = new Date(sinceSec * 1000);
-    cursor.setDate(1);
-    cursor.setHours(0, 0, 0, 0);
-    const end = new Date();
-    end.setDate(1);
-    end.setHours(0, 0, 0, 0);
-    const keys: string[] = [];
-    while (cursor <= end && keys.length < 36) {
-      keys.push(`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`);
-      cursor.setMonth(cursor.getMonth() + 1);
-    }
-    return keys;
+    return periodKeysSince(new Date(sinceSec * 1000), settings.monthStartDay);
   }
 
   async function triggerSlipScan() {
@@ -487,6 +535,11 @@
   // Wire Android hardware/gesture Back button handler
   $effect(() => {
     window.__moojotHandleBack = () => {
+      // The tour covers everything else, so Back belongs to it first.
+      if (showOnboarding) {
+        onboardingBack?.();
+        return "handled";
+      }
       if (monthPicker) {
         monthSheet.current?.();
         return "handled";
@@ -554,7 +607,8 @@
     };
     const onPerm = (ev: Event) => {
       const detail = (ev as CustomEvent<{ granted: boolean }>).detail;
-      if (detail?.granted) triggerSlipScan();
+      // During onboarding, granting access shouldn't start a scan behind it.
+      if (detail?.granted && !showOnboarding) triggerSlipScan();
     };
     const onErr = (ev: Event) => {
       const detail = (ev as CustomEvent<{ error: string }>).detail;
@@ -1236,6 +1290,7 @@
       {theme}
       {hand}
       bind:subPage={settingsSubPage}
+      onReplayOnboarding={() => openOnboarding(false)}
       onChangeTheme={(nextTheme) => {
         theme = nextTheme;
       }}
@@ -1332,23 +1387,22 @@
       close={monthSheet}
       onClose={() => (monthPicker = false)}
     >
-      <button
-        type="button"
-        class="w-full rounded-xl bg-[var(--brand)] py-2.5 text-sm font-bold text-white"
-        onclick={() => goToPeriod(0)}
-      >
-        {lang === "th" ? "เดือนนี้" : "This month"}
-      </button>
-      <div class="mt-2 flex flex-col gap-2">
-        {#each [1, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12] as offset (offset)}
+      <div class="flex flex-col gap-2">
+        {#each monthPickerOffsets() as offset (offset)}
           <button
             type="button"
-            class="rounded-xl py-2.5 text-sm font-bold {offset === periodOffset
-              ? 'border border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand-text)]'
-              : 'border border-[var(--border-subtle)] bg-[var(--bg-card)] text-[var(--text-primary)]'}"
+            aria-current={offset === periodOffset ? "date" : undefined}
+            class="rounded-xl py-2.5 text-sm font-bold {offset === 0
+              ? 'border border-[var(--brand)] bg-[var(--brand)] text-white'
+              : offset === periodOffset
+                ? 'border border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand-text)]'
+                : 'border border-[var(--border-subtle)] bg-[var(--bg-card)] text-[var(--text-primary)]'}"
             onclick={() => goToPeriod(offset)}
           >
             {monthLabel(offset)}
+            {#if offset === 0}
+              <span class="ml-1 text-xs font-semibold opacity-90">· {t(lang, "thisMonth")}</span>
+            {/if}
           </button>
         {/each}
       </div>
@@ -1659,3 +1713,21 @@
     </ThumbSheet>
   {/if}
 </div>
+
+{#if showOnboarding}
+  <Onboarding
+    {settings}
+    {theme}
+    {hand}
+    initialLanguage={onboardingLanguage}
+    bind:backHandler={onboardingBack}
+    onChangeTheme={(next) => (theme = next)}
+    onChangeHand={(next) => (hand = next)}
+    onSaveSettings={async (next) => {
+      await api.updateSettings(next);
+      settings = next;
+      await refreshPeriodData();
+    }}
+    onFinish={closeOnboarding}
+  />
+{/if}

@@ -525,13 +525,18 @@ fn find_fee(lines: &[String]) -> Option<i64> {
     })
 }
 
+/// Two-digit years from this value up are always Buddhist Era: as CE they would be 2050+,
+/// and as BE (`25yy`) they are 2007 to 2056 CE.
+const TWO_DIGIT_BE_FROM: i32 = 50;
+
 /// Maps a two-digit year to CE. Four-digit years >= 2400 are Buddhist Era.
-/// Two-digit years are BE (`25yy`) when `two_digit_is_be` is set, otherwise CE (`20yy`).
-fn year_to_ce(year: i32, two_digit_is_be: bool) -> i32 {
+/// Two-digit years are BE (`25yy`) when `two_digit_is_be` is set or the year is at least
+/// [`TWO_DIGIT_BE_FROM`], otherwise CE (`20yy`).
+pub(crate) fn year_to_ce(year: i32, two_digit_is_be: bool) -> i32 {
     if year >= 2400 {
         year - 543
     } else if year < 100 {
-        if two_digit_is_be {
+        if two_digit_is_be || year >= TWO_DIGIT_BE_FROM {
             2500 + year - 543
         } else {
             2000 + year
@@ -1415,6 +1420,15 @@ mod tests {
         assert_eq!(date_of("21 November 2026").as_deref(), Some("2026-11-21"));
         assert_eq!(date_of("Nov 21, 2026").as_deref(), Some("2026-11-21"));
         assert_eq!(date_of("2026-11-21").as_deref(), Some("2026-11-21"));
+    }
+
+    #[test]
+    fn two_digit_be_year_on_an_english_slip_is_not_read_as_2069() {
+        // Thai banks print short Buddhist-Era years on English slips too.
+        assert_eq!(date_of("21 Nov 69 17:28").as_deref(), Some("2026-11-21"));
+        assert_eq!(date_of("Date 21/11/69").as_deref(), Some("2026-11-21"));
+        // Short CE years still work.
+        assert_eq!(date_of("21 Nov 26 17:28").as_deref(), Some("2026-11-21"));
     }
 
     #[test]
