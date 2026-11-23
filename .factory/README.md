@@ -33,10 +33,25 @@ flowchart TD
 | Owner commands | owner comments `/…` | GitHub Actions, no AI | `.github/workflows/factory-commands.yml` |
 | Label move | write access adds a `status:*` label | GitHub Actions, no AI | `.github/workflows/factory-labels.yml` |
 | Stale needs-info | daily | GitHub Actions, no AI | `.github/workflows/factory-stale.yml` |
-| Triage | `status:triage` | AI agent | `prompts/triage.md` |
+| Triage | `status:triage`, every hour at :41 | GitHub Actions + [opencode](https://opencode.ai) with a **free** model (no API key) | `prompts/triage.md`, `.github/workflows/factory-triage.yml` |
 | Spec | `status:spec` | AI agent | `prompts/spec.md` |
 | Build | `status:ready` | AI agent (own git checkout) | `prompts/build.md` |
 | Review | `status:in-review` | AI agent (different model) | `prompts/review.md` |
+
+## Watch it run
+
+Triage is the stage anyone can watch, live, in this public repo:
+
+1. Open an issue with the bug or feature form. Intake labels it `source:*` + `status:triage` within seconds.
+2. Within the hour, [factory-triage](../../actions/workflows/factory-triage.yml) runs. To skip the wait, use
+   **Run workflow** (optionally with the issue number, or with `dry_run` to see decisions without any changes).
+3. The bot comments on the issue and swaps the labels: `status:spec`, `status:needs-info`, `status:waiting-owner`,
+   or it closes the issue (question / duplicate / spam). Each run's summary lists every decision and the model that made it.
+
+How it stays safe with a free model: the model can only **read** the repo (`.factory/opencode.json` denies shell,
+edits and web) and never sees the GitHub token. It returns a JSON decision, and `.factory/runner/triage.mjs` checks it
+and applies it. The runner only applies allowed labels, strips @-mentions, posts a fixed reply for security reports,
+and never closes an issue the owner opened. If a free model is rate limited, it tries the next one in `TRIAGE_MODELS`.
 
 ## Owner commands (comment on an issue or PR)
 

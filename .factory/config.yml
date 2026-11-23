@@ -40,7 +40,7 @@ needs_info:
   days_until_close: 14
 
 models:            # builder and reviewer should differ
-  triage:  gemini
+  triage:  opencode free models (deepseek-v4.1-flash, mimo-v2.6-flash, hy4-flash); see factory-triage.yml
   spec:    claude
   builder: claude
   reviewer: gemini
