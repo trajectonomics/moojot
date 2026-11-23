@@ -109,11 +109,13 @@ The PostHog project key and region are `vars` in `wrangler.jsonc`. The same key 
 - Update the "checked" date in the hero, the table intro, the sources and `article:modified_time` whenever you re-check.
 - Keep the "MeowJot may suit you better if…" list honest: it's what makes the page believable.
 - Keep the non-affiliation line and the trademark note.
+- MeowJot screenshots (`img/vs-meowjot-*.webp`) are our own captures of the real app, taken on the owner's phone and dated on the page. Blur every amount, name, phone number, birthday and merchant in both apps before an image enters the repo, keep the raw captures out of the repo, and look at the result at full size. Credit the app's design to KASIKORN X under the screenshots. Never copy images from meowjot.com or the app stores.
 
 ## Assets
 
 - `img/moo-wave.webp` is `static/mascot/mascot-idle.webp`. `img/moo-still.webp` is its first frame, used until the page has loaded.
 - `img/icon-*.png` and `img/apple-touch-icon.png` are resized from `static/app-icon.png`.
 - `img/og.jpg` (1200×630) is the link preview card.
+- `img/vs-*.webp` (540×1142) are the side-by-side captures on the comparison page, taken from a Nothing Phone (Android 16) on 24 Nov 2026 with the status bar cropped off and personal data blurred.
 - `img/shot-private-{en,th}.webp` and `img/shot-scan-{en,th}.webp` are onboarding screens 2 and 3 from `docs/onboarding/` (pink English, black-and-orange Thai), cropped to 412×891 to fit the phone frame. The comparison page shows the one that matches the page language.
 - `fonts/` holds Noto Sans Thai from `@fontsource/noto-sans-thai` (SIL OFL 1.1, see `fonts/OFL.txt`).
