@@ -11,6 +11,7 @@
     children,
     actions,
     footer,
+    hero,
   }: {
     title: string;
     labelId: string;
@@ -20,6 +21,8 @@
     children: Snippet;
     actions?: Snippet;
     footer?: Snippet;
+    /** Shown between the handle and the title, e.g. the mascot on "What's new". */
+    hero?: Snippet;
   } = $props();
 
   let sheetEl = $state<HTMLDivElement | null>(null);
@@ -181,6 +184,9 @@
 >
   <div data-sheet-handle class="shrink-0 cursor-grab px-5 pt-3 touch-none">
     <div class="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[var(--border-strong)]"></div>
+    {#if hero}
+      {@render hero()}
+    {/if}
     <div class="flex items-center justify-between gap-3">
       <h2 id={labelId} class="text-base font-extrabold text-[var(--text-primary)]">{title}</h2>
       {#if actions}

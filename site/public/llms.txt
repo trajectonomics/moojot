@@ -1,25 +1,23 @@
-# MooJot (มูจด)
+# MooJot
 
-> MooJot is a free, open-source Android expense tracker for Thailand. It reads the payment slips that 20 Thai banking and wallet apps save to the phone, then logs and categorizes every expense on the device. There is no account, no ads and no paid plan, and the ledger never leaves the phone. It is an independent alternative to MeowJot (เหมียวจด) and is not affiliated with MeowJot, KASIKORN X or any bank.
+> MooJot is a free, open-source Android app that reads Thai bank slips from the photos on your phone and turns them into an income and expense diary, with no account and no ads. The data stays on the phone. It is an independent, free alternative to MeowJot (เหมียวจด) and is not affiliated with MeowJot, KASIKORN X or any bank.
 
-Key facts:
+MooJot reads slips from 20 Thai bank apps, sorts each into a category, spots transfers between your own accounts, shows summaries and budgets, and imports credit card statements. It needs Android 7.0 or newer on a 64-bit phone. There is no iPhone version yet. It is not on the Play Store yet: install the APK from the project's GitHub releases. It is MIT licensed.
 
-- Platform: Android 7.0 or newer, 64-bit. Not on iPhone yet. Installed from an APK at https://moojot.trajectonomics.com/download; a Google Play listing is in progress.
-- Price: free. Every feature, no subscription, no ads. Open source under the MIT license.
-- Slip reading: K PLUS, SCB EASY, Krungthai NEXT, MAKE, TrueMoney, Dime! and others (20 apps). It reads the slip QR code and the Thai text with on-device OCR, and can scan this month, 3 months or a year back.
-- Categories: 247 built-in Thai and English merchant rules; it remembers your fixes. Unlimited custom categories and tags.
-- Also: detects transfers between your own accounts, summaries by category or tag, a 6-month comparison, daily budgets, credit card PDF e-statement import (KBank, SCB, KTC, Krungsri, BBL, ttb, UOB, AEON), CSV and JSON export, Thai and English, two themes.
-- Privacy: no sign-up and no MooJot server. Google's ML Kit, used for English text on slips, sends Google its own usage metrics but not the photo or its text. Anonymous app usage stats are off unless the user turns them on.
-- Publisher: Trajectonomics. Contact: privacy@trajectonomics.com
+## Site
 
-## Pages
+- [MooJot](https://moojot.trajectonomics.com/): the landing page, in Thai and English: what it does, the three install steps, privacy and the FAQ
+- [MooJot vs MeowJot](https://moojot.trajectonomics.com/meowjot-alternative): a side-by-side comparison with MeowJot (เหมียวจด): price, sign-up, where data is kept, slip history, budgets, tags, credit cards and export, with screenshots of both apps and sources
+- [Download the latest APK](https://moojot.trajectonomics.com/download): redirects to the signed APK in the latest GitHub release
 
-- [MooJot home](https://moojot.trajectonomics.com/): what it does, how to install the APK in 3 steps, screenshots, features, privacy, roadmap and FAQ (Thai and English)
-- [MooJot vs MeowJot](https://moojot.trajectonomics.com/meowjot-alternative): side-by-side comparison with MeowJot (เหมียวจด) on price, sign-up, data storage, slip history, budgets, tags, credit cards and export, with sources
+## Source and trust
 
-## Docs
-
-- [Source code](https://github.com/trajectonomics/moojot)
+- [moojot on GitHub](https://github.com/trajectonomics/moojot)
+- [Releases and SHA256SUMS](https://github.com/trajectonomics/moojot/releases)
 - [Privacy policy](https://github.com/trajectonomics/moojot/blob/main/docs/privacy-policy.md)
 - [Terms of service](https://github.com/trajectonomics/moojot/blob/main/docs/terms-of-service.md)
-- [Latest release and checksums](https://github.com/trajectonomics/moojot/releases/latest)
+- [MIT License](https://github.com/trajectonomics/moojot/blob/main/LICENSE)
+
+## Publisher
+
+- [Trajectonomics](https://trajectonomics.com/)

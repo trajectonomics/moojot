@@ -15,8 +15,9 @@
     X,
     Repeat,
     PenLine,
+    Mail,
   } from "@lucide/svelte";
-  import { untrack } from "svelte";
+  import { tick, untrack } from "svelte";
   import CategoryIcon from "$lib/components/CategoryIcon.svelte";
   import EmptyMonthArt from "$lib/components/EmptyMonthArt.svelte";
   import MooMascot, { type MascotMood } from "$lib/components/MooMascot.svelte";
@@ -27,6 +28,7 @@
   import RulesModal from "$lib/components/RulesModal.svelte";
   import ThumbSheet from "$lib/components/ThumbSheet.svelte";
   import Onboarding from "$lib/components/Onboarding.svelte";
+  import WhatsNewItems from "$lib/components/WhatsNewItems.svelte";
   import LockScreen from "$lib/components/LockScreen.svelte";
   import { lockOnReturn, requestUnlock } from "$lib/appLock";
   import {
@@ -51,6 +53,21 @@
   } from "$lib/api";
   import { formatBaht } from "$lib/format";
   import { localDateKey, reminderConfig } from "$lib/reminder";
+  import {
+    loadFeedbackCard,
+    saveFeedbackCard,
+    shouldShowFeedbackCard,
+    type FeedbackCardState,
+  } from "$lib/feedback";
+  import { openFeedbackMail } from "$lib/feedbackClient";
+  import {
+    loadWhatsNewSeen,
+    releasesToShow,
+    saveWhatsNewSeen,
+    type WhatsNewAction,
+    type WhatsNewRelease,
+  } from "$lib/whatsNew";
+  import { getVersion } from "@tauri-apps/api/app";
   import { parseWidgetAction, widgetSnapshot, type WidgetAction } from "$lib/widget";
   import { monthPickerOffsets } from "$lib/monthPicker";
   import {
@@ -98,6 +115,110 @@
     setAnalyticsEnabled(on, where);
   }
   let onboardingBack = $state<(() => void) | null>(null);
+
+  // "What's new" after an update (#104). A brand-new install (or one still in the welcome tour)
+  // has nothing new to read, so it only records the version it started on.
+  const whatsNewFreshInstall = firstRunState === "new" || firstRunState === "pending";
+  let appVersion = $state<string | null>(null);
+  let whatsNewSeen = $state<string | null>(loadWhatsNewSeen());
+  // The releases to show on this launch, fixed once the app version is known (null until then).
+  let whatsNewLaunch = $state<WhatsNewRelease[] | null>(null);
+  let showWhatsNew = $state(false);
+  let whatsNewOpened = false;
+  const whatsNewSheet = { current: null as (() => void) | null };
+
+  const whatsNewUnseen = $derived(
+    appVersion !== null &&
+      releasesToShow({ lastSeen: whatsNewSeen, current: appVersion, freshInstall: false }).length > 0,
+  );
+
+  function markWhatsNewSeen() {
+    if (appVersion === null) return;
+    whatsNewSeen = appVersion;
+    saveWhatsNewSeen(appVersion);
+  }
+
+  $effect(() => {
+    void (async () => {
+      let version: string | null = null;
+      try {
+        version = await getVersion();
+      } catch {
+        // A plain browser or dev build has no app version: nothing to announce.
+      }
+      appVersion = version;
+      whatsNewLaunch = version
+        ? releasesToShow({ lastSeen: whatsNewSeen, current: version, freshInstall: whatsNewFreshInstall })
+        : [];
+      // A fresh install starts "up to date".
+      if (version && whatsNewFreshInstall && whatsNewSeen === null) markWhatsNewSeen();
+    })();
+  });
+
+  // Open the sheet once everything above it is out of the way: no tour, no lock card.
+  $effect(() => {
+    if (whatsNewOpened || !whatsNewLaunch?.length || showOnboarding || lockState !== "open") return;
+    whatsNewOpened = true;
+    showWhatsNew = true;
+  });
+
+  function closeWhatsNew() {
+    showWhatsNew = false;
+    markWhatsNewSeen();
+  }
+
+  /** The My Moo rows a "Turn on" button points at (ids set in SettingsView). */
+  const WHATS_NEW_ROW_IDS = { "app-lock": "settings-row-app-lock", reminder: "settings-row-reminder" } as const;
+
+  async function whatsNewAction(action: Exclude<WhatsNewAction, "widget-help">) {
+    if (action === "feedback") {
+      await sendFeedbackFromCard();
+      return;
+    }
+    closeWhatsNew();
+    activeTab = "settings";
+    settingsSubPage = null;
+    await tick();
+    // SettingsView scrolls to the top as it mounts; wait for that before scrolling to the row.
+    setTimeout(() => {
+      const row = document.getElementById(WHATS_NEW_ROW_IDS[action]);
+      if (!row) return;
+      row.scrollIntoView({ block: "center", behavior: "smooth" });
+      row.classList.add("moo-row-flash");
+      setTimeout(() => row.classList.remove("moo-row-flash"), 1900);
+    }, 80);
+  }
+
+  // One-time "send feedback" card under the hero (#90). It shows after 2 successful slip scans
+  // or on the 3rd day of use, never during onboarding, and never again once used or closed.
+  let feedbackCard = $state<FeedbackCardState>(loadFeedbackCard(localDateKey(new Date())));
+  // The card waits for a later launch when "What's new" shows on this one (#104), and until we
+  // know whether it will (the app version is read a moment after launch).
+  const showFeedbackCard = $derived(
+    !showOnboarding &&
+      whatsNewLaunch !== null &&
+      whatsNewLaunch.length === 0 &&
+      shouldShowFeedbackCard(feedbackCard, localDateKey(new Date())),
+  );
+
+  function updateFeedbackCard(patch: Partial<FeedbackCardState>) {
+    feedbackCard = { ...feedbackCard, ...patch };
+    saveFeedbackCard(feedbackCard);
+  }
+
+  /** A gallery scan or a picked slip photo that finished without an error. PDF imports don't count. */
+  function noteSuccessfulScan() {
+    updateFeedbackCard({ successfulScans: feedbackCard.successfulScans + 1 });
+  }
+
+  async function sendFeedbackFromCard() {
+    updateFeedbackCard({ used: true });
+    const result = await openFeedbackMail(lang);
+    if (result === "copied") {
+      scanBanner = t(lang, "feedbackNoEmailApp");
+      setTimeout(() => (scanBanner = null), 4500);
+    }
+  }
   let theme = $state<AppTheme>(loadSavedTheme());
   let hand = $state<HandMode>(loadSavedHand());
   let activeTab = $state<"home" | "summary" | "settings">("home");
@@ -177,6 +298,7 @@
   } | null>(null);
   let deleteChain: Promise<void> = Promise.resolve();
   let scanChain: Promise<void> = Promise.resolve();
+  let scanChainFailed = false;
 
   // Interactive Mascot state
   let mascotMood = $state<MascotMood>("idle");
@@ -200,6 +322,7 @@
     scanStartPrompt ||
     monthPicker ||
     showOnboarding ||
+    showWhatsNew ||
     lockState !== "open"
   );
 
@@ -410,6 +533,8 @@
   function closeOnboarding() {
     const firstRun = !onboardingReplay;
     markOnboardingDone();
+    // The first tour is the end of a fresh install: it has no "what's new" to catch up on.
+    if (firstRun) markWhatsNewSeen();
     showOnboarding = false;
     activeTab = "home";
     settingsSubPage = null;
@@ -646,7 +771,7 @@
     return () => window.removeEventListener("moojot:widget-action", take);
   });
   $effect(() => {
-    if (lockState !== "open" || showOnboarding || !pendingWidgetAction) return;
+    if (lockState !== "open" || showOnboarding || showWhatsNew || !pendingWidgetAction) return;
     const action = pendingWidgetAction;
     pendingWidgetAction = null;
     untrack(() => {
@@ -706,6 +831,7 @@
     try {
       const report: SlipScanReport = await api.importSlipCandidates(candidates);
       noteJotted();
+      if (trigger === "photo") noteSuccessfulScan();
       track("slip_scan_finished", { trigger, imported: report.imported, duplicates: report.duplicates });
       scanBanner =
         lang === "th"
@@ -783,6 +909,7 @@
     scanStartPrompt = false;
     isScanning = true;
     scanTotals = { imported: 0, duplicates: 0 };
+    scanChainFailed = false;
     scanTrigger = "album";
     track("slip_scan_started", { trigger: "album" });
     scanBanner = lang === "th" ? "กำลังสแกนสลิปใหม่..." : "Scanning new slips...";
@@ -836,6 +963,10 @@
       // The tour covers everything else, so Back belongs to it first.
       if (showOnboarding) {
         onboardingBack?.();
+        return "handled";
+      }
+      if (showWhatsNew) {
+        whatsNewSheet.current?.();
         return "handled";
       }
       if (monthPicker) {
@@ -914,6 +1045,7 @@
     const onErr = (ev: Event) => {
       const detail = (ev as CustomEvent<{ error: string }>).detail;
       track("slip_scan_failed", { trigger: scanTrigger });
+      scanChainFailed = true;
       isScanning = false;
       scanBanner = detail?.error ?? "Scan error";
       setTimeout(() => (scanBanner = null), 3500);
@@ -970,6 +1102,7 @@
           }
           if (detail?.done) {
             noteJotted();
+            if (!scanChainFailed) noteSuccessfulScan();
             track("slip_scan_finished", { trigger: "album", ...scanTotals });
             const covered = monthKeysFromSince(scanSinceSec);
             if (covered.length > 0) {
@@ -984,6 +1117,7 @@
           }
         })
         .catch((error) => {
+          scanChainFailed = true;
           isScanning = false;
           scanBanner = String(error);
         });
@@ -1304,6 +1438,34 @@
         </div>
       </div>
 
+      {#if showFeedbackCard}
+        <div
+          class="mx-4 mt-4 flex items-center gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] py-2 pl-3 pr-1 shadow-xs"
+        >
+          <span class="flex size-9 shrink-0 items-center justify-center rounded-2xl bg-[var(--brand-soft)] text-[var(--brand)]">
+            <Mail class="size-4" />
+          </span>
+          <div class="min-w-0 flex-1">
+            <p class="text-xs font-bold leading-snug text-[var(--text-primary)]">{t(lang, "feedbackCardTitle")}</p>
+            <button
+              type="button"
+              onclick={sendFeedbackFromCard}
+              class="mt-1.5 rounded-full bg-[var(--brand)] px-3.5 py-1.5 text-xs font-extrabold text-white active:bg-[var(--brand-deep)]"
+            >
+              {t(lang, "sendFeedback")}
+            </button>
+          </div>
+          <button
+            type="button"
+            onclick={() => updateFeedbackCard({ dismissed: true })}
+            aria-label={t(lang, "feedbackNotNow")}
+            class="flex size-11 shrink-0 items-center justify-center rounded-full text-[var(--text-muted)] active:opacity-75"
+          >
+            <X class="size-4" />
+          </button>
+        </div>
+      {/if}
+
       <div class="overflow-x-clip">
       <div
         class="max-w-full"
@@ -1622,6 +1784,8 @@
       notificationsBlocked={settings.reminderEnabled && window.MooJotAndroid?.hasNotificationPermission?.() === false}
       onChangeReminder={changeReminder}
       bind:subPage={settingsSubPage}
+      {whatsNewUnseen}
+      onWhatsNewSeen={markWhatsNewSeen}
       onReplayOnboarding={() => openOnboarding(false)}
       onChangeTheme={(nextTheme) => {
         if (nextTheme !== theme) track("setting_changed", { setting: "theme", value: nextTheme });
@@ -1721,6 +1885,39 @@
         {t(lang, "undo")}
       </button>
     </div>
+  {/if}
+
+  {#if showWhatsNew && whatsNewLaunch?.length}
+    <ThumbSheet
+      title={t(lang, "whatsNewTitle").replace("{version}", appVersion ?? "")}
+      labelId="whats-new-title"
+      closeLabel={t(lang, "close")}
+      close={whatsNewSheet}
+      onClose={closeWhatsNew}
+    >
+      {#snippet hero()}
+        <div class="mb-1 flex justify-center">
+          <MooMascot mood="happy" size="md" interactive={false} alt="" />
+        </div>
+      {/snippet}
+      <WhatsNewItems
+        releases={whatsNewLaunch}
+        {lang}
+        showVersions={whatsNewLaunch.length > 1}
+        onAction={whatsNewAction}
+        appLockAvailable={hasAndroidBridge()}
+        reminderAvailable={hasAndroidBridge()}
+      />
+      {#snippet footer()}
+        <button
+          type="button"
+          onclick={() => whatsNewSheet.current?.()}
+          class="w-full rounded-xl bg-[var(--brand)] py-2.5 text-sm font-extrabold text-white active:bg-[var(--brand-deep)]"
+        >
+          {t(lang, "whatsNewGotIt")}
+        </button>
+      {/snippet}
+    </ThumbSheet>
   {/if}
 
   {#if monthPicker}

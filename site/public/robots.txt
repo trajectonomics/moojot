@@ -1,10 +1,7 @@
-# moojot.trajectonomics.com
-# Search engines and AI answer engines are welcome to read every page.
-# Only the redirect and API endpoints are kept out: they download the APK or count clicks.
 User-agent: *
 Allow: /
 Disallow: /download
-Disallow: /go/
+Disallow: /go
 Disallow: /api/
 Disallow: /ingest/
 

@@ -133,3 +133,18 @@ body {
     transform: scale(1.1);
   }
 }
+
+/* A short highlight on a My Moo row that a "What's new" button scrolled into view (#104). */
+@keyframes moo-row-flash {
+  0%,
+  60% {
+    background-color: var(--brand-soft);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.moo-row-flash {
+  animation: moo-row-flash 1.8s ease-out;
+}

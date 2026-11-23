@@ -48,6 +48,29 @@ export const scenes = [
     fixture: { data: "empty" },
     ready: 'svg[aria-label="No records yet"]',
   },
+  // The one-time "send feedback" card under the hero (#90), in both themes and languages.
+  {
+    name: "home-feedback-card-thai",
+    fixture: { ...THAI, feedbackCard: true },
+    run: (page) => page.waitForText("มูเป็นยังไงบ้าง บอกเราได้ใน 1 นาที", "p"),
+  },
+  {
+    name: "home-feedback-card-dark",
+    fixture: { ...DARK, feedbackCard: true },
+    run: (page) => page.waitForText("How's Moo doing? Tell us in a minute.", "p"),
+  },
+  // "What's new" after an update from 1.2.1 to 1.3.0 (#104). With the Android bridge, so the
+  // "Turn on" buttons show; the sheet also hides the feedback card on this launch.
+  {
+    name: "home-whats-new",
+    fixture: { android: "granted", appVersion: "1.3.0", whatsNewSeen: "1.2.1" },
+    ready: "#whats-new-title",
+  },
+  {
+    name: "home-whats-new-thai-dark",
+    fixture: { ...DARK, ...THAI, android: "granted", appVersion: "1.3.0", whatsNewSeen: "1.2.1" },
+    ready: "#whats-new-title",
+  },
   {
     name: "home-scrolled",
     run: async (page) => {
@@ -145,6 +168,16 @@ export const scenes = [
     },
   },
   { name: "settings-dark", fixture: DARK, run: openSettings },
+  // The "What's new" page in My Moo (#104). The version is already seen, so Home shows no sheet.
+  {
+    name: "settings-whats-new",
+    fixture: { appVersion: "1.3.0" },
+    run: async (page) => {
+      await openSettings(page);
+      await page.clickText("What's new", "button *");
+      await page.waitForText("Fingerprint app lock", "div");
+    },
+  },
   {
     name: "settings-appearance",
     run: async (page) => {

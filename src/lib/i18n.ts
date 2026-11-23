@@ -241,6 +241,23 @@ const en = {
   dailyReminderHint: "Off unless you turn it on. A nudge to jot, skipped on days you already did.",
   reminderTime: "Remind me at",
   reminderNoPermission: "Notifications are off for MooJot. Allow them in your phone's settings to get the reminder.",
+  // Send feedback (#90)
+  sendFeedback: "Send feedback",
+  copyFeedbackEmail: "Copy email address",
+  feedbackCopied: "Copied",
+  feedbackNoEmailApp: "No email app found. The address is copied.",
+  feedbackCardTitle: "How's Moo doing? Tell us in a minute.",
+  feedbackNotNow: "Not now",
+  // What's new (#104)
+  whatsNew: "What's new",
+  whatsNewHint: "See what changed in each update",
+  whatsNewTitle: "What's new in MooJot {version}",
+  whatsNewTurnOn: "Turn on",
+  whatsNewHowToAdd: "How to add",
+  whatsNewSend: "Send",
+  whatsNewGotIt: "Got it",
+  whatsNewWidgetSteps: "Long-press your home screen → Widgets → MooJot",
+  whatsNewNewDot: "New",
 
   // Misc
   loading: "Loading...",
@@ -492,6 +509,23 @@ const th: Record<I18nKey, string> = {
   dailyReminderHint: "ปิดไว้จนกว่าคุณจะเปิดเอง เตือนให้จดรายจ่าย และไม่เตือนในวันที่คุณจดแล้ว",
   reminderTime: "เตือนเวลา",
   reminderNoPermission: "การแจ้งเตือนของ MooJot ถูกปิดอยู่ เปิดได้ในการตั้งค่าเครื่องเพื่อรับการเตือน",
+  // Send feedback (#90)
+  sendFeedback: "ส่งความคิดเห็น",
+  copyFeedbackEmail: "คัดลอกอีเมล",
+  feedbackCopied: "คัดลอกแล้ว",
+  feedbackNoEmailApp: "ไม่พบแอปอีเมล คัดลอกที่อยู่ให้แล้ว",
+  feedbackCardTitle: "มูเป็นยังไงบ้าง บอกเราได้ใน 1 นาที",
+  feedbackNotNow: "ไว้ทีหลัง",
+  // What's new (#104)
+  whatsNew: "มีอะไรใหม่",
+  whatsNewHint: "ดูว่าแต่ละเวอร์ชันมีอะไรเปลี่ยนไป",
+  whatsNewTitle: "มีอะไรใหม่ใน MooJot {version}",
+  whatsNewTurnOn: "เปิดใช้",
+  whatsNewHowToAdd: "วิธีเพิ่ม",
+  whatsNewSend: "ส่ง",
+  whatsNewGotIt: "เข้าใจแล้ว",
+  whatsNewWidgetSteps: "กดค้างที่หน้าจอหลัก → วิดเจ็ต → MooJot",
+  whatsNewNewDot: "ใหม่",
 
   // Misc
   loading: "กำลังโหลด...",

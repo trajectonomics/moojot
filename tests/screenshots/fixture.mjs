@@ -22,6 +22,12 @@ export const TIMEZONE = "Asia/Bangkok";
  * @param {boolean} [options.appLock] The app lock (#79) is on. Android's unlock prompt answers
  *   "cancelled", so the app stays on its lock card. Needs `android`.
  * @param {boolean} [options.reminder] The daily reminder (#80) is on, at 20:30.
+ * @param {string} [options.appVersion] The app version the fake backend reports. Default "1.1.0".
+ * @param {string | null} [options.whatsNewSeen] The version "What's new" (#104) was last shown for:
+ *   a version string, or `null` for "never recorded". By default it is the app version, so no
+ *   scene shows the sheet unless it asks to.
+ * @param {boolean} [options.feedbackCard] The one-time feedback card (#90) is due: two
+ *   successful scans since 14 March, neither used nor dismissed.
  */
 export function fixtureScript(options = {}) {
   const config = {
@@ -30,6 +36,7 @@ export function fixtureScript(options = {}) {
     hand: "right",
     data: "full",
     onboarding: "done",
+    appVersion: "1.1.0",
     ...options,
     now: Date.parse(FIXED_NOW),
   };
@@ -56,6 +63,14 @@ function pageFixture(config) {
     localStorage.setItem("moojot_theme", config.theme);
     localStorage.setItem("moojot_hand", config.hand);
     localStorage.setItem("moojot_onboarding", config.onboarding);
+    const whatsNewSeen = "whatsNewSeen" in config ? config.whatsNewSeen : config.appVersion;
+    if (whatsNewSeen !== null) localStorage.setItem("moojot_whats_new_seen", whatsNewSeen);
+    if (config.feedbackCard) {
+      localStorage.setItem(
+        "moojot.feedbackCard",
+        JSON.stringify({ firstSeenDate: "2026-03-14", successfulScans: 2, dismissed: false, used: false }),
+      );
+    }
   } catch {
     // about:blank has no storage; the real page load sets these.
   }
@@ -307,7 +322,7 @@ function pageFixture(config) {
     list_known_slip_media_ids: () => [],
     list_payee_rules: () => payeeRules,
     search_records: searchRecords,
-    "plugin:app|version": () => "1.1.0",
+    "plugin:app|version": () => config.appVersion,
     // The person closes Android's unlock prompt: the lock card stays up.
     "plugin:biometric|authenticate": () => {
       throw { message: "Cancel button was pressed", code: "userCancel" };
