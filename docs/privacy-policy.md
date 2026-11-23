@@ -115,6 +115,7 @@ Information leaves the phone only in these cases:
 - ML Kit reads a slip, and sends Google the metrics described in "Google ML Kit metrics". This does not include the photo or the text read from it.
 - You stored an AksonOCR API key, and the app sends one slip image to AksonOCR as described above.
 - You turned on usage statistics, and the app sends the anonymous events described above.
+- You send us feedback or a question by email. Your email app sends it to support@trajectonomics.com. We receive your email address, your message, and the details the app adds (app version, Android version, app language). It is kept in our email inbox, which runs on Cloudflare, and that inbox's AI assistant may read incoming mail to help draft replies. We may summarise what you wrote, without your name or email address, in a public issue on GitHub.
 - You copy text into a GitHub issue or a security report yourself. Do not put real account numbers, slip photos, or a full ledger in a public issue.
 
 Banks, Google (including Google Play and ML Kit), Android, AksonOCR, PostHog, and Cloudflare are third parties. Their own terms apply when you use them. We are not responsible for their outages or their privacy practices.

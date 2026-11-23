@@ -22,6 +22,8 @@ export const TIMEZONE = "Asia/Bangkok";
  * @param {boolean} [options.appLock] The app lock (#79) is on. Android's unlock prompt answers
  *   "cancelled", so the app stays on its lock card. Needs `android`.
  * @param {boolean} [options.reminder] The daily reminder (#80) is on, at 20:30.
+ * @param {boolean} [options.feedbackCard] The one-time feedback card (#90) is due: two
+ *   successful scans since 14 March, neither used nor dismissed.
  */
 export function fixtureScript(options = {}) {
   const config = {
@@ -56,6 +58,12 @@ function pageFixture(config) {
     localStorage.setItem("moojot_theme", config.theme);
     localStorage.setItem("moojot_hand", config.hand);
     localStorage.setItem("moojot_onboarding", config.onboarding);
+    if (config.feedbackCard) {
+      localStorage.setItem(
+        "moojot.feedbackCard",
+        JSON.stringify({ firstSeenDate: "2026-03-14", successfulScans: 2, dismissed: false, used: false }),
+      );
+    }
   } catch {
     // about:blank has no storage; the real page load sets these.
   }

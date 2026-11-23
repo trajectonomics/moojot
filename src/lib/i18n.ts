@@ -241,6 +241,13 @@ const en = {
   dailyReminderHint: "Off unless you turn it on. A nudge to jot, skipped on days you already did.",
   reminderTime: "Remind me at",
   reminderNoPermission: "Notifications are off for MooJot. Allow them in your phone's settings to get the reminder.",
+  // Send feedback (#90)
+  sendFeedback: "Send feedback",
+  copyFeedbackEmail: "Copy email address",
+  feedbackCopied: "Copied",
+  feedbackNoEmailApp: "No email app found. The address is copied.",
+  feedbackCardTitle: "How's Moo doing? Tell us in a minute.",
+  feedbackNotNow: "Not now",
 
   // Misc
   loading: "Loading...",
@@ -492,6 +499,13 @@ const th: Record<I18nKey, string> = {
   dailyReminderHint: "ปิดไว้จนกว่าคุณจะเปิดเอง เตือนให้จดรายจ่าย และไม่เตือนในวันที่คุณจดแล้ว",
   reminderTime: "เตือนเวลา",
   reminderNoPermission: "การแจ้งเตือนของ MooJot ถูกปิดอยู่ เปิดได้ในการตั้งค่าเครื่องเพื่อรับการเตือน",
+  // Send feedback (#90)
+  sendFeedback: "ส่งความคิดเห็น",
+  copyFeedbackEmail: "คัดลอกอีเมล",
+  feedbackCopied: "คัดลอกแล้ว",
+  feedbackNoEmailApp: "ไม่พบแอปอีเมล คัดลอกที่อยู่ให้แล้ว",
+  feedbackCardTitle: "มูเป็นยังไงบ้าง บอกเราได้ใน 1 นาที",
+  feedbackNotNow: "ไว้ทีหลัง",
 
   // Misc
   loading: "กำลังโหลด...",
