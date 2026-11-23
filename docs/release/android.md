@@ -116,8 +116,8 @@ The APK, AAB and `SHA256SUMS` are attached to the run as an artifact for 7 days.
 2. Tag `main` and push the tag:
 
    ```bash
-   git tag v1.2.1 origin/main
-   git push origin v1.2.1
+   git tag v1.3.0 origin/main
+   git push origin v1.3.0
    ```
 
 3. The workflow signs the build with the release keystore (it fails if the secrets are missing), checks the signature, and publishes a GitHub Release with:
