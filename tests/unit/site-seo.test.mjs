@@ -50,7 +50,7 @@ test("every FAQ question and answer in the JSON-LD is on the page in the same wo
 test("robots.txt names the sitemap and keeps the worker's redirects out of the index", () => {
 	const robots = read("robots.txt")
 	assert.match(robots, /^Sitemap: https:\/\/moojot\.trajectonomics\.com\/sitemap\.xml$/m)
-	for (const path of ["/download", "/go/", "/api/", "/ingest/"]) {
+	for (const path of ["/download", "/go", "/api/", "/ingest/"]) {
 		assert.match(robots, new RegExp(`^Disallow: ${path}$`, "m"))
 	}
 	assert.doesNotMatch(robots, /^Disallow: \/\s*$/m)

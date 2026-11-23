@@ -1,7 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /download
-Disallow: /go/
+Disallow: /go
 Disallow: /api/
 Disallow: /ingest/
 
