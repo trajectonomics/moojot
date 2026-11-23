@@ -22,6 +22,7 @@
     Scale,
     GitFork,
     ChartNoAxesColumn,
+    Lock,
   } from "@lucide/svelte";
   import { getVersion } from "@tauri-apps/api/app";
   import { openUrl } from "@tauri-apps/plugin-opener";
@@ -60,6 +61,9 @@
     theme = "pink-white",
     hand = "right",
     shareStats = false,
+    appLockAvailable = false,
+    appLockEnabled = false,
+    onChangeAppLock,
     subPage = $bindable<SettingsSubPage>(null),
     onChangeTheme,
     onChangeHand,
@@ -89,6 +93,12 @@
     hand?: HandMode;
     /** Anonymous usage stats switch (opt-in, off by default). See $lib/analytics. */
     shareStats?: boolean;
+    /** The app lock needs Android's unlock prompt, so the switch only shows in the app. */
+    appLockAvailable?: boolean;
+    /** Opt-in fingerprint / phone-PIN lock (#79). */
+    appLockEnabled?: boolean;
+    /** Returns why the switch couldn't change, or null when it did (or the person cancelled). */
+    onChangeAppLock?: (on: boolean) => Promise<string | null>;
     subPage?: SettingsSubPage;
     onChangeTheme: (next: AppTheme) => void;
     onChangeHand: (next: HandMode) => void;
@@ -124,6 +134,22 @@
   let editingOwners = $state(false);
   let ownerSavedToast = $state(false);
   let savedToast = $state(false);
+  let appLockBusy = $state(false);
+  let appLockError = $state<string | null>(null);
+
+  async function toggleAppLock(input: HTMLInputElement) {
+    if (!onChangeAppLock || appLockBusy) return;
+    const on = input.checked;
+    appLockBusy = true;
+    appLockError = null;
+    try {
+      appLockError = await onChangeAppLock(on);
+    } finally {
+      appLockBusy = false;
+      // The switch follows the saved value, whatever the prompt said.
+      input.checked = appLockEnabled;
+    }
+  }
 
   let newTagName = $state("");
   let newCatEn = $state("");
@@ -564,6 +590,31 @@
             class="size-5 shrink-0 accent-[var(--brand)]"
           />
         </label>
+
+        {#if appLockAvailable}
+          <!-- 7b. App lock (opt-in, #79) -->
+          <label class="w-full px-4 py-3.5 flex items-center justify-between gap-3 text-left">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="size-9 rounded-2xl bg-[var(--brand-soft)] text-[var(--brand)] flex items-center justify-center shrink-0">
+                <Lock class="size-4" />
+              </span>
+              <div class="min-w-0">
+                <div class="text-sm font-bold text-[var(--text-primary)]">{t(lang, "appLock")}</div>
+                <div class="text-xs text-[var(--text-muted)]">{t(lang, "appLockHint")}</div>
+                {#if appLockError}
+                  <div class="mt-1 text-xs font-semibold text-[var(--brand)]" role="status">{appLockError}</div>
+                {/if}
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={appLockEnabled}
+              disabled={appLockBusy}
+              onchange={(e) => toggleAppLock(e.currentTarget)}
+              class="size-5 shrink-0 accent-[var(--brand)]"
+            />
+          </label>
+        {/if}
 
         <!-- 8. About -->
         <button

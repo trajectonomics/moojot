@@ -26,6 +26,8 @@
   import RulesModal from "$lib/components/RulesModal.svelte";
   import ThumbSheet from "$lib/components/ThumbSheet.svelte";
   import Onboarding from "$lib/components/Onboarding.svelte";
+  import LockScreen from "$lib/components/LockScreen.svelte";
+  import { lockOnReturn, requestUnlock } from "$lib/appLock";
   import {
     analyticsEnabled,
     setAnalyticsContext,
@@ -111,7 +113,17 @@
     aksonOcrApiKey: "",
     aksonOcrModel: "AksonOCR-preview",
     englishOcrEngine: "mlkit_latin",
+    appLockEnabled: false,
   });
+
+  // Opt-in app lock (#79), see $lib/appLock. On Android the app starts "checking" (a plain cover)
+  // until the saved setting is read, so records never show before the prompt.
+  //   checking: setting not read yet  · open: no cover  · away: in the background, covered
+  //   locked: the lock card, waiting for the fingerprint or phone PIN
+  let lockState = $state<"checking" | "open" | "away" | "locked">(hasAndroidBridge() ? "checking" : "open");
+  let unlocking = $state(false);
+  let lockMessage = $state<string | null>(null);
+  let hiddenAt: number | null = null;
   let accounts = $state<Account[]>([]);
   let categories = $state<Category[]>([]);
   let tags = $state<Tag[]>([]);
@@ -180,7 +192,8 @@
     pdfPrompt !== null ||
     scanStartPrompt ||
     monthPicker ||
-    showOnboarding
+    showOnboarding ||
+    lockState !== "open"
   );
 
   // Apply theme attribute & sync Android status bar icon contrast cleanly per screen!
@@ -196,7 +209,7 @@
       recordLightboxOpen;
     const isLightStatusBar =
       theme === "pink-white" &&
-      (showOnboarding || (!hasColoredTopBar && activeTab !== "home"));
+      (lockState !== "open" || showOnboarding || (!hasColoredTopBar && activeTab !== "home"));
     window.MooJotAndroid?.setStatusBarLight?.(isLightStatusBar);
   });
 
@@ -427,6 +440,115 @@
   });
 
 
+  // ---- App lock (#79) ----
+  function setRecentsHidden(hidden: boolean) {
+    window.MooJotAndroid?.setRecentsHidden?.(hidden);
+  }
+
+  async function unlockApp() {
+    if (unlocking) return;
+    unlocking = true;
+    lockMessage = null;
+    const result = await requestUnlock({ reason: t(lang, "appLockReason"), title: "MooJot" });
+    unlocking = false;
+    hiddenAt = null;
+    if (result === "unlocked") {
+      lockState = "open";
+    } else if (result === "no-screen-lock") {
+      // The phone's screen lock was removed after the app lock was turned on. There is nothing
+      // to check against, so open rather than lock the person out of their only copy.
+      await saveAppLock(false);
+      lockState = "open";
+      scanBanner = t(lang, "appLockTurnedOff");
+      setTimeout(() => (scanBanner = null), 6000);
+    } else {
+      lockMessage = result === "lockout" ? t(lang, "appLockLockout") : null;
+    }
+  }
+
+  /** Saves the lock switch on top of the stored settings, never on top of a stale copy. */
+  async function saveAppLock(on: boolean) {
+    const current = await api.getSettings();
+    const next = { ...current, appLockEnabled: on };
+    await api.updateSettings(next);
+    settings = { ...settings, appLockEnabled: on };
+    setRecentsHidden(on);
+  }
+
+  /** The My Moo switch. Turning it on needs one successful unlock first; returns why not, if not. */
+  async function changeAppLock(on: boolean): Promise<string | null> {
+    if (on) {
+      const result = await requestUnlock({ reason: t(lang, "appLockEnableReason"), title: "MooJot" });
+      hiddenAt = null;
+      if (result === "no-screen-lock") return t(lang, "appLockNoScreenLock");
+      if (result === "lockout") return t(lang, "appLockLockout");
+      if (result !== "unlocked") return result === "cancelled" ? null : t(lang, "appLockFailed");
+    }
+    try {
+      await saveAppLock(on);
+    } catch (error) {
+      console.error("save app lock", error);
+      return t(lang, "appLockFailed");
+    }
+    track("setting_changed", { setting: "app_lock", value: on ? "on" : "off" });
+    return null;
+  }
+
+  /** Settings screens keep their own draft; the lock switch is saved separately, so keep it. */
+  function withAppLock(next: AppSettings): AppSettings {
+    return { ...next, appLockEnabled: settings.appLockEnabled };
+  }
+
+  // Launch: read the setting, then lock or open.
+  $effect(() => {
+    if (lockState !== "checking") return;
+    void (async () => {
+      try {
+        const s = await api.getSettings();
+        settings = s;
+        setRecentsHidden(s.appLockEnabled);
+        if (s.appLockEnabled) {
+          lockState = "locked";
+          void unlockApp();
+          return;
+        }
+      } catch (error) {
+        console.error("app lock: could not read settings", error);
+      }
+      lockState = "open";
+    })();
+  });
+
+  // Background and back: cover when leaving; ask again only after more than a minute away.
+  $effect(() => {
+    const onLockVisibility = () => {
+      // Android's prompt can pause the app; that is not "leaving".
+      if (!settings.appLockEnabled || unlocking || lockState === "checking") return;
+      if (document.visibilityState === "hidden") {
+        if (lockState === "open") {
+          hiddenAt = Date.now();
+          lockState = "away";
+        }
+        return;
+      }
+      if (lockState === "locked") {
+        // Left while the lock card was up: offer the prompt again on the way back.
+        void unlockApp();
+        return;
+      }
+      if (lockState !== "away") return;
+      if (lockOnReturn(settings.appLockEnabled, hiddenAt, Date.now())) {
+        lockState = "locked";
+        void unlockApp();
+      } else {
+        hiddenAt = null;
+        lockState = "open";
+      }
+    };
+    document.addEventListener("visibilitychange", onLockVisibility);
+    return () => document.removeEventListener("visibilitychange", onLockVisibility);
+  });
+
   // Post the recurring records that have come due, so Home shows them.
   async function postDueRecurring(): Promise<number> {
     try {
@@ -594,6 +716,8 @@
   // Wire Android hardware/gesture Back button handler
   $effect(() => {
     window.__moojotHandleBack = () => {
+      // The lock card covers everything: Back only leaves the app, never moves the screen under it.
+      if (lockState !== "open") return `root:${lang}`;
       // The tour covers everything else, so Back belongs to it first.
       if (showOnboarding) {
         onboardingBack?.();
@@ -1371,6 +1495,9 @@
       {theme}
       {hand}
       {shareStats}
+      appLockAvailable={hasAndroidBridge()}
+      appLockEnabled={settings.appLockEnabled}
+      onChangeAppLock={changeAppLock}
       bind:subPage={settingsSubPage}
       onReplayOnboarding={() => openOnboarding(false)}
       onChangeTheme={(nextTheme) => {
@@ -1382,7 +1509,8 @@
         hand = nextHand;
       }}
       onChangeShareStats={(on) => changeShareStats(on, "settings")}
-      onSaveSettings={async (next) => {
+      onSaveSettings={async (draft) => {
+        const next = withAppLock(draft);
         await api.updateSettings(next);
         if (next.language !== settings.language) {
           track("setting_changed", { setting: "language", value: next.language });
@@ -1819,11 +1947,19 @@
     bind:backHandler={onboardingBack}
     onChangeTheme={(next) => (theme = next)}
     onChangeHand={(next) => (hand = next)}
-    onSaveSettings={async (next) => {
+    onSaveSettings={async (draft) => {
+      const next = withAppLock(draft);
       await api.updateSettings(next);
       settings = next;
       await refreshPeriodData();
     }}
     onFinish={closeOnboarding}
   />
+{/if}
+
+{#if lockState === "checking"}
+  <!-- Reading the lock setting: a plain cover, so nothing shows before a possible prompt. -->
+  <div class="fixed inset-0 z-[200] bg-[var(--bg-canvas)]" aria-hidden="true"></div>
+{:else if lockState !== "open"}
+  <LockScreen {lang} busy={unlocking} message={lockMessage} onUnlock={unlockApp} />
 {/if}

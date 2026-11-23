@@ -113,6 +113,9 @@ pub struct AppSettings {
     pub akson_ocr_api_key: String,
     pub akson_ocr_model: String,
     pub english_ocr_engine: String,
+    /// Fingerprint / phone-PIN lock (#79). Off by default; older frontends that don't send it keep it off.
+    #[serde(default)]
+    pub app_lock_enabled: bool,
 }
 
 impl Default for AppSettings {
@@ -127,6 +130,7 @@ impl Default for AppSettings {
             akson_ocr_api_key: String::new(),
             akson_ocr_model: "AksonOCR-preview".to_string(),
             english_ocr_engine: "mlkit_latin".to_string(),
+            app_lock_enabled: false,
         }
     }
 }
@@ -468,6 +472,7 @@ pub fn load_settings(conn: &Connection) -> Result<AppSettings, String> {
             "akson_ocr_api_key" => s.akson_ocr_api_key = v,
             "akson_ocr_model" => s.akson_ocr_model = v,
             "english_ocr_engine" => s.english_ocr_engine = v,
+            "app_lock_enabled" => s.app_lock_enabled = v == "true",
             _ => {}
         }
     }
@@ -488,6 +493,7 @@ pub fn save_settings(conn: &Connection, s: &AppSettings) -> Result<(), String> {
         ("akson_ocr_api_key", s.akson_ocr_api_key.clone()),
         ("akson_ocr_model", s.akson_ocr_model.clone()),
         ("english_ocr_engine", s.english_ocr_engine.clone()),
+        ("app_lock_enabled", s.app_lock_enabled.to_string()),
     ];
     for (k, v) in pairs {
         conn.execute(

@@ -177,6 +177,16 @@ class MainActivity : TauriActivity() {
             }
         }
 
+        /**
+         * App lock (#79): keep the ledger out of the Recents thumbnail while the lock is on.
+         * Android 13+ only; screenshots keep working (unlike FLAG_SECURE).
+         */
+        @JavascriptInterface
+        fun setRecentsHidden(hidden: Boolean) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+            runOnUiThread { setRecentsScreenshotEnabled(!hidden) }
+        }
+
         @JavascriptInterface
         fun hasGalleryPermission(): Boolean = hasGalleryAccess()
 

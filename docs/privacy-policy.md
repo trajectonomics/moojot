@@ -129,7 +129,9 @@ Usage statistics and website counts are kept in PostHog for as long as our PostH
 
 ## Security
 
-The database sits in the app's private storage, which other apps are not supposed to read. That is not the same as a promise of encryption at rest. MooJot does not add a separate passphrase or biometric lock in this version. Your phone lock is your lock.
+The database sits in the app's private storage, which other apps are not supposed to read. That is not the same as a promise of encryption at rest.
+
+MooJot has an optional app lock (My Moo → App lock), off until you turn it on. When it is on, the app asks for your fingerprint, face, or phone PIN when it opens and after more than a minute away. Android shows that prompt and checks it. MooJot only learns whether the unlock worked. Your fingerprint, face, and PIN never reach MooJot. The lock covers the screen. It does not encrypt the database.
 
 No method of storage is perfectly safe. Someone who unlocks your phone, or who has a backup of it, may be able to read the database. If you save an AksonOCR key, it is stored in that database as plain text.
 

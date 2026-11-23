@@ -194,6 +194,8 @@ export interface AppSettings {
   aksonOcrApiKey: string;
   aksonOcrModel: string;
   englishOcrEngine: "mlkit_latin" | "akson_only";
+  /** Opt-in fingerprint / phone-PIN lock (#79). Saved on its own, see changeAppLock. */
+  appLockEnabled: boolean;
 }
 
 export interface RecordInput {

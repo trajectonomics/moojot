@@ -131,6 +131,8 @@ export const scenes = [
 
   // -------------------------------------------------------------- settings ---
   { name: "settings", run: openSettings },
+  // On Android My Moo also has the app lock switch (#79).
+  { name: "settings-app-lock", fixture: { android: "granted" }, run: openSettings },
   { name: "settings-dark", fixture: DARK, run: openSettings },
   {
     name: "settings-appearance",
@@ -164,6 +166,12 @@ export const scenes = [
       await page.waitForText("Open-source licenses", "button *");
     },
   },
+
+  // -------------------------------------------------------------- app lock ---
+  // The opt-in lock (#79) after the person closed Android's unlock prompt.
+  { name: "app-lock", fixture: { android: "granted", appLock: true }, ready: "#lock-title" },
+  { name: "app-lock-dark", fixture: { ...DARK, android: "granted", appLock: true }, ready: "#lock-title" },
+  { name: "app-lock-thai", fixture: { ...THAI, android: "granted", appLock: true }, ready: "#lock-title" },
 
   // ------------------------------------------------------------ onboarding ---
   {

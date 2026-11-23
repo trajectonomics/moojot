@@ -13,8 +13,11 @@ use crate::db::{init_db, DbState};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
+    let builder = tauri::Builder::default().plugin(tauri_plugin_opener::init());
+    // Fingerprint / phone-PIN app lock (#79). The plugin only exists on phones.
+    #[cfg(mobile)]
+    let builder = builder.plugin(tauri_plugin_biometric::init());
+    builder
         .setup(|app| {
             let data_dir = app
                 .path()

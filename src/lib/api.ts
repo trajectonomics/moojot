@@ -33,6 +33,8 @@ declare global {
       readSlipImageDataUrl(relativePath: string): string | null;
       shareTextFile(filename: string, mimeType: string, content: string): boolean;
       pickStatementPdf(): void;
+      /** Android 13+: leave the app's screen out of the Recents thumbnail (app lock, #79). */
+      setRecentsHidden?(hidden: boolean): void;
     };
   }
 }
