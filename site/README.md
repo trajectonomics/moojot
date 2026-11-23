@@ -105,7 +105,8 @@ The PostHog project key and region are `vars` in `wrangler.jsonc`. The same key 
 
 `meowjot-alternative.html` compares MooJot with MeowJot (เหมียวจด). Comparing with a named product needs extra care:
 
-- Every claim about MeowJot comes from MeowJot's own public pages, listed under "Sources" on the page, with the date they were checked. Never guess, and leave out what you can't check (for example, where MeowJot stores data).
+- Every claim about MeowJot comes from MeowJot's own public pages or from its app, listed under "Sources" on the page with the date they were checked. Never guess, and leave out what you can't check.
+- The FAQPage JSON-LD on the comparison page must list exactly the questions and answers visible in its FAQ.
 - Update the "checked" date in the hero, the table intro, the sources and `article:modified_time` whenever you re-check.
 - Keep the "MeowJot may suit you better if…" list honest: it's what makes the page believable.
 - Keep the non-affiliation line and the trademark note.

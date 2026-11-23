@@ -44,19 +44,38 @@
         "url": "https://moojot.trajectonomics.com/meowjot-alternative",
         "name": "MooJot vs MeowJot (เหมียวจด): a free, open-source alternative",
         "description": "A side-by-side comparison of MooJot and MeowJot, two Thai expense trackers that read bank transfer slips.",
-        "inLanguage": ["th", "en"],
+        "inLanguage": [
+          "th",
+          "en"
+        ],
         "dateModified": "2026-11-24",
         "primaryImageOfPage": "https://moojot.trajectonomics.com/img/og.jpg",
-        "isPartOf": { "@id": "https://moojot.trajectonomics.com/#website" },
-        "about": { "@id": "https://moojot.trajectonomics.com/#app" },
-        "breadcrumb": { "@id": "https://moojot.trajectonomics.com/meowjot-alternative#breadcrumb" }
+        "isPartOf": {
+          "@id": "https://moojot.trajectonomics.com/#website"
+        },
+        "about": {
+          "@id": "https://moojot.trajectonomics.com/#app"
+        },
+        "breadcrumb": {
+          "@id": "https://moojot.trajectonomics.com/meowjot-alternative#breadcrumb"
+        }
       },
       {
         "@type": "BreadcrumbList",
         "@id": "https://moojot.trajectonomics.com/meowjot-alternative#breadcrumb",
         "itemListElement": [
-          { "@type": "ListItem", "position": 1, "name": "MooJot", "item": "https://moojot.trajectonomics.com/" },
-          { "@type": "ListItem", "position": 2, "name": "MooJot vs MeowJot", "item": "https://moojot.trajectonomics.com/meowjot-alternative" }
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "MooJot",
+            "item": "https://moojot.trajectonomics.com/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "MooJot vs MeowJot",
+            "item": "https://moojot.trajectonomics.com/meowjot-alternative"
+          }
         ]
       },
       {
@@ -64,28 +83,51 @@
         "mainEntity": [
           {
             "@type": "Question",
-            "name": "Is there a free alternative to MeowJot (เหมียวจด)?",
-            "acceptedAnswer": { "@type": "Answer", "text": "Yes. MooJot is a free, open-source Android app that reads payment slips from 20 Thai banking and wallet apps and logs your expenses. Every feature is free, including budgets, tags, credit card e-statement import and CSV export, and it needs no account." }
-          },
-          {
-            "@type": "Question",
-            "name": "What is the difference between MooJot and MeowJot?",
-            "acceptedAnswer": { "@type": "Answer", "text": "Both read Thai bank slips from your phone's gallery. MeowJot, by KASIKORN X, needs a mobile-number sign-up, backs up your records to its servers, keeps 1 month of history on its free plan, and puts automatic categories, budgets, more tags, credit card import and CSV export in its Silver (79 baht a month or 499 a year) or Gold (149 baht a month or 799 a year) plans. It runs on iPhone and Android. MooJot is open source, has no account and no paid plan, keeps the ledger only on your phone, and is Android only for now." }
+            "name": "Is there a free alternative to MeowJot?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. MooJot is a free, open-source Android app that reads payment slips from 20 Thai banking and wallet apps and logs and sorts your spending. Every feature is free, including budgets, tags, credit card statement import and CSV export, and you don't need an account."
+            }
           },
           {
             "@type": "Question",
             "name": "Is MooJot made by MeowJot or KBank?",
-            "acceptedAnswer": { "@type": "Answer", "text": "No. MooJot is an independent open-source project by Trajectonomics. It is not affiliated with or endorsed by MeowJot, KASIKORN X, KBTG or any bank." }
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. MooJot is an independent open-source project by Trajectonomics. It isn't affiliated with or endorsed by MeowJot, KASIKORN X, KBTG or any bank."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I switch from MeowJot to MooJot?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "MooJot can't import files from other apps yet. You often won't need to: it can read the slips still in your banking apps' albums from up to a year back in one go. Install it, choose “1 year” when you scan, and most of your history comes back."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What's the difference between MooJot and MeowJot?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Both read Thai bank slips from your phone. MeowJot, by KASIKORN X, needs a mobile-number sign-up and backs up your records to its servers. Its free plan keeps 1 month of history and 1 tag, and automatic categories, budgets, more tags, credit card statements and CSV export are in Silver (79 ฿ a month or 499 ฿ a year) or Gold (149 ฿ a month or 799 ฿ a year). It runs on iPhone and Android. MooJot is open source, has no account and no paid plan, keeps the ledger only on your phone, and is Android-only for now."
+            }
           },
           {
             "@type": "Question",
             "name": "Does MooJot work on iPhone?",
-            "acceptedAnswer": { "@type": "Answer", "text": "Not yet. MooJot runs on Android 7.0 or newer (64-bit). MeowJot is available on both iPhone and Android." }
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Not yet. MooJot is Android-only for now (Android 7.0 or newer, 64-bit). If you're on iPhone, MeowJot supports iOS."
+            }
           },
           {
             "@type": "Question",
-            "name": "Can I read older slips with MooJot?",
-            "acceptedAnswer": { "@type": "Answer", "text": "Yes. MooJot can scan the current month, 3 months or a whole year back in one go, as long as the slips are still in your banking apps' gallery albums. MeowJot's guide says it reads 7 to 30 days back depending on the bank." }
+            "name": "How is MooJot free?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "There are no servers to pay for, because everything runs on your phone. The code is open source, anyone can help build it, and every feature is meant to stay free for good."
+            }
           }
         ]
       }
@@ -172,8 +214,8 @@
           <li class="feature">
             <div class="feature-icon"><svg class="icon"><use href="#i-gift"/></svg></div>
             <h3><span lang="th">ฟรีทุกฟีเจอร์ ไม่มีแพ็กเกจ</span><span lang="en">Every feature free</span></h3>
-            <p lang="th">เหมียวจดฟรีแค่ฟีเจอร์พื้นฐานและดูย้อนหลังได้ 1 เดือน งบ แท็ก บัตรเครดิต และ CSV อยู่ในแพ็กเกจ Silver (79 ฿/เดือน หรือ 499 ฿/ปี) หรือ Gold (149 ฿/เดือน หรือ 799 ฿/ปี) ใน MooJot ทั้งหมดนี้ฟรี</p>
-            <p lang="en">MeowJot's free plan covers the basics and 1 month of history. Budgets, tags, credit cards and CSV sit in Silver (79 ฿ a month or 499 ฿ a year) or Gold (149 ฿ a month or 799 ฿ a year). In MooJot they're all free.</p>
+            <p lang="th">เหมียวจดฟรีแค่ฟีเจอร์พื้นฐานและดูย้อนหลังได้ 1 เดือน งบ แท็กเพิ่ม บัตรเครดิต และ CSV อยู่ในแพ็กเกจ Silver (79 ฿/เดือน หรือ 499 ฿/ปี) หรือ Gold (149 ฿/เดือน หรือ 799 ฿/ปี) ใน MooJot ทั้งหมดนี้ฟรี</p>
+            <p lang="en">MeowJot's free plan covers the basics and 1 month of history. Budgets, more tags, credit cards and CSV sit in Silver (79 ฿ a month or 499 ฿ a year) or Gold (149 ฿ a month or 799 ฿ a year). In MooJot they're all free.</p>
           </li>
           <li class="feature">
             <div class="feature-icon"><svg class="icon"><use href="#i-user-x"/></svg></div>
@@ -389,8 +431,8 @@
               <li lang="en"><b>Free:</b> reads e-slips, 1 month of history, 1 tag</li>
               <li lang="th"><b>Silver 79 ฿/เดือน หรือ 499 ฿/ปี:</b> ดูย้อนหลังไม่จำกัด แยกหมวดอัตโนมัติ รายการประจำ งบพร้อมแจ้งเตือน กราฟแนวโน้ม สรุปรายปีและไตรมาส รอบเดือนเอง 5 แท็ก</li>
               <li lang="en"><b>Silver, 79 ฿/month or 499 ฿/year:</b> unlimited history, automatic categories, recurring records, budgets with alerts, trend chart, yearly and quarterly view, custom month cycle, 5 tags</li>
-              <li lang="th"><b>Gold 149 ฿/เดือน หรือ 799 ฿/ปี:</b> ทุกอย่างใน Silver บวกบิลบัตรเครดิต หมวดของตัวเอง 50 หมวด 100 แท็ก ส่งออกข้อมูล และธีมพิเศษ</li>
-              <li lang="en"><b>Gold, 149 ฿/month or 799 ฿/year:</b> everything in Silver, plus credit card statements, 50 custom categories, 100 tags, data export and extra themes</li>
+              <li lang="th"><b>Gold 149 ฿/เดือน หรือ 799 ฿/ปี:</b> ทุกอย่างใน Silver บวกบิลบัตรเครดิต หมวดของตัวเอง 50 หมวด 100 แท็ก ส่งออกข้อมูล (CSV) และธีมพิเศษ</li>
+              <li lang="en"><b>Gold, 149 ฿/month or 799 ฿/year:</b> everything in Silver, plus credit card statements, 50 custom categories, 100 tags, data export (CSV) and extra themes</li>
             </ul>
             <p class="vs-plans-us" lang="th"><b>MooJot:</b> ทุกข้อข้างบนฟรี ยกเว้นสรุปรายปีและรายไตรมาสกับแจ้งเตือนงบ ที่ยังอยู่ในแผน</p>
             <p class="vs-plans-us" lang="en"><b>MooJot:</b> all of the above is free, except the yearly and quarterly view and budget alerts, which are still planned.</p>
@@ -444,7 +486,7 @@
           </div>
           <figcaption>
             <span class="shot-title"><span lang="th">สรุปตามหมวดหรือแท็ก</span><span lang="en">Summary by category or tag</span></span>
-            <span class="shot-tag"><span lang="th">เหมียวจด: แท็กใน Silver ขึ้นไป</span><span lang="en">MeowJot: tags on Silver+</span></span>
+            <span class="shot-tag"><span lang="th">เหมียวจด: ฟรีได้ 1 แท็ก</span><span lang="en">MeowJot: 1 tag on free</span></span>
           </figcaption>
         </figure>
         </div>
@@ -501,6 +543,11 @@
             <summary><span lang="th">ย้ายจากเหมียวจดมา MooJot ได้ไหม?</span><span lang="en">Can I switch from MeowJot to MooJot?</span></summary>
             <p lang="th">MooJot ยังนำเข้าไฟล์จากแอปอื่นไม่ได้ แต่ไม่จำเป็นมาก เพราะ MooJot อ่านสลิปที่ยังอยู่ในอัลบั้มของแอปธนาคารได้ย้อนหลังถึง 1 ปีในครั้งเดียว ติดตั้งแล้วเลือก “1 ปี” ตอนสแกน รายการส่วนใหญ่ก็กลับมาครบ</p>
             <p lang="en">MooJot can't import files from other apps yet. You often won't need to: it can read the slips still in your banking apps' albums from up to a year back in one go. Install it, choose “1 year” when you scan, and most of your history comes back.</p>
+          </details>
+          <details>
+            <summary><span lang="th">MooJot กับเหมียวจดต่างกันยังไง?</span><span lang="en">What's the difference between MooJot and MeowJot?</span></summary>
+            <p lang="th">อ่านสลิปธนาคารไทยจากมือถือได้เหมือนกัน เหมียวจดของ KASIKORN X ต้องสมัครด้วยเบอร์มือถือ สำรองข้อมูลไว้บนเซิร์ฟเวอร์ของตัวเอง แบบฟรีดูย้อนหลังได้ 1 เดือนและมี 1 แท็ก ส่วนแยกหมวดอัตโนมัติ งบประมาณ แท็กเพิ่ม บิลบัตรเครดิต และส่งออก CSV อยู่ใน Silver (79 ฿/เดือน หรือ 499 ฿/ปี) หรือ Gold (149 ฿/เดือน หรือ 799 ฿/ปี) และใช้ได้ทั้ง iPhone และ Android ส่วน MooJot เป็นโอเพนซอร์ส ไม่มีบัญชีผู้ใช้ ไม่มีแพ็กเกจเสียเงิน เก็บบัญชีไว้ในมือถือเท่านั้น และตอนนี้มีเฉพาะ Android</p>
+            <p lang="en">Both read Thai bank slips from your phone. MeowJot, by KASIKORN X, needs a mobile-number sign-up and backs up your records to its servers. Its free plan keeps 1 month of history and 1 tag, and automatic categories, budgets, more tags, credit card statements and CSV export are in Silver (79 ฿ a month or 499 ฿ a year) or Gold (149 ฿ a month or 799 ฿ a year). It runs on iPhone and Android. MooJot is open source, has no account and no paid plan, keeps the ledger only on your phone, and is Android-only for now.</p>
           </details>
           <details>
             <summary><span lang="th">ใช้กับ iPhone ได้ไหม?</span><span lang="en">Does MooJot work on iPhone?</span></summary>
