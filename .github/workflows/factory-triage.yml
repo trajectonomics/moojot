@@ -1,0 +1,70 @@
+name: factory-triage
+# AI stage, free: every hour a free model (via opencode, no API key) triages issues
+# labeled status:triage, following .factory/prompts/triage.md.
+# The model only reads the repo and returns a decision. .factory/runner/triage.mjs
+# checks that decision and applies it; the model never gets the GitHub token.
+
+on:
+  schedule:
+    - cron: "41 * * * *"
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: "Only this issue number (it must be status:triage)"
+        required: false
+      dry_run:
+        description: "Show the decisions without changing any issue"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: factory-triage
+  cancel-in-progress: false
+
+jobs:
+  triage:
+    if: ${{ vars.FACTORY_PAUSED != 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Anything to triage?
+        id: queue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ inputs.issue }}
+        run: |
+          if [ -n "$ISSUE" ]; then echo "count=1" >> "$GITHUB_OUTPUT"; exit 0; fi
+          count=$(gh issue list -R "$GITHUB_REPOSITORY" --state open --label status:triage --json labels \
+            --jq '[.[] | select(all(.labels[]; .name != "factory:hold"))] | length')
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          [ "$count" -gt 0 ] || echo "## 🐷 Factory triage"$'\n\n'"Nothing waiting in \`status:triage\`. 🎉" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/checkout@v4
+        if: steps.queue.outputs.count != '0'
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        if: steps.queue.outputs.count != '0'
+        with:
+          node-version: 24
+
+      - name: Install opencode
+        if: steps.queue.outputs.count != '0'
+        run: npm install -g opencode-ai@1.19.6
+
+      - name: Triage
+        if: steps.queue.outputs.count != '0'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          ISSUE: ${{ inputs.issue }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          MAX_ISSUES: "5"
+          # Free models, tried in order. Override with the repo variable FACTORY_TRIAGE_MODELS.
+          TRIAGE_MODELS: ${{ vars.FACTORY_TRIAGE_MODELS || 'opencode/deepseek-v4.1-flash-free,opencode/mimo-v2.6-flash-free,opencode/hy4-flash-free' }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node .factory/runner/triage.mjs
