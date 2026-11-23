@@ -117,5 +117,6 @@ The PostHog project key and region are `vars` in `wrangler.jsonc`. The same key 
 - `img/icon-*.png` and `img/apple-touch-icon.png` are resized from `static/app-icon.png`.
 - `img/og.jpg` (1200×630) is the link preview card.
 - `img/vs-*.webp` (540×1142) are the side-by-side captures on the comparison page, taken from a Nothing Phone (Android 16) on 24 Nov 2026 with the status bar cropped off and personal data blurred.
-- `img/shot-private-{en,th}.webp` and `img/shot-scan-{en,th}.webp` are onboarding screens 2 and 3 from `docs/onboarding/` (pink English, black-and-orange Thai), cropped to 412×891 to fit the phone frame. The comparison page shows the one that matches the page language.
+- `img/shot-private-{en,th}.webp` and `img/shot-scan-{en,th}.webp` are intro screens 2 and 3 in the pink & white theme. The Thai ones (540×1142) were captured from the app; the English ones (412×891) are cropped from `docs/onboarding/pink-en-*`. The comparison page shows the one that matches the page language.
+- Every MooJot screenshot on the site uses the pink & white theme, so the site looks like one app.
 - `fonts/` holds Noto Sans Thai from `@fontsource/noto-sans-thai` (SIL OFL 1.1, see `fonts/OFL.txt`).
