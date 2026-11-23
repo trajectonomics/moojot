@@ -30,7 +30,7 @@ This file is generated, not edited by hand. To regenerate it after a dependency 
 release APK and run: node tools/third-party-notices.mjs --apk path/to/moojot-android-arm64.apk (see
 docs/release/android.md).
 
-Components: 546 Rust crates, 37 web packages, 99 Android/Java libraries, 2 native-library entries, 1 model, plus MooJot itself.
+Components: 548 Rust crates, 38 web packages, 100 Android/Java libraries, 2 native-library entries, 1 model, plus MooJot itself.
 
 ==============================================================================
 PART 1. COMPONENTS
@@ -44,7 +44,7 @@ MooJot - 1
 MooJot 1.2.1 - MIT [L1]
 
 ------------------------------------------------------------------------------
-Rust crates (compiled into libmoojot_lib.so) - 546
+Rust crates (compiled into libmoojot_lib.so) - 548
 ------------------------------------------------------------------------------
 Tauri's Android glue library (app.tauri.*, in classes.dex) is part of the tauri crate listed here.
 
@@ -319,17 +319,18 @@ objc2-encode 4.1.0 * - MIT [L1]
 objc2-exception-helper 0.1.1 * - Zlib OR Apache-2.0 OR MIT [L29, L5, L1]
 objc2-foundation 0.3.2 * - MIT [L57]
 objc2-io-surface 0.3.2 * - Zlib OR Apache-2.0 OR MIT [L29, L5, L58]
-objc2-quartz-core 0.3.2 * - Zlib OR Apache-2.0 OR MIT [L29, L5, L59]
-objc2-ui-kit 0.3.2 * - Zlib OR Apache-2.0 OR MIT [L29, L5, L60]
-objc2-user-notifications 0.3.2 * - Zlib OR Apache-2.0 OR MIT [L29, L5, L61]
-objc2-web-kit 0.3.2 * - Zlib OR Apache-2.0 OR MIT [L29, L5, L62]
+objc2-local-authentication 0.3.2 * - Zlib OR Apache-2.0 OR MIT [L29, L5, L59]
+objc2-quartz-core 0.3.2 * - Zlib OR Apache-2.0 OR MIT [L29, L5, L60]
+objc2-ui-kit 0.3.2 * - Zlib OR Apache-2.0 OR MIT [L29, L5, L61]
+objc2-user-notifications 0.3.2 * - Zlib OR Apache-2.0 OR MIT [L29, L5, L62]
+objc2-web-kit 0.3.2 * - Zlib OR Apache-2.0 OR MIT [L29, L5, L63]
 once_cell 1.21.4 - MIT OR Apache-2.0 [L5, L4]
-open 5.4.5 - MIT [L63]
-option-ext 0.2.0 - MPL-2.0 [L64]
+open 5.4.5 - MIT [L64]
+option-ext 0.2.0 - MPL-2.0 [L65]
 ordered-stream 0.2.0 - MIT OR Apache-2.0 [L5, L4]
 pango 0.18.3 - MIT [L15, L4]
 pango-sys 0.18.0 - MIT [L4]
-parking 2.2.1 - Apache-2.0 OR MIT [L5, L4, L65]
+parking 2.2.1 - Apache-2.0 OR MIT [L5, L4, L66]
 parking_lot 0.12.5 - MIT OR Apache-2.0 [L5, L4]
 parking_lot_core 0.9.12 - MIT OR Apache-2.0 [L5, L4]
 percent-encoding 2.3.2 - MIT OR Apache-2.0 [L5, L4]
@@ -365,11 +366,11 @@ quinn 0.11.12 - MIT OR Apache-2.0 [L5, L4]
 quinn-proto 0.11.19 - MIT OR Apache-2.0 [L5, L4]
 quinn-udp 0.5.16 - MIT OR Apache-2.0 [L5, L4]
 quote 1.0.47 - MIT OR Apache-2.0 [L13, L4]
-r-efi 5.3.0 * - MIT OR Apache-2.0 OR LGPL-2.1-or-later [L66, L5]
-r-efi 6.0.0 * - MIT OR Apache-2.0 OR LGPL-2.1-or-later [L66, L5]
-rand 0.10.4 - MIT OR Apache-2.0 [L67, L68, L4]
-rand_core 0.10.1 - MIT OR Apache-2.0 [L69, L70, L4]
-rand_pcg 0.10.3 - MIT OR Apache-2.0 [L67, L70, L4]
+r-efi 5.3.0 * - MIT OR Apache-2.0 OR LGPL-2.1-or-later [L67, L5]
+r-efi 6.0.0 * - MIT OR Apache-2.0 OR LGPL-2.1-or-later [L67, L5]
+rand 0.10.4 - MIT OR Apache-2.0 [L68, L69, L4]
+rand_core 0.10.1 - MIT OR Apache-2.0 [L70, L71, L4]
+rand_pcg 0.10.3 - MIT OR Apache-2.0 [L68, L71, L4]
 rangemap 1.8.0 - MIT/Apache-2.0 [L14, L4]
 raw-window-handle 0.6.2 - MIT OR Apache-2.0 OR Zlib [L13, L1, L18]
 rayon 1.12.0 - MIT OR Apache-2.0 [L5, L4]
@@ -380,27 +381,27 @@ ref-cast 1.0.27 - MIT OR Apache-2.0 [L13, L4]
 ref-cast-impl 1.0.27 - MIT OR Apache-2.0 [L13, L4]
 regex 1.13.2 - MIT OR Apache-2.0 [L5, L4]
 regex-automata 0.4.19 - MIT OR Apache-2.0 [L5, L4]
-regex-syntax 0.8.12 - MIT OR Apache-2.0 [L5, L4, L71]
+regex-syntax 0.8.12 - MIT OR Apache-2.0 [L5, L4, L72]
 reqwest 0.12.28 - MIT OR Apache-2.0 [L22, L4]
 reqwest 0.13.5 - MIT OR Apache-2.0 [L22, L4]
-ring 0.17.14 - Apache-2.0 AND ISC [L72, L73, L42, L5, L74, L75]
+ring 0.17.14 - Apache-2.0 AND ISC [L73, L74, L42, L5, L75, L76]
 rusqlite 0.35.0 - MIT [L4]
 rustc-hash 2.1.3 - Apache-2.0 OR MIT [L13, L4]
 rustc_version 0.4.1 - MIT OR Apache-2.0 [L5, L4]
-rustix 1.1.6 - Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT [L76, L5, L45, L4]
+rustix 1.1.6 - Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT [L77, L5, L45, L4]
 rustls 0.23.46 - Apache-2.0 OR ISC OR MIT [L5, L38, L4]
 rustls-pki-types 1.16.0 - MIT OR Apache-2.0 [L22, L4]
-rustls-webpki 0.103.17 - ISC [L77]
+rustls-webpki 0.103.17 - ISC [L78]
 rustversion 1.0.23 - MIT OR Apache-2.0 [L13, L4]
-ryu 1.0.23 - Apache-2.0 OR BSL-1.0 [L13, L78]
+ryu 1.0.23 - Apache-2.0 OR BSL-1.0 [L13, L79]
 same-file 1.0.6 - Unlicense/MIT [L6, L7, L8]
 schemars 0.8.22 - MIT [L1]
 schemars 0.9.0 - MIT [L1]
 schemars 1.2.3 - MIT [L1]
 schemars_derive 0.8.22 - MIT [L1]
 scopeguard 1.2.0 - MIT OR Apache-2.0 [L5, L4]
-selectors 0.38.0 * - MPL-2.0 [L64]
-selectors 0.41.0 * - MPL-2.0 [L64]
+selectors 0.38.0 * - MPL-2.0 [L65]
+selectors 0.41.0 * - MPL-2.0 [L65]
 semver 1.0.28 - MIT OR Apache-2.0 [L13, L4]
 serde 1.0.229 - MIT OR Apache-2.0 [L13, L4]
 serde-untagged 0.1.9 - MIT OR Apache-2.0 [L13, L4]
@@ -422,9 +423,9 @@ sha2 0.10.9 - MIT OR Apache-2.0 [L5, L4]
 sha2 0.11.1 - MIT OR Apache-2.0 [L5, L4]
 shlex 2.0.1 - MIT OR Apache-2.0 [L11, L7]
 signal-hook-registry 1.4.8 - MIT OR Apache-2.0 [L5, L4]
-simd-adler32 0.3.10 - MIT [L79]
+simd-adler32 0.3.10 - MIT [L80]
 simdutf8 0.1.5 - MIT OR Apache-2.0 [L13, L1]
-siphasher 1.0.4 - MIT OR Apache-2.0 [L80, L5, L4]
+siphasher 1.0.4 - MIT OR Apache-2.0 [L81, L5, L4]
 slab 0.4.12 - MIT [L4]
 smallvec 1.16.6 - MIT OR Apache-2.0 [L5, L4]
 socket2 0.6.5 - MIT OR Apache-2.0 [L5, L4]
@@ -432,7 +433,7 @@ softbuffer 0.4.8 - MIT OR Apache-2.0 [L27, L4]
 soup3 0.5.0 - MIT [L7]
 soup3-sys 0.5.0 - MIT [L7]
 stable_deref_trait 1.2.1 - MIT OR Apache-2.0 [L5, L4]
-static_vcruntime 3.0.0 - MIT OR Apache-2.0 OR Zlib [L81, L5, L17, L18]
+static_vcruntime 3.0.0 - MIT OR Apache-2.0 OR Zlib [L82, L5, L17, L18]
 string_cache 0.11.0 - MIT OR Apache-2.0 [L5, L4]
 string_cache 0.9.0 - MIT OR Apache-2.0 [L5, L4]
 string_cache_codegen 0.11.2 - MIT OR Apache-2.0 [L5, L4]
@@ -447,15 +448,16 @@ syn 3.0.10 - MIT OR Apache-2.0 [L13, L4]
 sync_wrapper 1.0.2 - Apache-2.0 [L13]
 synstructure 0.14.0 - MIT [L4]
 system-deps 6.2.2 - MIT OR Apache-2.0 [L5, L4]
-tao 0.37.3 - Apache-2.0 [L24, L82]
-tao-macros 0.1.4 - MIT OR Apache-2.0 [L5, L1, L83]
+tao 0.37.3 - Apache-2.0 [L24, L83]
+tao-macros 0.1.4 - MIT OR Apache-2.0 [L5, L1, L84]
 target-lexicon 0.12.16 - Apache-2.0 WITH LLVM-exception [L45]
 tauri 2.12.7 - Apache-2.0 OR MIT [L13, L1]
 tauri-build 2.7.6 - Apache-2.0 OR MIT [L13, L1]
 tauri-codegen 2.7.6 - Apache-2.0 OR MIT [L13, L1]
 tauri-macros 2.7.6 - Apache-2.0 OR MIT [L13, L1]
 tauri-plugin 2.7.4 * - Apache-2.0 OR MIT [L5, L1]
-tauri-plugin-opener 2.7.3 - Apache-2.0 OR MIT [L84, L13, L1]
+tauri-plugin-biometric 2.5.0 - Apache-2.0 OR MIT [L85, L13, L1]
+tauri-plugin-opener 2.7.3 - Apache-2.0 OR MIT [L85, L13, L1]
 tauri-runtime 2.12.4 - Apache-2.0 OR MIT [L13, L1]
 tauri-runtime-wry 2.12.5 - Apache-2.0 OR MIT [L13, L1]
 tauri-utils 2.10.4 - Apache-2.0 OR MIT [L13, L1]
@@ -490,21 +492,21 @@ tower-service 0.3.3 - MIT [L4]
 tracing 0.1.44 - MIT [L4]
 tracing-attributes 0.1.31 - MIT [L4]
 tracing-core 0.1.36 - MIT [L4, L7]
-tray-icon 0.25.1 - MIT OR Apache-2.0 [L5, L1, L85]
+tray-icon 0.25.1 - MIT OR Apache-2.0 [L5, L1, L86]
 try-lock 0.2.5 - MIT [L4]
 typeid 1.0.3 - MIT OR Apache-2.0 [L13, L4]
-typenum 1.20.1 - MIT OR Apache-2.0 [L86, L22, L7]
-uds_windows 1.2.1 - MIT [L87]
-unicode-bidi 0.3.18 - MIT OR Apache-2.0 [L88, L5, L4]
-unicode-ident 1.0.27 - (MIT OR Apache-2.0) AND Unicode-3.0 [L13, L4, L89]
-unicode-normalization 0.1.26 - (MIT OR Apache-2.0) AND Unicode-3.0 [L23, L5, L4, L89]
-unicode-properties 0.1.5 - (MIT OR Apache-2.0) AND Unicode-3.0 [L23, L5, L4, L89]
+typenum 1.20.1 - MIT OR Apache-2.0 [L87, L22, L7]
+uds_windows 1.2.1 - MIT [L88]
+unicode-bidi 0.3.18 - MIT OR Apache-2.0 [L89, L5, L4]
+unicode-ident 1.0.27 - (MIT OR Apache-2.0) AND Unicode-3.0 [L13, L4, L90]
+unicode-normalization 0.1.26 - (MIT OR Apache-2.0) AND Unicode-3.0 [L23, L5, L4, L90]
+unicode-properties 0.1.5 - (MIT OR Apache-2.0) AND Unicode-3.0 [L23, L5, L4, L90]
 unicode-segmentation 1.13.3 - MIT OR Apache-2.0 [L23, L5, L4]
-untrusted 0.9.0 - ISC [L90]
+untrusted 0.9.0 - ISC [L91]
 url 2.5.9 - MIT OR Apache-2.0 [L5, L4]
 urlpattern 0.6.0 - MIT [L1]
-utf8_iter 1.1.0 - Apache-2.0 OR MIT [L91, L5, L4]
-utf_types 1.0.0 - Apache-2.0 OR MIT [L92, L5, L4]
+utf8_iter 1.1.0 - Apache-2.0 OR MIT [L92, L5, L4]
+utf_types 1.0.0 - Apache-2.0 OR MIT [L93, L5, L4]
 uuid 1.29.3 - Apache-2.0 OR MIT [L5, L4]
 vcpkg 0.2.15 - MIT/Apache-2.0 [L5, L4]
 version-compare 0.2.1 - MIT [L4]
@@ -526,56 +528,56 @@ web-sys 0.3.107 - MIT OR Apache-2.0 [L5, L4]
 web-time 1.1.0 - MIT OR Apache-2.0 [L22, L1]
 web_atoms 0.2.6 - MIT OR Apache-2.0 [L5, L4]
 web_atoms 0.3.0 - MIT OR Apache-2.0 [L5, L4]
-webkit2gtk 2.0.2 - MIT [L93]
-webkit2gtk-sys 2.0.2 - MIT [L93]
-webpki-roots 1.0.12 - CDLA-Permissive-2.0 [L94]
-webview2-com 0.39.1 * - MIT [L95]
-webview2-com-macros 0.8.1 * - MIT [L96]
-webview2-com-sys 0.39.1 * - MIT [L97]
+webkit2gtk 2.0.2 - MIT [L94]
+webkit2gtk-sys 2.0.2 - MIT [L94]
+webpki-roots 1.0.12 - CDLA-Permissive-2.0 [L95]
+webview2-com 0.39.1 * - MIT [L96]
+webview2-com-macros 0.8.1 * - MIT [L97]
+webview2-com-sys 0.39.1 * - MIT [L98]
 weezl 0.2.1 - MIT OR Apache-2.0 [L5, L7]
 winapi 0.3.9 - MIT/Apache-2.0 [L24, L4]
 winapi-i686-pc-windows-gnu 0.4.0 * - MIT/Apache-2.0 [L1, L5]
 winapi-util 0.1.11 - Unlicense OR MIT [L6, L7, L8]
 winapi-x86_64-pc-windows-gnu 0.4.0 * - MIT/Apache-2.0 [L1, L5]
-window-vibrancy 0.8.1 - Apache-2.0 OR MIT [L5, L1, L98]
-windows 0.62.2 - MIT OR Apache-2.0 [L22, L87]
-windows-collections 0.3.2 - MIT OR Apache-2.0 [L22, L87]
-windows-core 0.62.2 - MIT OR Apache-2.0 [L22, L87]
-windows-future 0.3.2 - MIT OR Apache-2.0 [L22, L87]
-windows-implement 0.60.2 - MIT OR Apache-2.0 [L22, L87]
-windows-interface 0.59.3 - MIT OR Apache-2.0 [L22, L87]
-windows-link 0.2.1 - MIT OR Apache-2.0 [L22, L87]
-windows-numerics 0.3.1 - MIT OR Apache-2.0 [L22, L87]
-windows-result 0.4.1 - MIT OR Apache-2.0 [L22, L87]
-windows-strings 0.5.1 - MIT OR Apache-2.0 [L22, L87]
-windows-sys 0.45.0 - MIT OR Apache-2.0 [L22, L87]
-windows-sys 0.52.0 - MIT OR Apache-2.0 [L22, L87]
-windows-sys 0.61.2 - MIT OR Apache-2.0 [L22, L87]
-windows-targets 0.42.2 - MIT OR Apache-2.0 [L22, L87]
-windows-targets 0.52.6 - MIT OR Apache-2.0 [L22, L87]
-windows-threading 0.2.1 - MIT OR Apache-2.0 [L22, L87]
-windows-version 0.1.7 - MIT OR Apache-2.0 [L22, L87]
-windows_aarch64_gnullvm 0.42.2 - MIT OR Apache-2.0 [L22, L87]
-windows_aarch64_gnullvm 0.52.6 - MIT OR Apache-2.0 [L22, L87]
-windows_aarch64_msvc 0.42.2 - MIT OR Apache-2.0 [L22, L87]
-windows_aarch64_msvc 0.52.6 - MIT OR Apache-2.0 [L22, L87]
-windows_i686_gnu 0.42.2 - MIT OR Apache-2.0 [L22, L87]
-windows_i686_gnu 0.52.6 - MIT OR Apache-2.0 [L22, L87]
-windows_i686_gnullvm 0.52.6 - MIT OR Apache-2.0 [L22, L87]
-windows_i686_msvc 0.42.2 - MIT OR Apache-2.0 [L22, L87]
-windows_i686_msvc 0.52.6 - MIT OR Apache-2.0 [L22, L87]
-windows_x86_64_gnu 0.42.2 - MIT OR Apache-2.0 [L22, L87]
-windows_x86_64_gnu 0.52.6 - MIT OR Apache-2.0 [L22, L87]
-windows_x86_64_gnullvm 0.42.2 - MIT OR Apache-2.0 [L22, L87]
-windows_x86_64_gnullvm 0.52.6 - MIT OR Apache-2.0 [L22, L87]
-windows_x86_64_msvc 0.42.2 - MIT OR Apache-2.0 [L22, L87]
-windows_x86_64_msvc 0.52.6 - MIT OR Apache-2.0 [L22, L87]
+window-vibrancy 0.8.1 - Apache-2.0 OR MIT [L5, L1, L99]
+windows 0.62.2 - MIT OR Apache-2.0 [L22, L88]
+windows-collections 0.3.2 - MIT OR Apache-2.0 [L22, L88]
+windows-core 0.62.2 - MIT OR Apache-2.0 [L22, L88]
+windows-future 0.3.2 - MIT OR Apache-2.0 [L22, L88]
+windows-implement 0.60.2 - MIT OR Apache-2.0 [L22, L88]
+windows-interface 0.59.3 - MIT OR Apache-2.0 [L22, L88]
+windows-link 0.2.1 - MIT OR Apache-2.0 [L22, L88]
+windows-numerics 0.3.1 - MIT OR Apache-2.0 [L22, L88]
+windows-result 0.4.1 - MIT OR Apache-2.0 [L22, L88]
+windows-strings 0.5.1 - MIT OR Apache-2.0 [L22, L88]
+windows-sys 0.45.0 - MIT OR Apache-2.0 [L22, L88]
+windows-sys 0.52.0 - MIT OR Apache-2.0 [L22, L88]
+windows-sys 0.61.2 - MIT OR Apache-2.0 [L22, L88]
+windows-targets 0.42.2 - MIT OR Apache-2.0 [L22, L88]
+windows-targets 0.52.6 - MIT OR Apache-2.0 [L22, L88]
+windows-threading 0.2.1 - MIT OR Apache-2.0 [L22, L88]
+windows-version 0.1.7 - MIT OR Apache-2.0 [L22, L88]
+windows_aarch64_gnullvm 0.42.2 - MIT OR Apache-2.0 [L22, L88]
+windows_aarch64_gnullvm 0.52.6 - MIT OR Apache-2.0 [L22, L88]
+windows_aarch64_msvc 0.42.2 - MIT OR Apache-2.0 [L22, L88]
+windows_aarch64_msvc 0.52.6 - MIT OR Apache-2.0 [L22, L88]
+windows_i686_gnu 0.42.2 - MIT OR Apache-2.0 [L22, L88]
+windows_i686_gnu 0.52.6 - MIT OR Apache-2.0 [L22, L88]
+windows_i686_gnullvm 0.52.6 - MIT OR Apache-2.0 [L22, L88]
+windows_i686_msvc 0.42.2 - MIT OR Apache-2.0 [L22, L88]
+windows_i686_msvc 0.52.6 - MIT OR Apache-2.0 [L22, L88]
+windows_x86_64_gnu 0.42.2 - MIT OR Apache-2.0 [L22, L88]
+windows_x86_64_gnu 0.52.6 - MIT OR Apache-2.0 [L22, L88]
+windows_x86_64_gnullvm 0.42.2 - MIT OR Apache-2.0 [L22, L88]
+windows_x86_64_gnullvm 0.52.6 - MIT OR Apache-2.0 [L22, L88]
+windows_x86_64_msvc 0.42.2 - MIT OR Apache-2.0 [L22, L88]
+windows_x86_64_msvc 0.52.6 - MIT OR Apache-2.0 [L22, L88]
 winnow 0.5.40 - MIT [L4]
 winnow 1.0.5 - MIT [L4]
 winreg 0.56.0 - MIT [L4]
 wit-bindgen 0.57.1 - Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT [L5, L45, L4]
 writeable 0.6.4 - Unicode-3.0 [L39]
-wry 0.57.3 - Apache-2.0 OR MIT [L5, L1, L99]
+wry 0.57.3 - Apache-2.0 OR MIT [L5, L1, L100]
 x11 2.21.0 - MIT [L4]
 x11-dl 2.21.0 - MIT [L4]
 yoke 0.8.4 - Unicode-3.0 [L39]
@@ -597,51 +599,52 @@ zvariant_derive 5.15.1 - MIT [L4]
 zvariant_utils 4.2.0 - MIT [L4]
 
 ------------------------------------------------------------------------------
-Web app packages (bundled into the app's JavaScript, CSS and fonts) - 37
+Web app packages (bundled into the app's JavaScript, CSS and fonts) - 38
 ------------------------------------------------------------------------------
 @fontsource/noto-sans-thai provides the Noto Sans Thai font files under the SIL Open Font License
 1.1.
 
-@fontsource/noto-sans-thai 5.3.0 - OFL-1.1 [L100]
+@fontsource/noto-sans-thai 5.3.0 - OFL-1.1 [L101]
 @jridgewell/gen-mapping 0.3.13 - MIT [L4]
 @jridgewell/remapping 2.3.5 - MIT [L4]
 @jridgewell/resolve-uri 3.1.3 - MIT [L4]
 @jridgewell/sourcemap-codec 1.6.0 - MIT [L4]
 @jridgewell/trace-mapping 0.3.31 - MIT [L4]
-@lucide/svelte 1.77.0 - ISC [L101]
-@posthog/browser-common 0.12.2 * - MIT [L102]
-@posthog/core 1.69.2 - MIT [L103]
-@posthog/types 1.427.0 - MIT [L103]
+@lucide/svelte 1.77.0 - ISC [L102]
+@posthog/browser-common 0.12.2 * - MIT [L103]
+@posthog/core 1.69.2 - MIT [L104]
+@posthog/types 1.427.0 - MIT [L104]
 @sveltejs/acorn-typescript 1.0.13 - MIT [L1]
 @sveltejs/kit 2.70.4 - MIT [L4]
 @tauri-apps/api 2.12.5 - Apache-2.0 OR MIT [L1, L13]
-@tauri-apps/plugin-opener 2.7.3 - MIT OR Apache-2.0 [L84]
-@types/estree 1.0.10 - MIT [L87]
-@types/trusted-types 2.0.7 - MIT [L87]
+@tauri-apps/plugin-biometric 2.5.0 - MIT OR Apache-2.0 [L85]
+@tauri-apps/plugin-opener 2.7.3 - MIT OR Apache-2.0 [L85]
+@types/estree 1.0.10 - MIT [L88]
+@types/trusted-types 2.0.7 - MIT [L88]
 acorn 8.19.0 - MIT [L1]
 aria-query 5.3.1 - Apache-2.0 [L27]
 axobject-query 4.1.0 - Apache-2.0 [L27]
 clsx 2.1.1 - MIT [L1]
 core-js 3.51.0 - MIT [L4]
 devalue 5.9.4 - MIT [L4]
-dompurify 3.4.18 - (MPL-2.0 OR Apache-2.0) [L5, L104, L26]
-esm-env 1.2.2 - MIT [L105]
+dompurify 3.4.18 - (MPL-2.0 OR Apache-2.0) [L5, L105, L26]
+esm-env 1.2.2 - MIT [L106]
 esrap 2.4.2 - MIT [L4]
 fflate 0.4.9 - MIT [L1]
 is-reference 3.0.3 * - MIT [L1]
 locate-character 3.0.0 * - MIT [L1]
 magic-string 0.30.21 - MIT [L4]
-posthog-js 1.453.2 - (Apache-2.0 AND MIT) [L103]
+posthog-js 1.453.2 - (Apache-2.0 AND MIT) [L104]
 preact 10.29.8 - MIT [L7]
 query-selector-shadow-dom 1.0.1 - MIT [L1]
 svelte 5.59.1 - MIT [L4]
 tailwindcss 4.3.5 - MIT [L1]
-web-vitals 6.2.1 - Apache-2.0 [L106]
-web-vitals 6.2.3 - Apache-2.0 [L106]
+web-vitals 6.2.1 - Apache-2.0 [L107]
+web-vitals 6.2.3 - Apache-2.0 [L107]
 zimmerframe 1.1.5 - MIT [L1]
 
 ------------------------------------------------------------------------------
-Android and Java/Kotlin libraries (classes.dex and resources) - 99
+Android and Java/Kotlin libraries (classes.dex and resources) - 100
 ------------------------------------------------------------------------------
 The Google ML Kit and Google Play services libraries are proprietary; the open-source notices they
 ship are reproduced in Part 2.
@@ -655,6 +658,7 @@ androidx.appcompat:appcompat 1.7.1 * - Apache-2.0 [L5]
 androidx.appcompat:appcompat-resources 1.7.1 * - Apache-2.0 [L5]
 androidx.arch.core:core-common 2.2.0 * - Apache-2.0 [L5]
 androidx.arch.core:core-runtime 2.2.0 * - Apache-2.0 [L5]
+androidx.biometric:biometric 1.1.0 * - Apache-2.0 [L5]
 androidx.browser:browser 1.8.0 * - Apache-2.0 [L5]
 androidx.cardview:cardview 1.0.0 * - Apache-2.0 [L5]
 androidx.collection:collection 1.1.0 * - Apache-2.0 [L5]
@@ -709,12 +713,12 @@ androidx.versionedparcelable:versionedparcelable 1.1.1 * - Apache-2.0 [L5]
 androidx.viewpager2:viewpager2 1.0.0 * - Apache-2.0 [L5]
 androidx.viewpager:viewpager 1.0.0 * - Apache-2.0 [L5]
 androidx.webkit:webkit 1.14.0 * - Apache-2.0 [L5]
-com.fasterxml.jackson.core:jackson-annotations 2.15.3 - Apache-2.0 [L5, L107]
-com.fasterxml.jackson.core:jackson-core 2.15.3 - Apache-2.0 [L5, L108, L109, L110]
-com.fasterxml.jackson.core:jackson-databind 2.15.3 - Apache-2.0 [L5, L107]
-com.fasterxml.jackson.datatype:jackson-datatype-json-org 2.15.3 * - Apache-2.0 [L111, L112, L5]
-com.google.android.datatransport:transport-api 2.2.1 * - Apache-2.0 [L113, L5]
-com.google.android.datatransport:transport-backend-cct 2.3.3 * - Apache-2.0 [L113, L5]
+com.fasterxml.jackson.core:jackson-annotations 2.15.3 - Apache-2.0 [L5, L108]
+com.fasterxml.jackson.core:jackson-core 2.15.3 - Apache-2.0 [L5, L109, L110, L111]
+com.fasterxml.jackson.core:jackson-databind 2.15.3 - Apache-2.0 [L5, L108]
+com.fasterxml.jackson.datatype:jackson-datatype-json-org 2.15.3 * - Apache-2.0 [L112, L113, L5]
+com.google.android.datatransport:transport-api 2.2.1 * - Apache-2.0 [L114, L5]
+com.google.android.datatransport:transport-backend-cct 2.3.3 * - Apache-2.0 [L114, L5]
 com.google.android.datatransport:transport-runtime 2.2.6 - Apache-2.0 [L5]
 com.google.android.gms:play-services-base 18.5.0 - Proprietary - Google ML Kit Terms of Service
     (https://developers.google.com/ml-kit/terms) / Android SDK License
@@ -734,12 +738,12 @@ com.google.android.gms:play-services-tasks 18.2.0 - Proprietary - Google ML Kit 
 com.google.android.material:material 1.12.0 * - Apache-2.0 [L5]
 com.google.android.odml:image 1.0.0-beta1 - Proprietary - Google ML Kit Terms of Service
     (https://developers.google.com/ml-kit/terms) / Android SDK License
-    (https://developer.android.com/studio/terms) [L129, L114, L115, L5, L117, L22]
+    (https://developer.android.com/studio/terms) [L130, L115, L116, L5, L118, L22]
 com.google.errorprone:error_prone_annotations 2.15.0 * - Apache-2.0 [L5]
 com.google.firebase:firebase-annotations 16.0.0 * - Apache-2.0 [L5]
-com.google.firebase:firebase-components 16.1.0 * - Apache-2.0 [L113, L5]
+com.google.firebase:firebase-components 16.1.0 * - Apache-2.0 [L114, L5]
 com.google.firebase:firebase-encoders 16.1.0 * - Apache-2.0 [L5]
-com.google.firebase:firebase-encoders-json 17.1.0 * - Apache-2.0 [L113, L5]
+com.google.firebase:firebase-encoders-json 17.1.0 * - Apache-2.0 [L114, L5]
 com.google.guava:listenablefuture 1.0 * - Apache-2.0 [L5]
 com.google.mlkit:common 18.11.0 - Proprietary - Google ML Kit Terms of Service
     (https://developers.google.com/ml-kit/terms) / Android SDK License
@@ -772,7 +776,7 @@ org.jspecify:jspecify 1.0.0 * - Apache-2.0 [L5]
 Native libraries - 2
 ------------------------------------------------------------------------------
 ONNX Runtime native libraries (libonnxruntime.so, libonnxruntime4j_jni.so) 1.22.0 * - MIT, with the
-    third-party components listed in ONNX Runtime's ThirdPartyNotices.txt [L350, L1]
+    third-party components listed in ONNX Runtime's ThirdPartyNotices.txt [L351, L1]
 SQLite (statically linked into libmoojot_lib.so through the libsqlite3-sys crate) bundled - Public
     domain (https://sqlite.org/copyright.html); the libsqlite3-sys binding is MIT and is listed under
     Rust crates
@@ -782,7 +786,7 @@ OCR model - 1
 ------------------------------------------------------------------------------
 AksonOCR-Lite Thai/English text-line recognizer (rec.onnx, rec_charset.json) Hugging Face
     Remtir/AksonOCR-Lite @ 576fa7b - Apache-2.0 (fine-tuned from PaddlePaddle PP-OCRv6_tiny_rec, also
-    Apache-2.0) [L351, L22]
+    Apache-2.0) [L352, L22]
 
 ==============================================================================
 PART 2. LICENSE TEXTS AND NOTICES
@@ -791,10 +795,10 @@ PART 2. LICENSE TEXTS AND NOTICES
 ------------------------------------------------------------------------------
 L1
 ------------------------------------------------------------------------------
-Applies to (87):
+Applies to (88):
   @sveltejs/acorn-typescript 1.0.13: Copyright (c) 2022 Tyreal Hu | Copyright (c) 2025 The Svelte Team
   @tauri-apps/api 2.12.5: Copyright (c) 2017 - Present Tauri Apps Contributors
-  MooJot 1.0.0: Copyright (c) 2026 Trajectonomics
+  MooJot 1.2.1: Copyright (c) 2026 Trajectonomics
   ONNX Runtime native libraries (libonnxruntime.so, libonnxruntime4j_jni.so) 1.22.0: Copyright (c) Microsoft Corporation
   acorn 8.19.0: Copyright (C) 2012-2022 by various contributors (see AUTHORS)
   block2 0.6.2: Copyright (c) Mads Marquart
@@ -865,6 +869,7 @@ Applies to (87):
   tauri-codegen 2.7.6: Copyright (c) 2017 - Present Tauri Apps Contributors
   tauri-macros 2.7.6: Copyright (c) 2017 - Present Tauri Apps Contributors
   tauri-plugin 2.7.4: Copyright (c) Tauri Programme within The Commons Conservancy
+  tauri-plugin-biometric 2.5.0: Copyright (c) 2017 - Present Tauri Apps Contributors
   tauri-plugin-opener 2.7.3: Copyright (c) 2017 - Present Tauri Apps Contributors
   tauri-runtime 2.12.4: Copyright (c) 2017 - Present Tauri Apps Contributors
   tauri-runtime-wry 2.12.5: Copyright (c) 2017 - Present Tauri Apps Contributors
@@ -1491,7 +1496,7 @@ DEALINGS IN THE SOFTWARE.
 ------------------------------------------------------------------------------
 L5
 ------------------------------------------------------------------------------
-Applies to (298):
+Applies to (300):
   aes 0.9.4
   androidx.activity:activity 1.10.1: Copyright The Android Open Source Project
   androidx.activity:activity-ktx 1.10.1: Copyright The Android Open Source Project
@@ -1502,6 +1507,7 @@ Applies to (298):
   androidx.appcompat:appcompat-resources 1.7.1: Copyright The Android Open Source Project
   androidx.arch.core:core-common 2.2.0: Copyright The Android Open Source Project
   androidx.arch.core:core-runtime 2.2.0: Copyright The Android Open Source Project
+  androidx.biometric:biometric 1.1.0: Copyright The Android Open Source Project
   androidx.browser:browser 1.8.0: Copyright The Android Open Source Project
   androidx.cardview:cardview 1.0.0: Copyright The Android Open Source Project
   androidx.collection:collection 1.1.0: Copyright The Android Open Source Project
@@ -1699,6 +1705,7 @@ Applies to (298):
   objc2-core-text 0.3.2: Copyright the objc2-core-text authors (https://github.com/madsmtm/objc2)
   objc2-exception-helper 0.1.1: Copyright Mads Marquart
   objc2-io-surface 0.3.2: Copyright the objc2-io-surface authors (https://github.com/madsmtm/objc2)
+  objc2-local-authentication 0.3.2: Copyright the objc2-local-authentication authors (https://github.com/madsmtm/objc2)
   objc2-quartz-core 0.3.2: Copyright the objc2-quartz-core authors (https://github.com/madsmtm/objc2)
   objc2-ui-kit 0.3.2: Copyright the objc2-ui-kit authors (https://github.com/madsmtm/objc2)
   objc2-user-notifications 0.3.2: Copyright the objc2-user-notifications authors (https://github.com/madsmtm/objc2)
@@ -2253,7 +2260,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ------------------------------------------------------------------------------
 L13
 ------------------------------------------------------------------------------
-Applies to (59):
+Applies to (60):
   @tauri-apps/api 2.12.5
   anyhow 1.0.104
   async-trait 0.1.92
@@ -2299,6 +2306,7 @@ Applies to (59):
   tauri-build 2.7.6
   tauri-codegen 2.7.6
   tauri-macros 2.7.6
+  tauri-plugin-biometric 2.5.0
   tauri-plugin-opener 2.7.3
   tauri-runtime 2.12.4
   tauri-runtime-wry 2.12.5
@@ -5610,7 +5618,7 @@ TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
 ------------------------------------------------------------------------------
 L29
 ------------------------------------------------------------------------------
-Applies to (15):
+Applies to (16):
   dispatch2 0.3.1
   objc2-app-kit 0.3.2
   objc2-cloud-kit 0.3.2
@@ -5622,6 +5630,7 @@ Applies to (15):
   objc2-core-text 0.3.2
   objc2-exception-helper 0.1.1
   objc2-io-surface 0.3.2
+  objc2-local-authentication 0.3.2
   objc2-quartz-core 0.3.2
   objc2-ui-kit 0.3.2
   objc2-user-notifications 0.3.2
@@ -7610,6 +7619,31 @@ USE OR OTHER DEALINGS IN THE SOFTWARE.
 L59
 ------------------------------------------------------------------------------
 Applies to (1):
+  objc2-local-authentication 0.3.2
+
+MIT License
+
+Copyright (c) the objc2-local-authentication authors (https://github.com/madsmtm/objc2)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+associated documentation files (the "Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the
+following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial
+portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO
+EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+------------------------------------------------------------------------------
+L60
+------------------------------------------------------------------------------
+Applies to (1):
   objc2-quartz-core 0.3.2
 
 MIT License
@@ -7632,7 +7666,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTI
 USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L60
+L61
 ------------------------------------------------------------------------------
 Applies to (1):
   objc2-ui-kit 0.3.2
@@ -7657,7 +7691,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTI
 USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L61
+L62
 ------------------------------------------------------------------------------
 Applies to (1):
   objc2-user-notifications 0.3.2
@@ -7682,7 +7716,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTI
 USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L62
+L63
 ------------------------------------------------------------------------------
 Applies to (1):
   objc2-web-kit 0.3.2
@@ -7707,7 +7741,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTI
 USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L63
+L64
 ------------------------------------------------------------------------------
 Applies to (1):
   open 5.4.5
@@ -7739,7 +7773,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L64
+L65
 ------------------------------------------------------------------------------
 Applies to (3):
   option-ext 0.2.0
@@ -8121,7 +8155,7 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
   defined by the Mozilla Public License, v. 2.0.
 
 ------------------------------------------------------------------------------
-L65
+L66
 ------------------------------------------------------------------------------
 Applies to (1):
   parking 2.2.1
@@ -8137,7 +8171,7 @@ option. All files in the project carrying such notice may not be
 copied, modified, or distributed except according to those terms.
 
 ------------------------------------------------------------------------------
-L66
+L67
 ------------------------------------------------------------------------------
 Applies to (2):
   r-efi 5.3.0
@@ -8163,7 +8197,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTI
 USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L67
+L68
 ------------------------------------------------------------------------------
 Applies to (2):
   rand 0.10.4
@@ -8183,7 +8217,7 @@ The Rand project includes code from the Rust project
 published under these same licenses.
 
 ------------------------------------------------------------------------------
-L68
+L69
 ------------------------------------------------------------------------------
 Applies to (1):
   rand 0.10.4
@@ -8366,7 +8400,7 @@ TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
 END OF TERMS AND CONDITIONS
 
 ------------------------------------------------------------------------------
-L69
+L70
 ------------------------------------------------------------------------------
 Applies to (1):
   rand_core 0.10.1
@@ -8382,7 +8416,7 @@ licensed under the Apache License, Version 2.0 <LICENSE-APACHE> or
 <LICENSE-MIT> or <http://opensource.org/licenses/MIT>, at your option.
 
 ------------------------------------------------------------------------------
-L70
+L71
 ------------------------------------------------------------------------------
 Applies to (2):
   rand_core 0.10.1
@@ -8577,7 +8611,7 @@ APPENDIX: How to apply the Apache License to your work.
    identification within third-party archives.
 
 ------------------------------------------------------------------------------
-L71
+L72
 ------------------------------------------------------------------------------
 Applies to (1):
   regex-syntax 0.8.12
@@ -8641,7 +8675,7 @@ use or other dealings in these Data Files or Software without prior
 written authorization of the copyright holder.
 
 ------------------------------------------------------------------------------
-L72
+L73
 ------------------------------------------------------------------------------
 Applies to (1):
   ring 0.17.14
@@ -8657,7 +8691,7 @@ See src/polyfill/once_cell/LICENSE-APACHE and src/polyfill/once_cell/LICENSE-MIT
 for the license to code that was sourced from the once_cell project.
 
 ------------------------------------------------------------------------------
-L73
+L74
 ------------------------------------------------------------------------------
 Applies to (1):
   ring 0.17.14
@@ -8935,7 +8969,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L74
+L75
 ------------------------------------------------------------------------------
 Applies to (1):
   ring 0.17.14
@@ -8965,7 +8999,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L75
+L76
 ------------------------------------------------------------------------------
 Applies to (1):
   ring 0.17.14
@@ -8987,7 +9021,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 ------------------------------------------------------------------------------
-L76
+L77
 ------------------------------------------------------------------------------
 Applies to (1):
   rustix 1.1.6
@@ -9023,7 +9057,7 @@ is licensed under:
 at your option.
 
 ------------------------------------------------------------------------------
-L77
+L78
 ------------------------------------------------------------------------------
 Applies to (1):
   rustls-webpki 0.103.17
@@ -9049,7 +9083,7 @@ The files under third-party/chromium are licensed as described in
 third-party/chromium/LICENSE.
 
 ------------------------------------------------------------------------------
-L78
+L79
 ------------------------------------------------------------------------------
 Applies to (1):
   ryu 1.0.23
@@ -9079,7 +9113,7 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L79
+L80
 ------------------------------------------------------------------------------
 Applies to (1):
   simd-adler32 0.3.10
@@ -9107,7 +9141,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ------------------------------------------------------------------------------
-L80
+L81
 ------------------------------------------------------------------------------
 Applies to (1):
   siphasher 1.0.4
@@ -9121,7 +9155,7 @@ http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
 option.
 
 ------------------------------------------------------------------------------
-L81
+L82
 ------------------------------------------------------------------------------
 Applies to (1):
   static_vcruntime 3.0.0
@@ -9129,7 +9163,7 @@ Applies to (1):
 MIT OR Apache-2.0 OR Zlib
 
 ------------------------------------------------------------------------------
-L82
+L83
 ------------------------------------------------------------------------------
 Applies to (1):
   tao 0.37.3
@@ -9154,7 +9188,7 @@ PackageDownloadLocation: git+ssh://github.com/tauri-apps/tao.git
 Creator: Person: Daniel Thompson-Yvetot
 
 ------------------------------------------------------------------------------
-L83
+L84
 ------------------------------------------------------------------------------
 Applies to (1):
   tao-macros 0.1.4
@@ -9180,10 +9214,12 @@ PackageDownloadLocation: git+ssh://github.com/tauri-apps/tao.git
 Creator: Person: Daniel Thompson-Yvetot
 
 ------------------------------------------------------------------------------
-L84
+L85
 ------------------------------------------------------------------------------
-Applies to (2):
+Applies to (4):
+  @tauri-apps/plugin-biometric 2.5.0
   @tauri-apps/plugin-opener 2.7.3
+  tauri-plugin-biometric 2.5.0
   tauri-plugin-opener 2.7.3
 
 SPDXVersion: SPDX-2.1
@@ -9208,7 +9244,7 @@ PackageDownloadLocation: git+ssh://github.com/tauri-apps/tauri.git
 Creator: Person: Daniel Thompson-Yvetot
 
 ------------------------------------------------------------------------------
-L85
+L86
 ------------------------------------------------------------------------------
 Applies to (1):
   tray-icon 0.25.1
@@ -9234,7 +9270,7 @@ PackageDownloadLocation: git+ssh://github.com/tauri-apps/tray-icon.git
 Creator: Person: Daniel Thompson-Yvetot
 
 ------------------------------------------------------------------------------
-L86
+L87
 ------------------------------------------------------------------------------
 Applies to (1):
   typenum 1.20.1
@@ -9242,7 +9278,7 @@ Applies to (1):
 MIT OR Apache-2.0
 
 ------------------------------------------------------------------------------
-L87
+L88
 ------------------------------------------------------------------------------
 Applies to (35):
   @types/estree 1.0.10: Copyright (c) Microsoft Corporation.
@@ -9304,7 +9340,7 @@ MIT License
     SOFTWARE
 
 ------------------------------------------------------------------------------
-L88
+L89
 ------------------------------------------------------------------------------
 Applies to (1):
   unicode-bidi 0.3.18
@@ -9319,7 +9355,7 @@ carrying such notice may not be copied, modified, or distributed except
 according to those terms.
 
 ------------------------------------------------------------------------------
-L89
+L90
 ------------------------------------------------------------------------------
 Applies to (5):
   com.google.mlkit:text-recognition 16.0.1 (notice for ICU4C): COPYRIGHT AND PERMISSION NOTICE | Copyright © 2016-2023 Unicode, Inc.
@@ -9368,7 +9404,7 @@ dealings in these Data Files or Software without prior written
 authorization of the copyright holder.
 
 ------------------------------------------------------------------------------
-L90
+L91
 ------------------------------------------------------------------------------
 Applies to (1):
   untrusted 0.9.0
@@ -9388,7 +9424,7 @@ Applies to (1):
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
-L91
+L92
 ------------------------------------------------------------------------------
 Applies to (1):
   utf8_iter 1.1.0
@@ -9437,7 +9473,7 @@ licensed under the Apache License, Version 2.0 <LICENSE-APACHE> or
 <LICENSE-MIT> or <http://opensource.org/licenses/MIT>, at your option.
 
 ------------------------------------------------------------------------------
-L92
+L93
 ------------------------------------------------------------------------------
 Applies to (1):
   utf_types 1.0.0
@@ -9464,7 +9500,7 @@ Test code is dedicated to the Public Domain when so designated (see
 the individual files for PD/CC0-dedicated sections).
 
 ------------------------------------------------------------------------------
-L93
+L94
 ------------------------------------------------------------------------------
 Applies to (2):
   webkit2gtk 2.0.2: COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER | Copyright (c) 2016 Boucher, Antoni <bouanto@zoho.com> | Copyright (c) 2017-2021, The Gtk-rs Project Developers. | Copyright (c) 2021, Tauri Programme within The Commons Conservancy
@@ -9489,7 +9525,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L94
+L95
 ------------------------------------------------------------------------------
 Applies to (1):
   webpki-roots 1.0.12
@@ -9557,7 +9593,7 @@ of Data, including for example machine learning models and models'
 insights.
 
 ------------------------------------------------------------------------------
-L95
+L96
 ------------------------------------------------------------------------------
 Applies to (1):
   webview2-com 0.39.1
@@ -9582,7 +9618,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTI
 USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L96
+L97
 ------------------------------------------------------------------------------
 Applies to (1):
   webview2-com-macros 0.8.1
@@ -9607,7 +9643,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTI
 USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L97
+L98
 ------------------------------------------------------------------------------
 Applies to (1):
   webview2-com-sys 0.39.1
@@ -9632,7 +9668,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTI
 USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L98
+L99
 ------------------------------------------------------------------------------
 Applies to (1):
   window-vibrancy 0.8.1
@@ -9658,7 +9694,7 @@ PackageDownloadLocation: git+ssh://github.com/tauri-apps/window-vibrancy.git
 Creator: Person: Daniel Thompson-Yvetot
 
 ------------------------------------------------------------------------------
-L99
+L100
 ------------------------------------------------------------------------------
 Applies to (1):
   wry 0.57.3
@@ -9685,7 +9721,7 @@ PackageDownloadLocation: git+ssh://github.com/tauri-apps/wry.git
 Creator: Person: Daniel Thompson-Yvetot
 
 ------------------------------------------------------------------------------
-L100
+L101
 ------------------------------------------------------------------------------
 Applies to (1):
   @fontsource/noto-sans-thai 5.3.0
@@ -9785,7 +9821,7 @@ FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
 
 ------------------------------------------------------------------------------
-L101
+L102
 ------------------------------------------------------------------------------
 Applies to (1):
   @lucide/svelte 1.77.0
@@ -9835,7 +9871,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ------------------------------------------------------------------------------
-L102
+L103
 ------------------------------------------------------------------------------
 Applies to (1):
   @posthog/browser-common 0.12.2
@@ -9860,7 +9896,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTI
 USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L103
+L104
 ------------------------------------------------------------------------------
 Applies to (3):
   @posthog/core 1.69.2
@@ -10286,7 +10322,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ------------------------------------------------------------------------------
-L104
+L105
 ------------------------------------------------------------------------------
 Applies to (1):
   dompurify 3.4.18
@@ -10294,7 +10330,7 @@ Applies to (1):
 /*! @license DOMPurify VERSION | (c) Cure53 and other contributors | Released under the Apache license 2.0 and Mozilla Public License 2.0 | github.com/cure53/DOMPurify/blob/VERSION/LICENSE */
 
 ------------------------------------------------------------------------------
-L105
+L106
 ------------------------------------------------------------------------------
 Applies to (1):
   esm-env 1.2.2
@@ -10308,7 +10344,7 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L106
+L107
 ------------------------------------------------------------------------------
 Applies to (2):
   web-vitals 6.2.1
@@ -10517,7 +10553,7 @@ Apache License
    limitations under the License.
 
 ------------------------------------------------------------------------------
-L107
+L108
 ------------------------------------------------------------------------------
 Applies to (2):
   com.fasterxml.jackson.core:jackson-annotations 2.15.3
@@ -10546,7 +10582,7 @@ in some artifacts (usually source distributions); but is always available
 from the source code management (SCM) system project uses.
 
 ------------------------------------------------------------------------------
-L108
+L109
 ------------------------------------------------------------------------------
 Applies to (1):
   com.fasterxml.jackson.core:jackson-core 2.15.3
@@ -10585,7 +10621,7 @@ See FastDoubleParser-NOTICE for details of other source code included in FastDou
 and the licenses and copyrights that apply to that code.
 
 ------------------------------------------------------------------------------
-L109
+L110
 ------------------------------------------------------------------------------
 Applies to (1):
   com.fasterxml.jackson.core:jackson-core 2.15.3
@@ -10627,7 +10663,7 @@ https://github.com/wrandelshofer/FastDoubleParser/blob/39e123b15b71f29a38a087d16
 - as is required by that license.)
 
 ------------------------------------------------------------------------------
-L110
+L111
 ------------------------------------------------------------------------------
 Applies to (1):
   com.fasterxml.jackson.core:jackson-core 2.15.3
@@ -10657,7 +10693,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L111
+L112
 ------------------------------------------------------------------------------
 Applies to (1):
   com.fasterxml.jackson.datatype:jackson-datatype-json-org 2.15.3
@@ -10672,7 +10708,7 @@ You may obtain a copy of the License at:
 http://www.apache.org/licenses/LICENSE-2.0
 
 ------------------------------------------------------------------------------
-L112
+L113
 ------------------------------------------------------------------------------
 Applies to (1):
   com.fasterxml.jackson.datatype:jackson-datatype-json-org 2.15.3
@@ -10696,7 +10732,7 @@ in some artifacts (usually source distributions); but is always available
 from the source code management (SCM) system project uses.
 
 ------------------------------------------------------------------------------
-L113
+L114
 ------------------------------------------------------------------------------
 Applies to (4):
   com.google.android.datatransport:transport-api 2.2.1
@@ -10707,7 +10743,7 @@ Applies to (4):
 {}
 
 ------------------------------------------------------------------------------
-L114
+L115
 ------------------------------------------------------------------------------
 Applies to (11):
   com.google.android.gms:play-services-base 18.5.0 (notice for Animal Sniffer): Copyright (c) 2008 Kohsuke Kawaguchi and codehaus.org.
@@ -10745,7 +10781,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L115
+L116
 ------------------------------------------------------------------------------
 Applies to (11):
   com.google.android.gms:play-services-base 18.5.0 (notice for Checker Framework Annotations)
@@ -10797,7 +10833,7 @@ THE SOFTWARE.
 ===========================================================================
 
 ------------------------------------------------------------------------------
-L116
+L117
 ------------------------------------------------------------------------------
 Applies to (9):
   com.google.android.gms:play-services-base 18.5.0 (notice for J2ObjC)
@@ -12260,7 +12296,7 @@ after the cause of action arose. Each party waives its rights to a jury trial
 in any resulting litigation.
 
 ------------------------------------------------------------------------------
-L117
+L118
 ------------------------------------------------------------------------------
 Applies to (11):
   com.google.android.gms:play-services-base 18.5.0 (notice for JSR 305)
@@ -12305,7 +12341,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L118
+L119
 ------------------------------------------------------------------------------
 Applies to (10):
   com.google.android.gms:play-services-base 18.5.0 (notice for Kotlin)
@@ -12524,7 +12560,7 @@ Files: kotlinc/*
    limitations under the License.
 
 ------------------------------------------------------------------------------
-L119
+L120
 ------------------------------------------------------------------------------
 Applies to (10):
   com.google.android.gms:play-services-base 18.5.0 (notice for Kotlin)
@@ -13045,7 +13081,7 @@ necessary.  Here is a sample; alter the names:
 That's all there is to it!
 
 ------------------------------------------------------------------------------
-L120
+L121
 ------------------------------------------------------------------------------
 Applies to (10):
   com.google.android.gms:play-services-base 18.5.0 (notice for Kotlin)
@@ -13177,7 +13213,7 @@ EXHIBIT A-Netscape Public License.
     version of this file under either the NPL or the [___] License."
 
 ------------------------------------------------------------------------------
-L121
+L122
 ------------------------------------------------------------------------------
 Applies to (10):
   com.google.android.gms:play-services-base 18.5.0 (notice for Kotlin)
@@ -13703,7 +13739,7 @@ EXHIBIT A -Mozilla Public License.
     Modifications.]
 
 ------------------------------------------------------------------------------
-L122
+L123
 ------------------------------------------------------------------------------
 Applies to (10):
   com.google.android.gms:play-services-base 18.5.0 (notice for Kotlin)
@@ -14058,7 +14094,7 @@ GNU GENERAL PUBLIC LICENSE
   Public License instead of this License.
 
 ------------------------------------------------------------------------------
-L123
+L124
 ------------------------------------------------------------------------------
 Applies to (9):
   com.google.android.gms:play-services-base 18.5.0 (notice for Kotlin)
@@ -14091,7 +14127,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ------------------------------------------------------------------------------
-L124
+L125
 ------------------------------------------------------------------------------
 Applies to (10):
   com.google.android.gms:play-services-base 18.5.0 (notice for Kotlin)
@@ -14130,7 +14166,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L125
+L126
 ------------------------------------------------------------------------------
 Applies to (10):
   com.google.android.gms:play-services-base 18.5.0 (notice for Kotlin)
@@ -14176,7 +14212,7 @@ Files:
  THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L126
+L127
 ------------------------------------------------------------------------------
 Applies to (10):
   com.google.android.gms:play-services-base 18.5.0 (notice for Kotlin)
@@ -14217,7 +14253,7 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L127
+L128
 ------------------------------------------------------------------------------
 Applies to (10):
   com.google.android.gms:play-services-base 18.5.0 (notice for Kotlin)
@@ -14451,7 +14487,7 @@ year after the cause of action arose. Each party waives its rights to a
 jury trial in any resulting litigation.
 
 ------------------------------------------------------------------------------
-L128
+L129
 ------------------------------------------------------------------------------
 Applies to (10):
   com.google.android.gms:play-services-base 18.5.0 (notice for Kotlin)
@@ -14475,7 +14511,7 @@ software is freely granted, provided that this notice
 is preserved.
 
 ------------------------------------------------------------------------------
-L129
+L130
 ------------------------------------------------------------------------------
 Applies to (11):
   com.google.android.gms:play-services-base 18.5.0 (notice for apksig): Copyright (c) 2005-2008, The Android Open Source Project
@@ -14680,7 +14716,7 @@ Applies to (11):
    END OF TERMS AND CONDITIONS
 
 ------------------------------------------------------------------------------
-L130
+L131
 ------------------------------------------------------------------------------
 Applies to (9):
   com.google.android.gms:play-services-base 18.5.0 (notice for java_annotations)
@@ -14860,7 +14896,7 @@ incurred by, or claims asserted against, such Contributor by reason of your
 accepting any such warranty or additional liability.
 
 ------------------------------------------------------------------------------
-L131
+L132
 ------------------------------------------------------------------------------
 Applies to (7):
   com.google.android.gms:play-services-mlkit-text-recognition 19.0.1 (notice for Android SDK Platforms)
@@ -15140,7 +15176,7 @@ injunctive remedies (or an equivalent type of urgent legal relief) in any jurisd
 April 10, 2009
 
 ------------------------------------------------------------------------------
-L132
+L133
 ------------------------------------------------------------------------------
 Applies to (6):
   com.google.android.gms:play-services-mlkit-text-recognition 19.0.1 (notice for JSR 330)
@@ -15354,7 +15390,7 @@ JSR-330
    limitations under the License.
 
 ------------------------------------------------------------------------------
-L133
+L134
 ------------------------------------------------------------------------------
 Applies to (5):
   com.google.android.gms:play-services-mlkit-text-recognition 19.0.1 (notice for Kotlin)
@@ -15450,7 +15486,7 @@ to this document and has no duty or obligation with respect to this CC0 or use
 of the Work.
 
 ------------------------------------------------------------------------------
-L134
+L135
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Boost)
@@ -15962,7 +15998,7 @@ modification, are permitted.
 There's ABSOLUTELY NO WARRANTY, express or implied.
 
 ------------------------------------------------------------------------------
-L135
+L136
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for BoringSSL)
@@ -16222,7 +16258,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L136
+L137
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Chrome Certificate Verifier; RE2): Copyright (c) 2009 The RE2 Authors. All rights reserved. | Copyright 2015 The Chromium Authors
@@ -16257,7 +16293,7 @@ Applies to (2):
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L137
+L138
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Darts-clone)
@@ -16276,7 +16312,7 @@ Redistribution and use in source and binary forms, with or without modification,
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L138
+L139
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Edge TPU (0))
@@ -16679,7 +16715,7 @@ DEALINGS IN THE SOFTWARE.
  * MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
 ------------------------------------------------------------------------------
-L139
+L140
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Edge TPU firmware callback)
@@ -16738,7 +16774,7 @@ BY EXERCISING ANY RIGHTS TO THE WORK PROVIDED HEREIN, YOU ACCEPT AND AGREE TO BE
         d. This License constitutes the entire agreement between the parties with respect to the Work licensed herein. There are no understandings, agreements or representations with respect to the Work not specified herein. The Author shall not be bound by any additional provisions that may appear in any communication from You. This License may not be modified without the mutual written agreement of the Author and You.
 
 ------------------------------------------------------------------------------
-L140
+L141
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Eigen 3)
@@ -16764,7 +16800,7 @@ This will cause a compilation error to be generated if you #include
 any code that is covered by more restrictive licences than MPL2.
 
 ------------------------------------------------------------------------------
-L141
+L142
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Eigen 3)
@@ -17491,7 +17527,7 @@ Following applies to:
 Mozilla Public License Version 2.0
 
 ------------------------------------------------------------------------------
-L142
+L143
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Eigen 3; gRPC)
@@ -17579,7 +17615,7 @@ Applies to (2):
 2. License Grants and Conditions
 
 ------------------------------------------------------------------------------
-L143
+L144
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Eigen 3; gRPC)
@@ -17656,7 +17692,7 @@ in Section 2.1.
 3. Responsibilities
 
 ------------------------------------------------------------------------------
-L144
+L145
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Eigen 3; gRPC)
@@ -17724,7 +17760,7 @@ jurisdiction.
 4. Inability to Comply Due to Statute or Regulation
 
 ------------------------------------------------------------------------------
-L145
+L146
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Eigen 3; gRPC)
@@ -17743,7 +17779,7 @@ recipient of ordinary skill to be able to understand it.
 5. Termination
 
 ------------------------------------------------------------------------------
-L146
+L147
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Eigen 3; gRPC)
@@ -17820,7 +17856,7 @@ prior to termination shall survive termination.
 8. Litigation
 
 ------------------------------------------------------------------------------
-L147
+L148
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Eigen 3; gRPC)
@@ -17836,7 +17872,7 @@ cross-claims or counter-claims.
 9. Miscellaneous
 
 ------------------------------------------------------------------------------
-L148
+L149
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Eigen 3; gRPC)
@@ -17852,7 +17888,7 @@ shall not be used to construe this License against a Contributor.
 10. Versions of the License
 
 ------------------------------------------------------------------------------
-L149
+L150
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Eigen 3; gRPC)
@@ -17890,7 +17926,7 @@ notice described in Exhibit B of this License must be attached.
 Exhibit A - Source Code Form License Notice
 
 ------------------------------------------------------------------------------
-L150
+L151
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Eigen 3; gRPC)
@@ -17910,7 +17946,7 @@ You may add additional accurate notices of copyright ownership.
 Exhibit B - "Incompatible With Secondary Licenses" Notice
 
 ------------------------------------------------------------------------------
-L151
+L152
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Eigen 3; gRPC)
@@ -17920,7 +17956,7 @@ This Source Code Form is "Incompatible With Secondary Licenses", as
   defined by the Mozilla Public License, v. 2.0.
 
 ------------------------------------------------------------------------------
-L152
+L153
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Eigen 3)
@@ -18001,7 +18037,7 @@ Following applies to:
  */
 
 ------------------------------------------------------------------------------
-L153
+L154
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Eigen 3)
@@ -18121,7 +18157,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L154
+L155
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Eigen 3)
@@ -18335,7 +18371,7 @@ Following applies to:
    limitations under the License.
 
 ------------------------------------------------------------------------------
-L155
+L156
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Eigen 3)
@@ -18364,7 +18400,7 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L156
+L157
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Halide)
@@ -18587,7 +18623,7 @@ done, however, it is the responsibility of the person who modified the routine
 to provide support.
 
 ------------------------------------------------------------------------------
-L157
+L158
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for ICU4C)
@@ -18600,7 +18636,7 @@ terms for licensed third-party software components included within ICU
 libraries.
 
 ------------------------------------------------------------------------------
-L158
+L159
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for ICU4C)
@@ -18642,7 +18678,7 @@ All trademarks and registered trademarks mentioned herein are the
 property of their respective owners.
 
 ------------------------------------------------------------------------------
-L159
+L160
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for ICU4C)
@@ -18853,7 +18889,7 @@ Chinese/Japanese Word Break Dictionary Data (cjdict.txt)
  #  ---------------COPYING.ipadic-----END----------------------------------
 
 ------------------------------------------------------------------------------
-L160
+L161
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for ICU4C)
@@ -18900,7 +18936,7 @@ Lao Word Break Dictionary Data (laodict.txt)
  #  --------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
-L161
+L162
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for ICU4C)
@@ -18947,7 +18983,7 @@ Burmese Word Break Dictionary Data (burmesedict.txt)
  #  --------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
-L162
+L163
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for ICU4C)
@@ -18977,7 +19013,7 @@ Database section 7.
  #    future claims in that contribution or in the TZ Database.
 
 ------------------------------------------------------------------------------
-L163
+L164
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for ICU4C)
@@ -18998,7 +19034,7 @@ Disclaimer and license
     similar terms.
 
 ------------------------------------------------------------------------------
-L164
+L165
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for ICU4C)
@@ -19034,7 +19070,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L165
+L166
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LAPACK)
@@ -19115,7 +19151,7 @@ Files: LAPACKE/*
   THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L166
+L167
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -19124,7 +19160,7 @@ Applies to (2):
 Copied from llvm-project/llvm/LICENSE.TXT:
 
 ------------------------------------------------------------------------------
-L167
+L168
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM; intel_dnnl)
@@ -19133,7 +19169,7 @@ Applies to (2):
 The LLVM Project is under the Apache License v2.0 with LLVM Exceptions:
 
 ------------------------------------------------------------------------------
-L168
+L169
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM; intel_dnnl)
@@ -19359,7 +19395,7 @@ the License, but only in their entirety and only with respect to the Combined
 Software.
 
 ------------------------------------------------------------------------------
-L169
+L170
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -19368,7 +19404,7 @@ Applies to (2):
 Software from third parties included in the LLVM Project:
 
 ------------------------------------------------------------------------------
-L170
+L171
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -19384,7 +19420,7 @@ mechanisms:
    file.
 
 ------------------------------------------------------------------------------
-L171
+L172
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -19393,7 +19429,7 @@ Applies to (2):
 Legacy LLVM License (https://llvm.org/docs/DeveloperPolicy.html#legacy):
 
 ------------------------------------------------------------------------------
-L172
+L173
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM; SwiftShader): Copyright (c) 2003-2016 University of Illinois at Urbana-Champaign. | Copyright (c) 2003-2019 University of Illinois at Urbana-Champaign.
@@ -19441,7 +19477,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS WITH THE
 SOFTWARE.
 
 ------------------------------------------------------------------------------
-L173
+L174
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -19475,7 +19511,7 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L174
+L175
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -19515,7 +19551,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L175
+L176
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -19547,7 +19583,7 @@ to the following restrictions:
 4. This notice may not be removed or altered.
 
 ------------------------------------------------------------------------------
-L176
+L177
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -19585,7 +19621,7 @@ Applies to (2):
  */
 
 ------------------------------------------------------------------------------
-L177
+L178
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -19902,7 +19938,7 @@ exception to the GPL from your modified version.
                      END OF TERMS AND CONDITIONS
 
 ------------------------------------------------------------------------------
-L178
+L179
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -19932,7 +19968,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ------------------------------------------------------------------------------
-L179
+L180
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -19970,7 +20006,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L180
+L181
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -20002,7 +20038,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L181
+L182
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -20031,7 +20067,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L182
+L183
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -20062,7 +20098,7 @@ ISC LICENSE
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
-L183
+L184
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -20095,7 +20131,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ------------------------------------------------------------------------------
-L184
+L185
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -20107,7 +20143,7 @@ Copied from llvm-project/llvm/include/llvm/Support/LICENSE.TXT:
 LLVM System Interface Library
 
 ------------------------------------------------------------------------------
-L185
+L186
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -20119,7 +20155,7 @@ License and has the following additional copyright:
 Copyright (C) 2004 eXtensible Systems, Inc.
 
 ------------------------------------------------------------------------------
-L186
+L187
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -20149,7 +20185,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ------------------------------------------------------------------------------
-L187
+L188
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -20159,7 +20195,7 @@ Applies to (2):
 Copied from llvm-project/clang-tools-extra/clang-tidy/cert/LICENSE.TXT:
 
 ------------------------------------------------------------------------------
-L188
+L189
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -20186,7 +20222,7 @@ to reproduce the title of the content being linked to, nor to reproduce any
 de Minimis description of such content.
 
 ------------------------------------------------------------------------------
-L189
+L190
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -20196,7 +20232,7 @@ Applies to (2):
 Copied from llvm-project/clang-tools-extra/clang-tidy/hicpp/LICENSE.TXT:
 
 ------------------------------------------------------------------------------
-L190
+L191
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -20213,7 +20249,7 @@ Please see http://www.codingstandard.com/section/conditions-of-use/ for more
 information.
 
 ------------------------------------------------------------------------------
-L191
+L192
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -20254,7 +20290,7 @@ representing official policies, either expressed or implied, of
 Tobias Grosser.
 
 ------------------------------------------------------------------------------
-L192
+L193
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -20386,7 +20422,7 @@ express Statement of Purpose.
     this CC0 or use of the Work.
 
 ------------------------------------------------------------------------------
-L193
+L194
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -20443,7 +20479,7 @@ use or other dealings in these Data Files or Software without prior
 written authorization of the copyright holder.
 
 ------------------------------------------------------------------------------
-L194
+L195
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -20489,7 +20525,7 @@ use or other dealings in these Data Files or Software without prior
 written authorization of the copyright holder.
 
 ------------------------------------------------------------------------------
-L195
+L196
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -20704,7 +20740,7 @@ License: Apache 2.0
     limitations under the License.
 
 ------------------------------------------------------------------------------
-L196
+L197
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -20736,7 +20772,7 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L197
+L198
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for LLVM)
@@ -20774,7 +20810,7 @@ License:
   */
 
 ------------------------------------------------------------------------------
-L198
+L199
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Leptonica)
@@ -20807,7 +20843,7 @@ Applies to (2):
  *====================================================================*/
 
 ------------------------------------------------------------------------------
-L199
+L200
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Libxml2)
@@ -20940,7 +20976,7 @@ http://ctrio.sourceforge.net/
 *************************************************************************
 
 ------------------------------------------------------------------------------
-L200
+L201
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Little CMS)
@@ -21067,7 +21103,7 @@ Users of this code must verify correctness for their application.
 END LICENSE_softsurfer
 
 ------------------------------------------------------------------------------
-L201
+L202
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for MediaPipe)
@@ -21293,7 +21329,7 @@ For files under tasks/cc/text/language_detector/custom_ops/utils/utf/
  */
 
 ------------------------------------------------------------------------------
-L202
+L203
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for NCurses)
@@ -21421,7 +21457,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
 THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L203
+L204
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for NVIDIA Management Library)
@@ -21461,7 +21497,7 @@ include, in the user documentation and internal comments to the code,
 the above Disclaimer and U.S. Government End Users Notice.
 
 ------------------------------------------------------------------------------
-L204
+L205
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Nano Protocol Buffers)
@@ -21502,7 +21538,7 @@ standalone and requires a support library to be linked with it.  This
 support library is itself covered by the above license.
 
 ------------------------------------------------------------------------------
-L205
+L206
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Ooura FFT)
@@ -21513,7 +21549,7 @@ You may use, copy, modify this code for any purpose and
 without fee. You may distribute this ORIGINAL package.
 
 ------------------------------------------------------------------------------
-L206
+L207
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for OpenCV)
@@ -21725,7 +21761,7 @@ Apache-2.0
    limitations under the License.
 
 ------------------------------------------------------------------------------
-L207
+L208
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for OpenCV)
@@ -21764,7 +21800,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L208
+L209
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for OpenCV)
@@ -21798,7 +21834,7 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L209
+L210
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for OpenCV)
@@ -21836,7 +21872,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L210
+L211
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for OpenCV)
@@ -21874,7 +21910,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L211
+L212
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for OpenCV)
@@ -21923,7 +21959,7 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L212
+L213
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for OpenCV)
@@ -21953,7 +21989,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
 ------------------------------------------------------------------------------
-L213
+L214
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for OpenCV)
@@ -21981,7 +22017,7 @@ the following restrictions:
 3. This notice may not be removed or altered from any source distribution.
 
 ------------------------------------------------------------------------------
-L214
+L215
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for OpenCV)
@@ -21997,7 +22033,7 @@ software is freely granted, provided that this notice
 is preserved.
 
 ------------------------------------------------------------------------------
-L215
+L216
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for OpenCV)
@@ -22011,7 +22047,7 @@ software is freely granted, provided that this notice
 is preserved.
 
 ------------------------------------------------------------------------------
-L216
+L217
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for PNG)
@@ -22153,7 +22189,7 @@ this source code in a product, acknowledgment is not required but would
 be appreciated.
 
 ------------------------------------------------------------------------------
-L217
+L218
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Protocol Buffers)
@@ -22224,7 +22260,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L218
+L219
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Protocol Buffers for Java)
@@ -22264,7 +22300,7 @@ standalone and requires a support library to be linked with it.  This
 support library is itself covered by the above license.
 
 ------------------------------------------------------------------------------
-L219
+L220
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Skia)
@@ -22301,7 +22337,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L220
+L221
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for SwiftShader)
@@ -23304,7 +23340,7 @@ POSSIBILITY OF SUCH DAMAGE.  */
 --
 
 ------------------------------------------------------------------------------
-L221
+L222
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for TensorFlow)
@@ -23563,7 +23599,7 @@ or otherwise, the contributor releases their content to the
 license and copyright terms herein.
 
 ------------------------------------------------------------------------------
-L222
+L223
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for TensorFlow Models)
@@ -23783,7 +23819,7 @@ Are licensed as follows:
    limitations under the License.
 
 ------------------------------------------------------------------------------
-L223
+L224
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for UTF)
@@ -23804,7 +23840,7 @@ REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY
 OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
 
 ------------------------------------------------------------------------------
-L224
+L225
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -23848,7 +23884,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L225
+L226
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -23882,7 +23918,7 @@ in this Software without prior written authorization from The Open Group.
 X Window System is a trademark of The Open Group.
 
 ------------------------------------------------------------------------------
-L226
+L227
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -23931,7 +23967,7 @@ of this documentation for any purpose.
 It is provided ``as is'' without express or implied warranty.
 
 ------------------------------------------------------------------------------
-L227
+L228
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -23962,7 +23998,7 @@ other dealings in this Software without prior written authorization from the
 Free Software Foundation.
 
 ------------------------------------------------------------------------------
-L228
+L229
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24004,7 +24040,7 @@ CONTRACT, NEGLIGENCE, OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
 CONNECTION WITH THE USE OR THE PERFORMANCE OF THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
-L229
+L230
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24015,7 +24051,7 @@ This is source code modified by FUJITSU LIMITED under the Joint
 Development Agreement for the CDE/Motif PST.
 
 ------------------------------------------------------------------------------
-L230
+L231
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24046,7 +24082,7 @@ OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE
 OR PERFORMANCE OF THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
-L231
+L232
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24074,7 +24110,7 @@ OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
-L232
+L233
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24107,7 +24143,7 @@ other dealings in this Software without prior written authorization
 from David E. Wexelblat.
 
 ------------------------------------------------------------------------------
-L233
+L234
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24134,7 +24170,7 @@ TORTUOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
-L234
+L235
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24155,7 +24191,7 @@ of the information in this document.  It is provided \`\`as-is'' without
 express or implied warranty.
 
 ------------------------------------------------------------------------------
-L235
+L236
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24186,7 +24222,7 @@ OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
-L236
+L237
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24214,7 +24250,7 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
-L237
+L238
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24243,7 +24279,7 @@ NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE
 USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
-L238
+L239
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24273,7 +24309,7 @@ OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION  WITH
 THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
-L239
+L240
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24305,7 +24341,7 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
-L240
+L241
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24339,7 +24375,7 @@ OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE
 OR PERFORMANCE OF THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
-L241
+L242
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24367,7 +24403,7 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ------------------------------------------------------------------------------
-L242
+L243
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24396,7 +24432,7 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
 OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
-L243
+L244
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24425,7 +24461,7 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
-L244
+L245
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24452,7 +24488,7 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ------------------------------------------------------------------------------
-L245
+L246
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24482,7 +24518,7 @@ OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
-L246
+L247
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24513,7 +24549,7 @@ TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE
 OF THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
-L247
+L248
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24541,7 +24577,7 @@ OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
-L248
+L249
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24573,7 +24609,7 @@ sale, use or other dealings in this Software without prior written
 authorization from the X Consortium and the XFree86 Project.
 
 ------------------------------------------------------------------------------
-L249
+L250
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24606,7 +24642,7 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
-L250
+L251
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24634,7 +24670,7 @@ OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
-L251
+L252
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24664,7 +24700,7 @@ TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
-L252
+L253
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24692,7 +24728,7 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L253
+L254
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24726,7 +24762,7 @@ dealings in this Software without prior written authorization from Holger Veit o
 Sebastien Marineau.
 
 ------------------------------------------------------------------------------
-L254
+L255
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24761,7 +24797,7 @@ IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
 OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
-L255
+L256
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24789,7 +24825,7 @@ OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE
 OR PERFORMANCE OF THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
-L256
+L257
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24816,7 +24852,7 @@ TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
-L257
+L258
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24844,7 +24880,7 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L258
+L259
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24871,7 +24907,7 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ------------------------------------------------------------------------------
-L259
+L260
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24899,7 +24935,7 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ------------------------------------------------------------------------------
-L260
+L261
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for X.Org)
@@ -24928,7 +24964,7 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
-L261
+L262
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for XCB library)
@@ -24966,7 +25002,7 @@ Software without prior written authorization from the
 authors.
 
 ------------------------------------------------------------------------------
-L262
+L263
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for XNNPACK)
@@ -25005,7 +25041,7 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L263
+L264
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Zippy)
@@ -25425,7 +25461,7 @@ Quantitatively Predicts DNA Replication Timing in _Drosophila_”, the license i
 Attribution 4.0 International
 
 ------------------------------------------------------------------------------
-L264
+L265
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Zippy; jpegxl)
@@ -25482,7 +25518,7 @@ exhaustive, and do not form part of our licenses.
     wiki.creativecommons.org/Considerations_for_licensees
 
 ------------------------------------------------------------------------------
-L265
+L266
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Zippy; jpegxl)
@@ -25807,7 +25843,7 @@ Section 8 -- Interpretation.
      processes of any jurisdiction or authority.
 
 ------------------------------------------------------------------------------
-L266
+L267
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Zippy)
@@ -25847,7 +25883,7 @@ you are located before using this ebook.
 from https://www.gutenberg.org/policy/license.html
 
 ------------------------------------------------------------------------------
-L267
+L268
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for Zstandard)
@@ -25935,7 +25971,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L268
+L269
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for address_sorting)
@@ -25969,7 +26005,7 @@ OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L269
+L270
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for angle)
@@ -26987,7 +27023,7 @@ This special exception was added by the Free Software Foundation in version
 --
 
 ------------------------------------------------------------------------------
-L270
+L271
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for bzip2)
@@ -27036,7 +27072,7 @@ bzip2/libbzip2 version 1.0.8 of 13 July 2019
 --------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
-L271
+L272
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for c-ares)
@@ -27107,7 +27143,7 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
 OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
-L272
+L273
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for cblas)
@@ -27129,7 +27165,7 @@ modification is done, however, it is the responsibility of the person
 who modified the routine to provide support
 
 ------------------------------------------------------------------------------
-L273
+L274
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for cppitertools)
@@ -27160,7 +27196,7 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L274
+L275
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for cpu_features)
@@ -27397,7 +27433,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L275
+L276
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for cpuinfo; pthreadpool): Copyright (C) 2010-2012 Marat Dukhan | Copyright (C) 2012-2017 Georgia Institute of Technology | Copyright (c) 2015-2017 Georgia Institute of Technology | Copyright (c) 2017 Facebook Inc. | Copyright (c) 2017-2018 Facebook Inc. | Copyright (c) 2019 Google LLC | Copyright 2019 Google LLC
@@ -27429,7 +27465,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L276
+L277
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for cutlass)
@@ -27464,7 +27500,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L277
+L278
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for dav1d)
@@ -27573,7 +27609,7 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
-L278
+L279
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for dawn)
@@ -27607,7 +27643,7 @@ Applies to (2):
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L279
+L280
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for double-conversion; sha3): Copyright (c) 2009 The Go Authors. All rights reserved. | Copyright 2006-2011, the V8 project authors. All rights reserved.
@@ -27641,7 +27677,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L280
+L281
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for ducc)
@@ -28171,7 +28207,7 @@ Files: google/*
    limitations under the License.
 
 ------------------------------------------------------------------------------
-L281
+L282
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for expat)
@@ -28456,7 +28492,7 @@ be used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization of the copyright holder.
 
 ------------------------------------------------------------------------------
-L282
+L283
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for f2reduce)
@@ -28550,7 +28586,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS WITH THE
 SOFTWARE.
 
 ------------------------------------------------------------------------------
-L283
+L284
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for from_libaom (0))
@@ -28588,7 +28624,7 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L284
+L285
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for gRPC)
@@ -28625,7 +28661,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L285
+L286
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for gcc_14_1_0)
@@ -29309,7 +29345,7 @@ Public License instead of this License.  But first, please read
 <http://www.gnu.org/philosophy/why-not-lgpl.html>.
 
 ------------------------------------------------------------------------------
-L286
+L287
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for gcc_14_1_0)
@@ -29389,7 +29425,7 @@ presumption that third-party software is unaffected by the copyleft
 requirements of the license of GCC.
 
 ------------------------------------------------------------------------------
-L287
+L288
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for giflib)
@@ -29416,7 +29452,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L288
+L289
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for glslang)
@@ -29444,7 +29480,7 @@ Other parts, outside of glslang proper, include:
   are external and optional; see them for their respective licenses.
 
 ------------------------------------------------------------------------------
-L289
+L290
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for glslang)
@@ -29453,7 +29489,7 @@ Applies to (2):
 The core of glslang-proper, minus the preprocessor is licenced as follows:
 
 ------------------------------------------------------------------------------
-L290
+L291
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for glslang)
@@ -29496,7 +29532,7 @@ Applies to (2):
 //
 
 ------------------------------------------------------------------------------
-L291
+L292
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for glslang)
@@ -29513,7 +29549,7 @@ Redistribution and use in source and binary forms, with or without modification,
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L292
+L293
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for glslang)
@@ -30156,7 +30192,7 @@ This special exception was added by the Free Software Foundation in version
                      END OF TERMS AND CONDITIONS
 
 ------------------------------------------------------------------------------
-L293
+L294
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for glslang)
@@ -30165,7 +30201,7 @@ Applies to (2):
 ================================================================================
 
 ------------------------------------------------------------------------------
-L294
+L295
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for glslang)
@@ -30244,7 +30280,7 @@ NVIDIA HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 ------------------------------------------------------------------------------
-L295
+L296
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for hwloc)
@@ -30291,7 +30327,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L296
+L297
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for intel_dnnl)
@@ -30341,7 +30377,7 @@ Third party programs and their corresponding required notices and/or license
 terms are listed below.
 
 ------------------------------------------------------------------------------
-L297
+L298
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for intel_dnnl)
@@ -30399,7 +30435,7 @@ THE POSSIBILITY OF SUCH DAMAGE.
 一切責任を負わないものとします。
 
 ------------------------------------------------------------------------------
-L298
+L299
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for intel_dnnl)
@@ -30442,7 +30478,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L299
+L300
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for intel_dnnl)
@@ -30480,7 +30516,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L300
+L301
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for intel_dnnl)
@@ -30521,7 +30557,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L301
+L302
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for intel_dnnl)
@@ -30612,7 +30648,7 @@ with CMake under compatible licenses provide their own copyright notices
 documented in corresponding subdirectories or source files.
 
 ------------------------------------------------------------------------------
-L302
+L303
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for intel_dnnl)
@@ -30633,7 +30669,7 @@ CMake was initially developed by Kitware with the following sponsorship:
  * Kitware, Inc.
 
 ------------------------------------------------------------------------------
-L303
+L304
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for intel_dnnl)
@@ -30835,7 +30871,7 @@ limitations under the License.
    END OF TERMS AND CONDITIONS
 
 ------------------------------------------------------------------------------
-L304
+L305
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for intel_dnnl)
@@ -30869,7 +30905,7 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L305
+L306
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for intel_dnnl)
@@ -30940,7 +30976,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L306
+L307
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for intel_dnnl)
@@ -30972,7 +31008,7 @@ IN THE SOFTWARE.
 10. LLVM (src/graph/backend/graph_compiler/core/src/util/array_ref.hpp)
 
 ------------------------------------------------------------------------------
-L307
+L308
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for jpegxl)
@@ -31012,7 +31048,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 END LICENSE
 
 ------------------------------------------------------------------------------
-L308
+L309
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for jpegxl)
@@ -31032,7 +31068,7 @@ maxst at users.sourceforge.net
 zlib license
 
 ------------------------------------------------------------------------------
-L309
+L310
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for jpegxl)
@@ -31058,7 +31094,7 @@ freely, subject to the following restrictions:
 END lib/extras/LICENSE.apngdis
 
 ------------------------------------------------------------------------------
-L310
+L311
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for jpegxl)
@@ -31069,7 +31105,7 @@ BEGIN testdata/LICENSE
 Attribution 4.0 International
 
 ------------------------------------------------------------------------------
-L311
+L312
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for jpegxl)
@@ -31099,7 +31135,7 @@ Creative Commons may be contacted at creativecommons.org.
 END testdata/LICENSE
 
 ------------------------------------------------------------------------------
-L312
+L313
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for jpegxl)
@@ -31121,7 +31157,7 @@ purpose and without fee is hereby granted.
 END testdata/external/pngsuite/PngSuite.LICENSE
 
 ------------------------------------------------------------------------------
-L313
+L314
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for jpegxl)
@@ -31248,7 +31284,7 @@ For more information, please see
 END testdata/external/raw.pixls/LICENSE.md
 
 ------------------------------------------------------------------------------
-L314
+L315
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for jpegxl)
@@ -31375,7 +31411,7 @@ For more information, please see
 END testdata/external/wesaturate/LICENSE.md
 
 ------------------------------------------------------------------------------
-L315
+L316
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for jpegxl)
@@ -31589,7 +31625,7 @@ BEGIN testdata/external/wide-gamut-tests/LICENSE
 END testdata/external/wide-gamut-tests/LICENSE
 
 ------------------------------------------------------------------------------
-L316
+L317
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for legacy_libcxx_sort)
@@ -31908,7 +31944,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L317
+L318
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for libaom)
@@ -32043,7 +32079,7 @@ written by Colin Plumb in 1993, no copyright is claimed.
 This code is in the public domain; do with it what you wish.
 
 ------------------------------------------------------------------------------
-L318
+L319
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for libavif)
@@ -32308,7 +32344,7 @@ Files: android_jni/gradlew*
    limitations under the License.
 
 ------------------------------------------------------------------------------
-L319
+L320
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for libexecinfo)
@@ -32341,7 +32377,7 @@ SUCH DAMAGE.
 $Id: execinfo.c,v 1.3 2004/07/19 05:21:09 sobomax Exp $
 
 ------------------------------------------------------------------------------
-L320
+L321
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for libjpeg-turbo)
@@ -32495,7 +32531,7 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
 OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L321
+L322
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for libpfm4)
@@ -32523,7 +32559,7 @@ CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFT
 OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L322
+L323
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for libwebp)
@@ -32562,7 +32598,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 Additional IP Rights Grant (Patents)
 
 ------------------------------------------------------------------------------
-L323
+L324
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for libwebp)
@@ -32590,7 +32626,7 @@ for these implementations of WebM shall terminate as of the date such
 litigation is filed.
 
 ------------------------------------------------------------------------------
-L324
+L325
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for libwebp)
@@ -33266,7 +33302,7 @@ third-party software is unaffected by the copyleft requirements of the license
 of Autoconf.
 
 ------------------------------------------------------------------------------
-L325
+L326
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for libwebp)
@@ -33477,7 +33513,7 @@ Files: tools/chrome_extension/*
    limitations under the License.
 
 ------------------------------------------------------------------------------
-L326
+L327
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for libwebp)
@@ -33488,7 +33524,7 @@ Files: tools/release/redist/mingw/*, tools/release/redist/msvc/*
   Freeglut Copyright
 
 ------------------------------------------------------------------------------
-L327
+L328
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for libwebp)
@@ -33519,7 +33555,7 @@ Freeglut code without an explicit copyright is covered by the following
   in this Software without prior written authorization from Pawel W. Olszta.
 
 ------------------------------------------------------------------------------
-L328
+L329
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for libwebp)
@@ -33549,7 +33585,7 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L329
+L330
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for libyuv)
@@ -33586,7 +33622,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L330
+L331
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for mecab)
@@ -33623,7 +33659,7 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF TH
 ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L331
+L332
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for minizip)
@@ -33678,7 +33714,7 @@ Copyright notice:
  3. This notice may not be removed or altered from any source distribution.
 
 ------------------------------------------------------------------------------
-L332
+L333
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for nanoflann)
@@ -33714,7 +33750,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L333
+L334
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for neon2sse)
@@ -33751,7 +33787,7 @@ or tort (including negligence or otherwise) arising in any way out of
 the use of this software, even if advised of the possibility of such damage.
 
 ------------------------------------------------------------------------------
-L334
+L335
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for openssh)
@@ -34287,7 +34323,7 @@ OpenSSH contains no GPL code.
 $OpenBSD: LICENCE,v 1.20 2017/04/30 23:26:16 djm Exp $
 
 ------------------------------------------------------------------------------
-L335
+L336
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for perfetto)
@@ -34527,7 +34563,7 @@ Copyright (C) 2017 The Android Open Source Project
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L336
+L337
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for pngnq)
@@ -34584,7 +34620,7 @@ Applies to (2):
 ----------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
-L337
+L338
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for sentencepiece)
@@ -34882,7 +34918,7 @@ standalone and requires a support library to be linked with it.  This
 support library is itself covered by the above license.
 
 ------------------------------------------------------------------------------
-L338
+L339
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for sobol_data)
@@ -34922,7 +34958,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L339
+L340
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for spirv_headers)
@@ -35033,7 +35069,7 @@ SOFTWARE.
 ---
 
 ------------------------------------------------------------------------------
-L340
+L341
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for tf_runtime)
@@ -35294,7 +35330,7 @@ mechanisms:
    file.
 
 ------------------------------------------------------------------------------
-L341
+L342
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for tf_runtime_llvm)
@@ -35580,7 +35616,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS WITH THE
 SOFTWARE.
 
 ------------------------------------------------------------------------------
-L342
+L343
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for tiff)
@@ -35677,7 +35713,7 @@ LIABILITY, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE
 OF THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
-L343
+L344
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for tz database)
@@ -35718,7 +35754,7 @@ contain material derived from BSD and use the BSD 3-clause license.
   SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L344
+L345
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for vulkan_headers)
@@ -35938,7 +35974,7 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-L345
+L346
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for vulkan_loader)
@@ -36208,7 +36244,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L346
+L347
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for xmp_toolkit)
@@ -36247,7 +36283,7 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L347
+L348
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for xxhash)
@@ -36281,7 +36317,7 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L348
+L349
 ------------------------------------------------------------------------------
 Applies to (2):
   com.google.mlkit:text-recognition 16.0.1 (notice for zlib)
@@ -36342,7 +36378,7 @@ freely, subject to the following restrictions:
 3. This notice may not be removed or altered from any source distribution.
 
 ------------------------------------------------------------------------------
-L349
+L350
 ------------------------------------------------------------------------------
 Applies to (1):
   com.google.mlkit:vision-common 17.3.0 (notice for J2ObjC)
@@ -36580,7 +36616,7 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L350
+L351
 ------------------------------------------------------------------------------
 Applies to (1):
   ONNX Runtime native libraries (libonnxruntime.so, libonnxruntime4j_jni.so) 1.22.0 (notice for ONNX Runtime ThirdPartyNotices.txt)
@@ -42743,7 +42779,7 @@ Redistribution and use in source and binary forms, with or without modification,
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-L351
+L352
 ------------------------------------------------------------------------------
 Applies to (1):
   AksonOCR-Lite Thai/English text-line recognizer (rec.onnx, rec_charset.json) Hugging Face Remtir/AksonOCR-Lite @ 576fa7b

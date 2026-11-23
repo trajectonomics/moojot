@@ -19,6 +19,9 @@ export const TIMEZONE = "Asia/Bangkok";
  * @param {"done" | "pending"} [options.onboarding] "pending" opens the first-run tour.
  * @param {"granted" | "denied"} [options.android] Adds a fake Android bridge with photo access
  *   granted or not. Scans it is asked to start are recorded in `window.__moojotScans`.
+ * @param {boolean} [options.appLock] The app lock (#79) is on. Android's unlock prompt answers
+ *   "cancelled", so the app stays on its lock card. Needs `android`.
+ * @param {boolean} [options.reminder] The daily reminder (#80) is on, at 20:30.
  */
 export function fixtureScript(options = {}) {
   const config = {
@@ -118,7 +121,8 @@ function pageFixture(config) {
   const settings = {
     language: config.lang, monthStartDay: 1, weekStartDay: 1, defaultView: "monthly",
     allowSharedAlbum: false, ownerNames: [], aksonOcrApiKey: "", aksonOcrModel: "",
-    englishOcrEngine: "mlkit_latin",
+    englishOcrEngine: "mlkit_latin", appLockEnabled: Boolean(config.appLock),
+    reminderEnabled: Boolean(config.reminder), reminderTime: config.reminder ? "20:30" : "20:00",
   };
 
   // [day of March 2026, time, kind, amount in baht, category, account, payee, extra fields]
@@ -304,6 +308,10 @@ function pageFixture(config) {
     list_payee_rules: () => payeeRules,
     search_records: searchRecords,
     "plugin:app|version": () => "1.1.0",
+    // The person closes Android's unlock prompt: the lock card stays up.
+    "plugin:biometric|authenticate": () => {
+      throw { message: "Cancel button was pressed", code: "userCancel" };
+    },
   };
 
   window.__moojotUnmocked = [];
@@ -324,6 +332,13 @@ function pageFixture(config) {
       readSlipImageDataUrl: () => null,
       shareTextFile: () => false,
       pickStatementPdf: () => {},
+      setRecentsHidden: () => {},
+      hasNotificationPermission: () => true,
+      requestNotificationPermission: () => {},
+      configureReminder: () => {},
+      markJotted: () => {},
+      updateWidget: () => {},
+      takeWidgetAction: () => "",
     };
   }
   window.__TAURI_INTERNALS__ = {

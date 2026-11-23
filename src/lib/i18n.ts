@@ -224,6 +224,24 @@ const en = {
   shareStatsHint: "Off unless you turn it on. Tells us which screens and features get used. Never your records, amounts or slips.",
   onbStatsHint: "Optional. Helps Moo see which features get used. Never your money data. Change it any time in My Moo.",
 
+  // App lock (opt-in, #79)
+  appLock: "App lock",
+  appLockHint: "Off unless you turn it on. Asks for your fingerprint or phone PIN when MooJot opens, and after a minute away.",
+  appLockLocked: "MooJot is locked",
+  appLockLockedHint: "Use your fingerprint, face or phone PIN to open it.",
+  appLockUnlock: "Unlock",
+  appLockReason: "Unlock MooJot",
+  appLockEnableReason: "Confirm it's you to turn on the app lock",
+  appLockNoScreenLock: "Set a screen lock (PIN, pattern or password) in your phone's settings first.",
+  appLockLockout: "Too many tries. Use your phone PIN, or wait a moment and try again.",
+  appLockTurnedOff: "Your phone has no screen lock any more, so the app lock is off.",
+  appLockFailed: "Couldn't turn on the app lock. Try again.",
+  // Daily reminder (opt-in, #80)
+  dailyReminder: "Daily reminder",
+  dailyReminderHint: "Off unless you turn it on. A nudge to jot, skipped on days you already did.",
+  reminderTime: "Remind me at",
+  reminderNoPermission: "Notifications are off for MooJot. Allow them in your phone's settings to get the reminder.",
+
   // Misc
   loading: "Loading...",
   error: "Something went wrong",
@@ -456,6 +474,24 @@ const th: Record<I18nKey, string> = {
   shareStats: "ส่งสถิติการใช้งานแบบไม่ระบุตัวตน",
   shareStatsHint: "ปิดไว้จนกว่าคุณจะเปิดเอง บอกเราว่าหน้าไหนและฟีเจอร์ไหนถูกใช้ ไม่ส่งรายการ ยอดเงิน หรือสลิปของคุณ",
   onbStatsHint: "ไม่บังคับ ช่วยให้มูรู้ว่าฟีเจอร์ไหนถูกใช้ ไม่มีข้อมูลเงินของคุณ เปลี่ยนได้ทุกเมื่อในหน้ามูของฉัน",
+
+  // App lock (opt-in, #79)
+  appLock: "ล็อกแอป",
+  appLockHint: "ปิดไว้จนกว่าคุณจะเปิดเอง ใช้ลายนิ้วมือหรือรหัสเครื่องตอนเปิด MooJot และเมื่อออกไปเกิน 1 นาที",
+  appLockLocked: "MooJot ล็อกอยู่",
+  appLockLockedHint: "ใช้ลายนิ้วมือ ใบหน้า หรือรหัสเครื่องเพื่อเปิด",
+  appLockUnlock: "ปลดล็อก",
+  appLockReason: "ปลดล็อก MooJot",
+  appLockEnableReason: "ยืนยันตัวตนเพื่อเปิดล็อกแอป",
+  appLockNoScreenLock: "ตั้งการล็อกหน้าจอ (PIN รูปแบบ หรือรหัสผ่าน) ในการตั้งค่าเครื่องก่อน",
+  appLockLockout: "ลองผิดหลายครั้งเกินไป ใช้รหัสเครื่อง หรือรอสักครู่แล้วลองใหม่",
+  appLockTurnedOff: "เครื่องนี้ไม่มีการล็อกหน้าจอแล้ว จึงปิดล็อกแอปให้",
+  appLockFailed: "เปิดล็อกแอปไม่สำเร็จ ลองอีกครั้ง",
+  // Daily reminder (opt-in, #80)
+  dailyReminder: "เตือนให้จดทุกวัน",
+  dailyReminderHint: "ปิดไว้จนกว่าคุณจะเปิดเอง เตือนให้จดรายจ่าย และไม่เตือนในวันที่คุณจดแล้ว",
+  reminderTime: "เตือนเวลา",
+  reminderNoPermission: "การแจ้งเตือนของ MooJot ถูกปิดอยู่ เปิดได้ในการตั้งค่าเครื่องเพื่อรับการเตือน",
 
   // Misc
   loading: "กำลังโหลด...",

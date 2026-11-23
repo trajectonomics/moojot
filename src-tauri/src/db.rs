@@ -113,6 +113,29 @@ pub struct AppSettings {
     pub akson_ocr_api_key: String,
     pub akson_ocr_model: String,
     pub english_ocr_engine: String,
+    /// Fingerprint / phone-PIN lock (#79). Off by default; older frontends that don't send it keep it off.
+    #[serde(default)]
+    pub app_lock_enabled: bool,
+    /// Opt-in daily reminder (#80). Older frontends that don't send these keep it off at 20:00.
+    #[serde(default)]
+    pub reminder_enabled: bool,
+    /// Local time of day, `HH:MM`.
+    #[serde(default = "default_reminder_time")]
+    pub reminder_time: String,
+}
+
+fn default_reminder_time() -> String {
+    "20:00".to_string()
+}
+
+/// `HH:MM` with a real hour and minute, or None.
+pub fn valid_reminder_time(v: &str) -> Option<String> {
+    let (h, m) = v.split_once(':')?;
+    if h.len() != 2 || m.len() != 2 {
+        return None;
+    }
+    let (h, m) = (h.parse::<u8>().ok()?, m.parse::<u8>().ok()?);
+    (h < 24 && m < 60).then(|| format!("{h:02}:{m:02}"))
 }
 
 impl Default for AppSettings {
@@ -127,6 +150,9 @@ impl Default for AppSettings {
             akson_ocr_api_key: String::new(),
             akson_ocr_model: "AksonOCR-preview".to_string(),
             english_ocr_engine: "mlkit_latin".to_string(),
+            app_lock_enabled: false,
+            reminder_enabled: false,
+            reminder_time: default_reminder_time(),
         }
     }
 }
@@ -468,6 +494,13 @@ pub fn load_settings(conn: &Connection) -> Result<AppSettings, String> {
             "akson_ocr_api_key" => s.akson_ocr_api_key = v,
             "akson_ocr_model" => s.akson_ocr_model = v,
             "english_ocr_engine" => s.english_ocr_engine = v,
+            "app_lock_enabled" => s.app_lock_enabled = v == "true",
+            "reminder_enabled" => s.reminder_enabled = v == "true",
+            "reminder_time" => {
+                if let Some(t) = valid_reminder_time(&v) {
+                    s.reminder_time = t;
+                }
+            }
             _ => {}
         }
     }
@@ -488,6 +521,12 @@ pub fn save_settings(conn: &Connection, s: &AppSettings) -> Result<(), String> {
         ("akson_ocr_api_key", s.akson_ocr_api_key.clone()),
         ("akson_ocr_model", s.akson_ocr_model.clone()),
         ("english_ocr_engine", s.english_ocr_engine.clone()),
+        ("app_lock_enabled", s.app_lock_enabled.to_string()),
+        ("reminder_enabled", s.reminder_enabled.to_string()),
+        (
+            "reminder_time",
+            valid_reminder_time(&s.reminder_time).unwrap_or_else(default_reminder_time),
+        ),
     ];
     for (k, v) in pairs {
         conn.execute(
@@ -1451,5 +1490,60 @@ mod payee_rule_tests {
             Some("cat_food")
         );
         cleanup(&path);
+    }
+}
+
+#[cfg(test)]
+mod reminder_settings_tests {
+    use super::*;
+
+    #[test]
+    fn reminder_is_off_at_eight_pm_by_default() {
+        let s = AppSettings::default();
+        assert!(!s.reminder_enabled);
+        assert_eq!(s.reminder_time, "20:00");
+    }
+
+    #[test]
+    fn a_frontend_without_reminder_fields_keeps_the_defaults() {
+        let json = r#"{"language":"th","monthStartDay":25,"weekStartDay":1,"defaultView":"monthly",
+            "allowSharedAlbum":false,"ownerNames":[],"aksonOcrApiKey":"","aksonOcrModel":"m",
+            "englishOcrEngine":"mlkit_latin"}"#;
+        let s: AppSettings = serde_json::from_str(json).expect("older settings still parse");
+        assert!(!s.reminder_enabled);
+        assert_eq!(s.reminder_time, "20:00");
+    }
+
+    #[test]
+    fn reminder_time_must_be_a_real_time() {
+        assert_eq!(valid_reminder_time("07:05").as_deref(), Some("07:05"));
+        assert_eq!(valid_reminder_time("23:59").as_deref(), Some("23:59"));
+        for bad in ["24:00", "12:60", "7:05", "07:5", "", "noon", "07-05", "-1:00", "07:05:00"] {
+            assert_eq!(valid_reminder_time(bad), None, "{bad}");
+        }
+    }
+
+    #[test]
+    fn reminder_settings_round_trip_and_bad_times_fall_back() {
+        let path = std::env::temp_dir().join(format!("moojot-reminder-{}.sqlite3", Uuid::new_v4()));
+        let conn = init_db(&path).expect("init db");
+        let mut s = load_settings(&conn).expect("load");
+        s.reminder_enabled = true;
+        s.reminder_time = "21:30".to_string();
+        save_settings(&conn, &s).expect("save");
+        let back = load_settings(&conn).expect("reload");
+        assert!(back.reminder_enabled);
+        assert_eq!(back.reminder_time, "21:30");
+
+        s.reminder_time = "99:99".to_string();
+        save_settings(&conn, &s).expect("save bad time");
+        assert_eq!(load_settings(&conn).expect("reload").reminder_time, "20:00");
+
+        drop(conn);
+        for suffix in ["", "-wal", "-shm"] {
+            let mut file = path.as_os_str().to_os_string();
+            file.push(suffix);
+            let _ = std::fs::remove_file(file);
+        }
     }
 }

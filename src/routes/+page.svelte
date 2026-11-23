@@ -16,6 +16,7 @@
     Repeat,
     PenLine,
   } from "@lucide/svelte";
+  import { untrack } from "svelte";
   import CategoryIcon from "$lib/components/CategoryIcon.svelte";
   import EmptyMonthArt from "$lib/components/EmptyMonthArt.svelte";
   import MooMascot, { type MascotMood } from "$lib/components/MooMascot.svelte";
@@ -26,6 +27,8 @@
   import RulesModal from "$lib/components/RulesModal.svelte";
   import ThumbSheet from "$lib/components/ThumbSheet.svelte";
   import Onboarding from "$lib/components/Onboarding.svelte";
+  import LockScreen from "$lib/components/LockScreen.svelte";
+  import { lockOnReturn, requestUnlock } from "$lib/appLock";
   import {
     analyticsEnabled,
     setAnalyticsContext,
@@ -47,6 +50,8 @@
     triggerAndroidDownloadOrShare,
   } from "$lib/api";
   import { formatBaht } from "$lib/format";
+  import { localDateKey, reminderConfig } from "$lib/reminder";
+  import { parseWidgetAction, widgetSnapshot, type WidgetAction } from "$lib/widget";
   import { monthPickerOffsets } from "$lib/monthPicker";
   import {
     clampMonthStartDay,
@@ -111,7 +116,21 @@
     aksonOcrApiKey: "",
     aksonOcrModel: "AksonOCR-preview",
     englishOcrEngine: "mlkit_latin",
+    appLockEnabled: false,
+    reminderEnabled: false,
+    reminderTime: "20:00",
   });
+  // The saved settings have been read once (the reminder sync waits for this).
+  let settingsReady = $state(false);
+
+  // Opt-in app lock (#79), see $lib/appLock. On Android the app starts "checking" (a plain cover)
+  // until the saved setting is read, so records never show before the prompt.
+  //   checking: setting not read yet  · open: no cover  · away: in the background, covered
+  //   locked: the lock card, waiting for the fingerprint or phone PIN
+  let lockState = $state<"checking" | "open" | "away" | "locked">(hasAndroidBridge() ? "checking" : "open");
+  let unlocking = $state(false);
+  let lockMessage = $state<string | null>(null);
+  let hiddenAt: number | null = null;
   let accounts = $state<Account[]>([]);
   let categories = $state<Category[]>([]);
   let tags = $state<Tag[]>([]);
@@ -180,7 +199,8 @@
     pdfPrompt !== null ||
     scanStartPrompt ||
     monthPicker ||
-    showOnboarding
+    showOnboarding ||
+    lockState !== "open"
   );
 
   // Apply theme attribute & sync Android status bar icon contrast cleanly per screen!
@@ -196,7 +216,7 @@
       recordLightboxOpen;
     const isLightStatusBar =
       theme === "pink-white" &&
-      (showOnboarding || (!hasColoredTopBar && activeTab !== "home"));
+      (lockState !== "open" || showOnboarding || (!hasColoredTopBar && activeTab !== "home"));
     window.MooJotAndroid?.setStatusBarLight?.(isLightStatusBar);
   });
 
@@ -427,6 +447,221 @@
   });
 
 
+  // ---- App lock (#79) ----
+  function setRecentsHidden(hidden: boolean) {
+    window.MooJotAndroid?.setRecentsHidden?.(hidden);
+  }
+
+  async function unlockApp() {
+    if (unlocking) return;
+    unlocking = true;
+    lockMessage = null;
+    const result = await requestUnlock({ reason: t(lang, "appLockReason"), title: "MooJot" });
+    unlocking = false;
+    hiddenAt = null;
+    if (result === "unlocked") {
+      lockState = "open";
+    } else if (result === "no-screen-lock") {
+      // The phone's screen lock was removed after the app lock was turned on. There is nothing
+      // to check against, so open rather than lock the person out of their only copy.
+      await saveAppLock(false);
+      lockState = "open";
+      scanBanner = t(lang, "appLockTurnedOff");
+      setTimeout(() => (scanBanner = null), 6000);
+    } else {
+      lockMessage = result === "lockout" ? t(lang, "appLockLockout") : null;
+    }
+  }
+
+  /** Saves the lock switch on top of the stored settings, never on top of a stale copy. */
+  async function saveAppLock(on: boolean) {
+    const current = await api.getSettings();
+    const next = { ...current, appLockEnabled: on };
+    await api.updateSettings(next);
+    settings = { ...settings, appLockEnabled: on };
+    setRecentsHidden(on);
+  }
+
+  /** The My Moo switch. Turning it on needs one successful unlock first; returns why not, if not. */
+  async function changeAppLock(on: boolean): Promise<string | null> {
+    if (on) {
+      const result = await requestUnlock({ reason: t(lang, "appLockEnableReason"), title: "MooJot" });
+      hiddenAt = null;
+      if (result === "no-screen-lock") return t(lang, "appLockNoScreenLock");
+      if (result === "lockout") return t(lang, "appLockLockout");
+      if (result !== "unlocked") return result === "cancelled" ? null : t(lang, "appLockFailed");
+    }
+    try {
+      await saveAppLock(on);
+    } catch (error) {
+      console.error("save app lock", error);
+      return t(lang, "appLockFailed");
+    }
+    track("setting_changed", { setting: "app_lock", value: on ? "on" : "off" });
+    return null;
+  }
+
+  /** Settings screens keep their own draft; the lock switch is saved separately, so keep it. */
+  function withAppLock(next: AppSettings): AppSettings {
+    return { ...next, appLockEnabled: settings.appLockEnabled };
+  }
+
+  // Launch: read the setting, then lock or open.
+  $effect(() => {
+    if (lockState !== "checking") return;
+    void (async () => {
+      try {
+        const s = await api.getSettings();
+        settings = s;
+        setRecentsHidden(s.appLockEnabled);
+        if (s.appLockEnabled) {
+          lockState = "locked";
+          void unlockApp();
+          return;
+        }
+      } catch (error) {
+        console.error("app lock: could not read settings", error);
+      }
+      lockState = "open";
+    })();
+  });
+
+  // Background and back: cover when leaving; ask again only after more than a minute away.
+  $effect(() => {
+    const onLockVisibility = () => {
+      // Android's prompt can pause the app; that is not "leaving".
+      if (!settings.appLockEnabled || unlocking || lockState === "checking") return;
+      if (document.visibilityState === "hidden") {
+        if (lockState === "open") {
+          hiddenAt = Date.now();
+          lockState = "away";
+        }
+        return;
+      }
+      if (lockState === "locked") {
+        // Left while the lock card was up: offer the prompt again on the way back.
+        void unlockApp();
+        return;
+      }
+      if (lockState !== "away") return;
+      if (lockOnReturn(settings.appLockEnabled, hiddenAt, Date.now())) {
+        lockState = "locked";
+        void unlockApp();
+      } else {
+        hiddenAt = null;
+        lockState = "open";
+      }
+    };
+    document.addEventListener("visibilitychange", onLockVisibility);
+    return () => document.removeEventListener("visibilitychange", onLockVisibility);
+  });
+
+  // ---- Daily reminder (#80) ----
+  // Keep Android's copy (DailyReminder.kt) in step with the saved setting and the language.
+  $effect(() => {
+    if (!settingsReady) return;
+    const c = reminderConfig(settings);
+    window.MooJotAndroid?.configureReminder?.(c.enabled, c.hour, c.minute, c.title, c.body);
+  });
+
+  /** Something was jotted or scanned today: the reminder stays quiet until tomorrow. */
+  function noteJotted() {
+    window.MooJotAndroid?.markJotted?.(localDateKey(new Date()));
+  }
+
+  /** Android 13+ asks for notification permission; older versions already allow it. */
+  function ensureNotificationPermission(): Promise<boolean> {
+    const bridge = window.MooJotAndroid;
+    if (!bridge?.requestNotificationPermission) return Promise.resolve(false);
+    if (bridge.hasNotificationPermission?.()) return Promise.resolve(true);
+    return new Promise((resolve) => {
+      const onAnswer = (ev: Event) => {
+        window.removeEventListener("moojot:notification-permission", onAnswer);
+        resolve(Boolean((ev as CustomEvent<{ granted?: boolean }>).detail?.granted));
+      };
+      window.addEventListener("moojot:notification-permission", onAnswer);
+      bridge.requestNotificationPermission?.();
+    });
+  }
+
+  /** The My Moo reminder switch and time. Returns why it couldn't change, or null. */
+  async function changeReminder(enabled: boolean, time: string): Promise<string | null> {
+    if (enabled && !(await ensureNotificationPermission())) return t(lang, "reminderNoPermission");
+    try {
+      // On top of the stored settings, never on top of a stale copy.
+      const current = await api.getSettings();
+      await api.updateSettings({ ...current, reminderEnabled: enabled, reminderTime: time });
+    } catch (error) {
+      console.error("save daily reminder", error);
+      return t(lang, "error");
+    }
+    if (enabled !== settings.reminderEnabled) {
+      track("setting_changed", { setting: "daily_reminder", value: enabled ? "on" : "off" });
+    }
+    settings = { ...settings, reminderEnabled: enabled, reminderTime: time };
+    return null;
+  }
+
+  /** Settings screens keep their own draft; the reminder is saved separately, so keep it. */
+  function withReminder(next: AppSettings): AppSettings {
+    return { ...next, reminderEnabled: settings.reminderEnabled, reminderTime: settings.reminderTime };
+  }
+
+  // ---- Home-screen widget (#81) ----
+  // Re-sends this period's numbers whenever Home data, the language, the theme or the lock change.
+  // The widget always shows this period with no account filter, so another view fetches it.
+  $effect(() => {
+    if (!settingsReady) return;
+    const options = {
+      lang,
+      theme,
+      hideAmounts: settings.appLockEnabled,
+      baht: (satang: number) => `฿${formatBaht(satang)}`,
+    };
+    const current = periodOffset === 0 && filterAccountIds.length === 0 ? home : null;
+    void syncWidget(current, options);
+  });
+
+  async function syncWidget(current: HomePayload | null, options: Parameters<typeof widgetSnapshot>[2]) {
+    const bridge = window.MooJotAndroid;
+    if (!bridge?.updateWidget) return;
+    try {
+      const data = current ?? (await api.getHomeData(0));
+      bridge.updateWidget(JSON.stringify(widgetSnapshot(data, localDateKey(new Date()), options)));
+    } catch (error) {
+      console.error("widget sync", error);
+    }
+  }
+
+  // A widget button opened the app: "+ Jot" opens a new record, "Scan" scans slips. It waits
+  // until the app is open (after the lock, if it is on) and the welcome tour is closed.
+  let pendingWidgetAction = $state<WidgetAction | null>(null);
+  $effect(() => {
+    const take = () => {
+      const action = parseWidgetAction(window.MooJotAndroid?.takeWidgetAction?.());
+      if (action) pendingWidgetAction = action;
+    };
+    take();
+    window.addEventListener("moojot:widget-action", take);
+    return () => window.removeEventListener("moojot:widget-action", take);
+  });
+  $effect(() => {
+    if (lockState !== "open" || showOnboarding || !pendingWidgetAction) return;
+    const action = pendingWidgetAction;
+    pendingWidgetAction = null;
+    untrack(() => {
+      activeTab = "home";
+      if (action === "add") {
+        editingRecord = null;
+        recordLightboxOpen = false;
+        showFabMenu = false;
+        showRecordSheet = true;
+      } else {
+        void triggerSlipScan();
+      }
+    });
+  });
+
   // Post the recurring records that have come due, so Home shows them.
   async function postDueRecurring(): Promise<number> {
     try {
@@ -446,6 +681,7 @@
       api.getTags(),
     ]);
     settings = s;
+    settingsReady = true;
     accounts = accs;
     categories = cats;
     tags = tgs;
@@ -469,6 +705,7 @@
   async function handleCandidates(candidates: SlipScanCandidate[], trigger: "photo" | "shared") {
     try {
       const report: SlipScanReport = await api.importSlipCandidates(candidates);
+      noteJotted();
       track("slip_scan_finished", { trigger, imported: report.imported, duplicates: report.duplicates });
       scanBanner =
         lang === "th"
@@ -594,6 +831,8 @@
   // Wire Android hardware/gesture Back button handler
   $effect(() => {
     window.__moojotHandleBack = () => {
+      // The lock card covers everything: Back only leaves the app, never moves the screen under it.
+      if (lockState !== "open") return `root:${lang}`;
       // The tour covers everything else, so Back belongs to it first.
       if (showOnboarding) {
         onboardingBack?.();
@@ -730,6 +969,7 @@
             }
           }
           if (detail?.done) {
+            noteJotted();
             track("slip_scan_finished", { trigger: "album", ...scanTotals });
             const covered = monthKeysFromSince(scanSinceSec);
             if (covered.length > 0) {
@@ -798,6 +1038,7 @@
 
   async function handleSaveRecord(input: RecordInput) {
     await api.saveRecord(input);
+    if (!input.id) noteJotted();
     track("record_saved", { kind: input.kind, is_new: !input.id, recurring: Boolean(input.recurringFrequency) });
     showRecordSheet = false;
     recordLightboxOpen = false;
@@ -884,6 +1125,7 @@
       pdfPrompt = null;
       pdfPassword = "";
       track("statement_imported", { imported: report.imported, duplicates: report.duplicates });
+      if (report.imported > 0) noteJotted();
       await refreshPeriodData();
       activeTab = "home";
       scanBanner =
@@ -1371,6 +1613,14 @@
       {theme}
       {hand}
       {shareStats}
+      appLockAvailable={hasAndroidBridge()}
+      appLockEnabled={settings.appLockEnabled}
+      onChangeAppLock={changeAppLock}
+      reminderAvailable={hasAndroidBridge()}
+      reminderEnabled={settings.reminderEnabled}
+      reminderTime={settings.reminderTime}
+      notificationsBlocked={settings.reminderEnabled && window.MooJotAndroid?.hasNotificationPermission?.() === false}
+      onChangeReminder={changeReminder}
       bind:subPage={settingsSubPage}
       onReplayOnboarding={() => openOnboarding(false)}
       onChangeTheme={(nextTheme) => {
@@ -1382,7 +1632,8 @@
         hand = nextHand;
       }}
       onChangeShareStats={(on) => changeShareStats(on, "settings")}
-      onSaveSettings={async (next) => {
+      onSaveSettings={async (draft) => {
+        const next = withReminder(withAppLock(draft));
         await api.updateSettings(next);
         if (next.language !== settings.language) {
           track("setting_changed", { setting: "language", value: next.language });
@@ -1819,11 +2070,19 @@
     bind:backHandler={onboardingBack}
     onChangeTheme={(next) => (theme = next)}
     onChangeHand={(next) => (hand = next)}
-    onSaveSettings={async (next) => {
+    onSaveSettings={async (draft) => {
+      const next = withReminder(withAppLock(draft));
       await api.updateSettings(next);
       settings = next;
       await refreshPeriodData();
     }}
     onFinish={closeOnboarding}
   />
+{/if}
+
+{#if lockState === "checking"}
+  <!-- Reading the lock setting: a plain cover, so nothing shows before a possible prompt. -->
+  <div class="fixed inset-0 z-[200] bg-[var(--bg-canvas)]" aria-hidden="true"></div>
+{:else if lockState !== "open"}
+  <LockScreen {lang} busy={unlocking} message={lockMessage} onUnlock={unlockApp} />
 {/if}
