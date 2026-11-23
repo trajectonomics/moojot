@@ -134,7 +134,16 @@ export const scenes = [
   // On Android My Moo also has the app lock switch (#79).
   { name: "settings-app-lock", fixture: { android: "granted" }, run: openSettings },
   // On Android My Moo also has the daily reminder (#80), here switched on.
-  { name: "settings-reminder", fixture: { android: "granted", reminder: true }, run: openSettings },
+  {
+    name: "settings-reminder",
+    fixture: { android: "granted", reminder: true },
+    run: async (page) => {
+      await openSettings(page);
+      // Scroll to the bottom so the reminder's time picker is in view.
+      await page.evaluate("window.scrollTo(0, document.body.scrollHeight)");
+      await page.waitFor('input[type="time"]');
+    },
+  },
   { name: "settings-dark", fixture: DARK, run: openSettings },
   {
     name: "settings-appearance",
