@@ -235,7 +235,7 @@ html[data-release="soon"] .js-download { opacity: 0.92; }
 .lane ul { margin: 12px 0 0; padding-left: 20px; color: var(--text-2); display: grid; gap: 6px; }
 .lane-soon { border: 2px solid var(--brand); }
 .lane-note { margin: 6px 0 0; font-size: 15px; color: var(--muted); }
-.roadmap-ask { margin-top: 20px; font-weight: 700; }
+.roadmap-ask { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 20px; font-weight: 700; }
 .roadmap-ask a { display: inline-flex; align-items: center; gap: 6px; }
 .roadmap-ask .icon { width: 16px; height: 16px; }
 

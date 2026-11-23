@@ -15,6 +15,7 @@
     X,
     Repeat,
     PenLine,
+    Mail,
   } from "@lucide/svelte";
   import { untrack } from "svelte";
   import CategoryIcon from "$lib/components/CategoryIcon.svelte";
@@ -51,6 +52,13 @@
   } from "$lib/api";
   import { formatBaht } from "$lib/format";
   import { localDateKey, reminderConfig } from "$lib/reminder";
+  import {
+    loadFeedbackCard,
+    saveFeedbackCard,
+    shouldShowFeedbackCard,
+    type FeedbackCardState,
+  } from "$lib/feedback";
+  import { openFeedbackMail } from "$lib/feedbackClient";
   import { parseWidgetAction, widgetSnapshot, type WidgetAction } from "$lib/widget";
   import { monthPickerOffsets } from "$lib/monthPicker";
   import {
@@ -98,6 +106,32 @@
     setAnalyticsEnabled(on, where);
   }
   let onboardingBack = $state<(() => void) | null>(null);
+
+  // One-time "send feedback" card under the hero (#90). It shows after 2 successful slip scans
+  // or on the 3rd day of use, never during onboarding, and never again once used or closed.
+  let feedbackCard = $state<FeedbackCardState>(loadFeedbackCard(localDateKey(new Date())));
+  const showFeedbackCard = $derived(
+    !showOnboarding && shouldShowFeedbackCard(feedbackCard, localDateKey(new Date())),
+  );
+
+  function updateFeedbackCard(patch: Partial<FeedbackCardState>) {
+    feedbackCard = { ...feedbackCard, ...patch };
+    saveFeedbackCard(feedbackCard);
+  }
+
+  /** A gallery scan or a picked slip photo that finished without an error. PDF imports don't count. */
+  function noteSuccessfulScan() {
+    updateFeedbackCard({ successfulScans: feedbackCard.successfulScans + 1 });
+  }
+
+  async function sendFeedbackFromCard() {
+    updateFeedbackCard({ used: true });
+    const result = await openFeedbackMail(lang);
+    if (result === "copied") {
+      scanBanner = t(lang, "feedbackNoEmailApp");
+      setTimeout(() => (scanBanner = null), 4500);
+    }
+  }
   let theme = $state<AppTheme>(loadSavedTheme());
   let hand = $state<HandMode>(loadSavedHand());
   let activeTab = $state<"home" | "summary" | "settings">("home");
@@ -177,6 +211,7 @@
   } | null>(null);
   let deleteChain: Promise<void> = Promise.resolve();
   let scanChain: Promise<void> = Promise.resolve();
+  let scanChainFailed = false;
 
   // Interactive Mascot state
   let mascotMood = $state<MascotMood>("idle");
@@ -706,6 +741,7 @@
     try {
       const report: SlipScanReport = await api.importSlipCandidates(candidates);
       noteJotted();
+      if (trigger === "photo") noteSuccessfulScan();
       track("slip_scan_finished", { trigger, imported: report.imported, duplicates: report.duplicates });
       scanBanner =
         lang === "th"
@@ -783,6 +819,7 @@
     scanStartPrompt = false;
     isScanning = true;
     scanTotals = { imported: 0, duplicates: 0 };
+    scanChainFailed = false;
     scanTrigger = "album";
     track("slip_scan_started", { trigger: "album" });
     scanBanner = lang === "th" ? "กำลังสแกนสลิปใหม่..." : "Scanning new slips...";
@@ -914,6 +951,7 @@
     const onErr = (ev: Event) => {
       const detail = (ev as CustomEvent<{ error: string }>).detail;
       track("slip_scan_failed", { trigger: scanTrigger });
+      scanChainFailed = true;
       isScanning = false;
       scanBanner = detail?.error ?? "Scan error";
       setTimeout(() => (scanBanner = null), 3500);
@@ -970,6 +1008,7 @@
           }
           if (detail?.done) {
             noteJotted();
+            if (!scanChainFailed) noteSuccessfulScan();
             track("slip_scan_finished", { trigger: "album", ...scanTotals });
             const covered = monthKeysFromSince(scanSinceSec);
             if (covered.length > 0) {
@@ -984,6 +1023,7 @@
           }
         })
         .catch((error) => {
+          scanChainFailed = true;
           isScanning = false;
           scanBanner = String(error);
         });
@@ -1303,6 +1343,34 @@
           </div>
         </div>
       </div>
+
+      {#if showFeedbackCard}
+        <div
+          class="mx-4 mt-4 flex items-center gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] py-2 pl-3 pr-1 shadow-xs"
+        >
+          <span class="flex size-9 shrink-0 items-center justify-center rounded-2xl bg-[var(--brand-soft)] text-[var(--brand)]">
+            <Mail class="size-4" />
+          </span>
+          <div class="min-w-0 flex-1">
+            <p class="text-xs font-bold leading-snug text-[var(--text-primary)]">{t(lang, "feedbackCardTitle")}</p>
+            <button
+              type="button"
+              onclick={sendFeedbackFromCard}
+              class="mt-1.5 rounded-full bg-[var(--brand)] px-3.5 py-1.5 text-xs font-extrabold text-white active:bg-[var(--brand-deep)]"
+            >
+              {t(lang, "sendFeedback")}
+            </button>
+          </div>
+          <button
+            type="button"
+            onclick={() => updateFeedbackCard({ dismissed: true })}
+            aria-label={t(lang, "feedbackNotNow")}
+            class="flex size-11 shrink-0 items-center justify-center rounded-full text-[var(--text-muted)] active:opacity-75"
+          >
+            <X class="size-4" />
+          </button>
+        </div>
+      {/if}
 
       <div class="overflow-x-clip">
       <div

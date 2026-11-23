@@ -24,9 +24,13 @@
     ChartNoAxesColumn,
     Lock,
     BellRing,
+    Mail,
+    Copy,
   } from "@lucide/svelte";
   import { getVersion } from "@tauri-apps/api/app";
   import { openUrl } from "@tauri-apps/plugin-opener";
+  import { FEEDBACK_EMAIL } from "$lib/feedback";
+  import { copyFeedbackEmail, openFeedbackMail } from "$lib/feedbackClient";
   import CategoryIcon from "./CategoryIcon.svelte";
   import LegalText from "./LegalText.svelte";
   import MooMascot, { type MascotMood } from "./MooMascot.svelte";
@@ -398,6 +402,25 @@
     else subPage = null;
   }
 
+  // Send feedback (#90): the row opens the email app; the copy button covers phones without one.
+  let feedbackNote = $state<string | null>(null);
+  let feedbackNoteTimer: ReturnType<typeof setTimeout> | undefined;
+
+  function showFeedbackNote(text: string) {
+    feedbackNote = text;
+    clearTimeout(feedbackNoteTimer);
+    feedbackNoteTimer = setTimeout(() => (feedbackNote = null), 3500);
+  }
+
+  async function sendFeedback() {
+    const result = await openFeedbackMail(lang);
+    if (result === "copied") showFeedbackNote(t(lang, "feedbackNoEmailApp"));
+  }
+
+  async function copyFeedback() {
+    if (await copyFeedbackEmail()) showFeedbackNote(t(lang, "feedbackCopied"));
+  }
+
   async function openGitHub() {
     try {
       await openUrl(GITHUB_URL);
@@ -460,6 +483,34 @@
 
       <!-- Clean Grouped Settings Navigation Menu -->
       <section class="rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] overflow-hidden divide-y divide-[var(--border-subtle)] shadow-xs">
+        <!-- 0. Send feedback (#90) -->
+        <div class="flex items-center">
+          <button
+            type="button"
+            onclick={sendFeedback}
+            class="min-w-0 flex-1 pl-4 pr-2 py-3.5 flex items-center gap-3 text-left active:opacity-75"
+          >
+            <span class="size-9 rounded-2xl bg-[var(--brand-soft)] text-[var(--brand)] flex items-center justify-center shrink-0">
+              <Mail class="size-4" />
+            </span>
+            <div class="min-w-0">
+              <div class="text-sm font-bold text-[var(--text-primary)]">{t(lang, "sendFeedback")}</div>
+              <div class="text-xs text-[var(--text-muted)] truncate">{FEEDBACK_EMAIL}</div>
+              {#if feedbackNote}
+                <div class="mt-0.5 text-xs font-semibold text-[var(--brand-text)]" role="status">{feedbackNote}</div>
+              {/if}
+            </div>
+          </button>
+          <button
+            type="button"
+            onclick={copyFeedback}
+            aria-label={t(lang, "copyFeedbackEmail")}
+            class="size-11 mr-2 shrink-0 flex items-center justify-center rounded-full text-[var(--text-muted)] active:opacity-75"
+          >
+            <Copy class="size-4" />
+          </button>
+        </div>
+
         <!-- 1. Appearance & Theme -->
         <button
           type="button"
