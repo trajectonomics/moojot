@@ -282,7 +282,94 @@ html[data-release="soon"] .js-download { opacity: 0.92; }
 .consent-actions .btn-primary { border: 2px solid var(--primary-bg); }
 .consent-no { background: var(--card); color: var(--brand-text); border: 2px solid var(--border); }
 
+/* Comparison page (meowjot-alternative.html) ----------------------------------- */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.hero-sub h1 { font-size: clamp(34px, 8.5vw, 56px); }
+.hero-sub .hero-copy { padding-bottom: 8px; }
+@media (min-width: 960px) { .hero-sub .hero-copy { padding-bottom: 64px; } }
+.crumbs { font-size: 14px; color: var(--hero-text-2); }
+.crumbs a { color: inherit; font-weight: 700; }
+
+.compare-wrap { margin-top: 28px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--card); overflow: hidden; }
+.compare { width: 100%; border-collapse: collapse; font-size: 16px; line-height: 1.5; }
+.compare th, .compare td { padding: 14px 16px; text-align: left; vertical-align: top; }
+.compare tbody th { font-weight: 800; }
+.compare td { color: var(--text-2); }
+.compare td.us { color: var(--text); font-weight: 700; }
+/* Phones: each row is a card with the two apps side by side. */
+.compare thead { display: none; }
+.compare tbody tr { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--border); }
+.compare tbody tr:first-child { border-top: 0; }
+.compare tbody th { grid-column: 1 / -1; padding-bottom: 4px; }
+.compare tbody td { padding-top: 4px; }
+.compare tbody td::before { content: attr(data-app); display: block; font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.compare tbody td.us::before { color: var(--brand-text); }
+
+.pick { display: grid; gap: 14px; margin-top: 28px; }
+.pick-card { padding: 22px; border-radius: var(--radius); background: var(--card); border: 1px solid var(--border); }
+.pick-us { border: 2px solid var(--brand); }
+.pick-card h3 { font-size: 20px; font-weight: 800; }
+.pick-card ul { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 10px; color: var(--text-2); }
+.pick-card li { display: flex; gap: 10px; align-items: flex-start; }
+.pick-card .icon { margin-top: 2px; color: var(--ok); }
+
+.shot-title { display: block; }
+.shot-tag { display: inline-block; margin-top: 8px; padding: 3px 10px; border-radius: 999px; background: rgba(24, 24, 27, 0.06); color: var(--muted); font-size: 13px; }
+.pick-card { position: relative; }
+.pick-us h3 { padding-right: 76px; }
+.pick-moo { position: absolute; right: 10px; top: -30px; width: 84px; height: auto; filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.18)); }
+
+/* Side by side: MeowJot (left) and MooJot (right), one topic per row */
+.vs-rows { display: grid; gap: 44px; max-width: 760px; margin: 32px auto 0; }
+.vs-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; align-items: start; }
+.vs-row > h3 { grid-column: 1 / -1; font-size: 21px; font-weight: 800; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+.vs-shot { margin: 0; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.vs-label { align-self: flex-start; padding: 3px 10px; border-radius: 999px; background: rgba(24, 24, 27, 0.07); color: var(--text-2); font-size: 12px; font-weight: 800; letter-spacing: 0.04em; }
+.vs-us .vs-label { background: var(--brand-soft); color: var(--brand-text); }
+.vs-shot .phone { border-radius: 26px; padding: 6px; }
+.vs-shot .phone img { border-radius: 21px; }
+.phone-raw img { aspect-ratio: 540 / 1142; object-fit: cover; object-position: top; }
+.vs-shot figcaption { font-size: 14px; line-height: 1.5; color: var(--text-2); }
+.vs-us figcaption { color: var(--text); font-weight: 700; }
+.vs-free {
+  aspect-ratio: 552 / 1154; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  padding: 16px; border-radius: 26px; text-align: center; color: var(--hero-text);
+  background: linear-gradient(165deg, var(--hero-from), var(--hero-to)); box-shadow: 0 30px 60px -24px rgba(0, 0, 0, 0.5);
+}
+.vs-free img { width: 46%; height: auto; filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.25)); }
+.vs-zero { font-size: clamp(40px, 11vw, 72px); font-weight: 800; line-height: 1; }
+.vs-free p:not(.vs-zero) { font-size: 15px; font-weight: 700; color: var(--hero-text-2); }
+.vs-plans { grid-column: 1 / -1; padding: 20px; border-radius: var(--radius); background: var(--card); border: 1px solid var(--border); }
+.vs-plans h4 { margin: 0; font-size: 18px; font-weight: 800; }
+.vs-plans ul { margin: 12px 0 0; padding-left: 20px; display: grid; gap: 8px; color: var(--text-2); }
+.vs-plans-us { margin-top: 14px; padding: 12px 14px; border-radius: 14px; background: var(--brand-soft); }
+.section .vs-note { margin-top: 24px; }
+.free-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px 16px; max-width: 760px; margin: 28px auto 0; }
+.free-grid .shot { width: auto; }
+.free-grid .phone { border-radius: 26px; padding: 6px; }
+.free-grid .phone img { border-radius: 21px; }
+
+.sources { display: grid; gap: 12px; color: var(--text-2); font-size: 15px; }
+.sources-title { font-size: 22px; font-weight: 800; color: var(--text); }
+.sources ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.section .sources .fineprint { text-align: left; margin-top: 0; }
+
 /* Wider screens ------------------------------------------------------------ */
+@media (min-width: 720px) {
+  .compare thead { display: table-header-group; }
+  .compare thead th { background: var(--card-sub); font-weight: 800; }
+  .compare thead th.us { color: var(--brand-text); }
+  .compare tbody tr { display: table-row; }
+  .compare tbody th { width: 26%; padding-bottom: 14px; }
+  .compare tbody td { padding-top: 14px; width: 37%; }
+  .compare tbody td::before { content: none; }
+  .compare tbody tr, .compare tbody tr:first-child { border-top: 1px solid var(--border); }
+  .compare td.us { background: rgba(255, 77, 148, 0.05); }
+  .pick { grid-template-columns: 1fr 1fr; }
+  .vs-row { gap: 16px 32px; }
+  .free-grid { gap: 36px 32px; }
+  .vs-shot figcaption { font-size: 15px; }
+}
 @media (min-width: 720px) {
   .steps { grid-template-columns: repeat(3, 1fr); }
   .features { grid-template-columns: repeat(2, 1fr); }

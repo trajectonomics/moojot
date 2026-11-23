@@ -7,6 +7,8 @@ The page is plain HTML, CSS and JS with no build step and no dependencies. It's 
 | Path | What it is |
 |---|---|
 | `public/` | The static site: `index.html`, `styles.css`, `boot.js` (sets the language before paint), `app.js` (language switch, release info, animated Moo), `analytics.js` (cookie banner, then PostHog), `_headers`, `404.html`, `img/`, `fonts/` |
+| `public/meowjot-alternative.html` | The MooJot vs MeowJot comparison page, served at `/meowjot-alternative` |
+| `public/robots.txt`, `sitemap.xml`, `llms.txt` | Search and AI-answer engine files. See "Search and AI answers" below |
 | `worker.js` | Worker entry. It only runs for `/download*`, `/go*`, `/api/*` and `/ingest/*` (see `run_worker_first`). |
 | `release.js` | Request router, and the latest GitHub release lookup. It uses the API first and falls back to github.com when Cloudflare's shared IPs are rate limited, then caches the answer for 5 minutes. |
 | `tracking.js` | Source links (`/go/…`, `/download/…`), cookieless counting of clicks and downloads, and the `/ingest` proxy to PostHog |
@@ -91,9 +93,31 @@ The PostHog project key and region are `vars` in `wrangler.jsonc`. The same key 
 - No third-party requests from the browser. PostHog is served from this domain through `/ingest`, so the CSP in `_headers` stays `'self'`.
 - If what is collected changes, update `docs/privacy-policy.md` (sections "Anonymous usage statistics" and "Website") in the same PR.
 
+## Search and AI answers
+
+- Every indexable page has a `<link rel="canonical">`, a description in both languages, Open Graph tags and JSON-LD structured data (`MobileApplication` and `FAQPage` on the home page, `FAQPage` and `BreadcrumbList` on the comparison page). JSON-LD is a data block, not a script, so the CSP doesn't block it.
+- When you add a page, add it to `sitemap.xml` (with `lastmod`) and to `llms.txt`, and give its `<html>` a `data-title-th` and `data-title-en`: `app.js` swaps the tab title when the language changes.
+- When FAQ answers change, change the matching JSON-LD answer in the same file.
+- `robots.txt` lets every crawler in, including AI crawlers, and keeps them off `/download`, `/go/`, `/api/` and `/ingest/`.
+- `llms.txt` is a plain summary for AI assistants. Keep its facts in step with the page.
+
+## Comparison page
+
+`meowjot-alternative.html` compares MooJot with MeowJot (เหมียวจด). Comparing with a named product needs extra care:
+
+- Every claim about MeowJot comes from MeowJot's own public pages or from its app, listed under "Sources" on the page with the date they were checked. Never guess, and leave out what you can't check.
+- The FAQPage JSON-LD on the comparison page must list exactly the questions and answers visible in its FAQ.
+- Update the "checked" date in the hero, the table intro, the sources and `article:modified_time` whenever you re-check.
+- Keep the "MeowJot may suit you better if…" list honest: it's what makes the page believable.
+- Keep the non-affiliation line and the trademark note.
+- MeowJot screenshots (`img/vs-meowjot-*.webp`) are our own captures of the real app, taken on the owner's phone and dated on the page. Blur every amount, name, phone number, birthday and merchant in both apps before an image enters the repo, keep the raw captures out of the repo, and look at the result at full size. Credit the app's design to KASIKORN X under the screenshots. Never copy images from meowjot.com or the app stores.
+
 ## Assets
 
 - `img/moo-wave.webp` is `static/mascot/mascot-idle.webp`. `img/moo-still.webp` is its first frame, used until the page has loaded.
 - `img/icon-*.png` and `img/apple-touch-icon.png` are resized from `static/app-icon.png`.
 - `img/og.jpg` (1200×630) is the link preview card.
+- `img/vs-*.webp` (540×1142) are the side-by-side captures on the comparison page, taken from a Nothing Phone (Android 16) on 24 Nov 2026 with the status bar cropped off and personal data blurred.
+- `img/shot-private-{en,th}.webp` and `img/shot-scan-{en,th}.webp` are intro screens 2 and 3 in the pink & white theme. The Thai ones (540×1142) were captured from the app; the English ones (412×891) are cropped from `docs/onboarding/pink-en-*`. The comparison page shows the one that matches the page language.
+- Every MooJot screenshot on the site uses the pink & white theme, so the site looks like one app.
 - `fonts/` holds Noto Sans Thai from `@fontsource/noto-sans-thai` (SIL OFL 1.1, see `fonts/OFL.txt`).

@@ -38,7 +38,7 @@ test("the app is free and says only what the page says", () => {
 
 test("every FAQ question and answer in the JSON-LD is on the page in the same words", () => {
 	const faq = graph().find((node) => node["@type"] === "FAQPage")
-	assert.equal(faq.mainEntity.length, 10)
+	assert.equal(faq.mainEntity.length, 12)
 	for (const question of faq.mainEntity) {
 		assert.ok(visible.includes(squash(question.name)), `question on the page: ${question.name}`)
 		for (const sentence of question.acceptedAnswer.text.split(". ")) {
@@ -56,9 +56,11 @@ test("robots.txt names the sitemap and keeps the worker's redirects out of the i
 	assert.doesNotMatch(robots, /^Disallow: \/\s*$/m)
 })
 
-test("the sitemap lists the one page, and llms.txt links it", () => {
-	assert.match(read("sitemap.xml"), new RegExp(`<loc>${ORIGIN}</loc>`))
-	assert.ok(read("llms.txt").includes(`(${ORIGIN})`))
+test("the sitemap lists both pages, and llms.txt links them", () => {
+	for (const page of [ORIGIN, `${ORIGIN}meowjot-alternative`]) {
+		assert.match(read("sitemap.xml"), new RegExp(`<loc>${page}</loc>`))
+		assert.ok(read("llms.txt").includes(`(${page})`))
+	}
 })
 
 test("the IndexNow key file holds its own name and nothing else", () => {
