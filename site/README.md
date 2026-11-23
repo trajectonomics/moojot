@@ -7,6 +7,8 @@ The page is plain HTML, CSS and JS with no build step and no dependencies. It's 
 | Path | What it is |
 |---|---|
 | `public/` | The static site: `index.html`, `styles.css`, `boot.js` (sets the language before paint), `app.js` (language switch, release info, animated Moo), `analytics.js` (cookie banner, then PostHog), `_headers`, `404.html`, `img/`, `fonts/` |
+| `public/meowjot-alternative.html` | The MooJot vs MeowJot comparison page, served at `/meowjot-alternative` |
+| `public/robots.txt`, `sitemap.xml`, `llms.txt` | Search and AI-answer engine files. See "Search and AI answers" below |
 | `worker.js` | Worker entry. It only runs for `/download*`, `/go*`, `/api/*` and `/ingest/*` (see `run_worker_first`). |
 | `release.js` | Request router, and the latest GitHub release lookup. It uses the API first and falls back to github.com when Cloudflare's shared IPs are rate limited, then caches the answer for 5 minutes. |
 | `tracking.js` | Source links (`/go/…`, `/download/…`), cookieless counting of clicks and downloads, and the `/ingest` proxy to PostHog |
@@ -90,6 +92,23 @@ The PostHog project key and region are `vars` in `wrangler.jsonc`. The same key 
 - No cookies and no analytics scripts until the visitor taps "Allow" on the cookie banner. "No thanks" must stay as easy as "Allow". The Worker's cookieless counts send only the labels listed in `tracking.js`: never an IP address, a user agent, or a persistent ID.
 - No third-party requests from the browser. PostHog is served from this domain through `/ingest`, so the CSP in `_headers` stays `'self'`.
 - If what is collected changes, update `docs/privacy-policy.md` (sections "Anonymous usage statistics" and "Website") in the same PR.
+
+## Search and AI answers
+
+- Every indexable page has a `<link rel="canonical">`, a description in both languages, Open Graph tags and JSON-LD structured data (`MobileApplication` and `FAQPage` on the home page, `FAQPage` and `BreadcrumbList` on the comparison page). JSON-LD is a data block, not a script, so the CSP doesn't block it.
+- When you add a page, add it to `sitemap.xml` (with `lastmod`) and to `llms.txt`, and give its `<html>` a `data-title-th` and `data-title-en`: `app.js` swaps the tab title when the language changes.
+- When FAQ answers change, change the matching JSON-LD answer in the same file.
+- `robots.txt` lets every crawler in, including AI crawlers, and keeps them off `/download`, `/go/`, `/api/` and `/ingest/`.
+- `llms.txt` is a plain summary for AI assistants. Keep its facts in step with the page.
+
+## Comparison page
+
+`meowjot-alternative.html` compares MooJot with MeowJot (เหมียวจด). Comparing with a named product needs extra care:
+
+- Every claim about MeowJot comes from MeowJot's own public pages, listed under "Sources" on the page, with the date they were checked. Never guess, and leave out what you can't check (for example, where MeowJot stores data).
+- Update the "checked" date in the hero, the table intro, the sources and `article:modified_time` whenever you re-check.
+- Keep the "MeowJot may suit you better if…" list honest: it's what makes the page believable.
+- Keep the non-affiliation line and the trademark note.
 
 ## Assets
 

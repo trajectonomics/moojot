@@ -13,9 +13,9 @@
     if (save) {
       try { localStorage.setItem("moojot_site_lang", lang); } catch (e) {}
     }
-    document.title = lang === "en"
-      ? "MooJot · You pay, Moo jots it down · Free Thai expense tracker"
-      : "MooJot · โอนปุ๊บ มูจดให้ปั๊บ · แอปจดรายรับรายจ่ายฟรี";
+    // Each page names its own title per language on <html data-title-th / data-title-en>.
+    var title = root.getAttribute("data-title-" + lang);
+    if (title) document.title = title;
     if (lastRelease !== undefined) renderRelease(lastRelease);
   }
   document.addEventListener("click", function (event) {
