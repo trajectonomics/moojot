@@ -46,6 +46,7 @@
       <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></symbol>
       <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
       <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+      <symbol id="i-rocket" viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></symbol>
       <symbol id="i-flag" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></symbol>
       <symbol id="i-play" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></symbol>
       <symbol id="i-arrow-down" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></symbol>
@@ -323,7 +324,7 @@
 
         <div class="roadmap">
           <div class="lane lane-done">
-            <h3><svg class="icon"><use href="#i-check"/></svg><span lang="th">ทำเสร็จแล้ว</span><span lang="en">Built</span></h3>
+            <h3><svg class="icon"><use href="#i-check"/></svg><span lang="th">ปล่อยแล้ว</span><span lang="en">Released</span></h3>
             <ul>
               <li><span lang="th">อ่านสลิป 20 แอปธนาคารและวอลเล็ต</span><span lang="en">Slip reading for 20 banks and wallets</span></li>
               <li><span lang="th">แยกหมวดอัตโนมัติและจำสิ่งที่คุณแก้</span><span lang="en">Auto categories that learn from your fixes</span></li>
@@ -331,6 +332,15 @@
               <li><span lang="th">นำเข้า e-Statement บัตรเครดิต</span><span lang="en">Credit card e-statement import</span></li>
               <li><a href="https://github.com/trajectonomics/moojot/issues/11"><span lang="th">หน้าแนะนำการใช้ครั้งแรก</span><span lang="en">First-run setup guide</span></a></li>
               <li><a href="https://github.com/trajectonomics/moojot/issues/34"><span lang="th">ปล่อยไฟล์ให้ดาวน์โหลดเวอร์ชันแรก</span><span lang="en">First public download</span></a></li>
+            </ul>
+          </div>
+          <div class="lane lane-soon">
+            <h3><svg class="icon"><use href="#i-rocket"/></svg><span lang="th">ใกล้ปล่อยแล้ว</span><span lang="en">Releasing soon</span></h3>
+            <p class="lane-note"><span lang="th">เสร็จแล้ว มาในอัปเดตถัดไป</span><span lang="en">Finished, coming in the next update</span></p>
+            <ul>
+              <li><a href="https://github.com/trajectonomics/moojot/issues/79"><span lang="th">ล็อกแอปด้วยลายนิ้วมือ</span><span lang="en">Fingerprint app lock</span></a></li>
+              <li><a href="https://github.com/trajectonomics/moojot/issues/81"><span lang="th">วิดเจ็ตบนหน้าจอหลัก</span><span lang="en">Home-screen widget</span></a></li>
+              <li><a href="https://github.com/trajectonomics/moojot/issues/80"><span lang="th">แจ้งเตือนให้จดทุกวัน</span><span lang="en">Daily reminder</span></a></li>
             </ul>
           </div>
           <div class="lane lane-now">
@@ -342,9 +352,11 @@
           <div class="lane lane-later">
             <h3><svg class="icon"><use href="#i-flag"/></svg><span lang="th">ในแผน</span><span lang="en">Planned</span></h3>
             <ul>
-              <li><span lang="th">ล็อกแอปด้วยลายนิ้วมือ</span><span lang="en">Fingerprint app lock</span></li>
-              <li><span lang="th">วิดเจ็ตบนหน้าจอหลัก</span><span lang="en">Home-screen widget</span></li>
-              <li><span lang="th">แจ้งเตือนให้จดทุกวัน</span><span lang="en">Daily reminder</span></li>
+              <li><a href="https://github.com/trajectonomics/moojot/issues/82"><span lang="th">สรุปเดือนที่ผ่านมากับมู</span><span lang="en">Moo's monthly recap</span></a></li>
+              <li><a href="https://github.com/trajectonomics/moojot/issues/83"><span lang="th">สรุปทั้งปีกับมู</span><span lang="en">Year-end recap</span></a></li>
+              <li><a href="https://github.com/trajectonomics/moojot/issues/84"><span lang="th">เตือนเมื่องบใกล้หมด</span><span lang="en">Budget alerts</span></a></li>
+              <li><a href="https://github.com/trajectonomics/moojot/issues/85"><span lang="th">สรุปรายไตรมาสและรายปี</span><span lang="en">Quarterly and yearly views</span></a></li>
+              <li><a href="https://github.com/trajectonomics/moojot/issues/86"><span lang="th">ไอคอนหมวดหมู่เพิ่มอีกเยอะ</span><span lang="en">Many more category icons</span></a></li>
             </ul>
           </div>
         </div>

@@ -86,7 +86,7 @@ The PostHog project key and region are `vars` in `wrangler.jsonc`. The same key 
 - Every piece of copy exists in Thai and English as sibling elements marked `lang="th"` and `lang="en"`. CSS hides whichever language isn't active, so add both when you change text.
 - Only claim what the app actually does. Check `docs/prd/PRD.md` and `docs/privacy-policy.md`.
 - Screenshots in `img/shot-*.webp` were taken from the real Svelte UI using invented sample data. Never use a real ledger.
-- The roadmap section links to GitHub issues. Update it when those issues close.
+- The roadmap section links to GitHub issues. A feature moves to "Releasing soon" once its PR is done, and to "Released" when a release ships it.
 - No cookies and no analytics scripts until the visitor taps "Allow" on the cookie banner. "No thanks" must stay as easy as "Allow". The Worker's cookieless counts send only the labels listed in `tracking.js`: never an IP address, a user agent, or a persistent ID.
 - No third-party requests from the browser. PostHog is served from this domain through `/ingest`, so the CSP in `_headers` stays `'self'`.
 - If what is collected changes, update `docs/privacy-policy.md` (sections "Anonymous usage statistics" and "Website") in the same PR.
