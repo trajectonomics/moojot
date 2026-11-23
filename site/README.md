@@ -115,4 +115,5 @@ The PostHog project key and region are `vars` in `wrangler.jsonc`. The same key 
 - `img/moo-wave.webp` is `static/mascot/mascot-idle.webp`. `img/moo-still.webp` is its first frame, used until the page has loaded.
 - `img/icon-*.png` and `img/apple-touch-icon.png` are resized from `static/app-icon.png`.
 - `img/og.jpg` (1200×630) is the link preview card.
+- `img/shot-private-{en,th}.webp` and `img/shot-scan-{en,th}.webp` are onboarding screens 2 and 3 from `docs/onboarding/` (pink English, black-and-orange Thai), cropped to 412×891 to fit the phone frame. The comparison page shows the one that matches the page language.
 - `fonts/` holds Noto Sans Thai from `@fontsource/noto-sans-thai` (SIL OFL 1.1, see `fonts/OFL.txt`).

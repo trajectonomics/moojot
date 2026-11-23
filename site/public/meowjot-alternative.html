@@ -24,10 +24,11 @@
   <meta property="og:image:height" content="630">
   <meta property="og:locale" content="th_TH">
   <meta property="og:locale:alternate" content="en_US">
-  <meta property="article:modified_time" content="2026-11-23">
+  <meta property="article:modified_time" content="2026-11-24">
   <meta name="twitter:card" content="summary_large_image">
 
   <link rel="preload" href="/fonts/noto-sans-thai-thai-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/img/moo-still.webp" as="image" fetchpriority="high">
   <link rel="stylesheet" href="/styles.css">
   <script src="/boot.js"></script>
   <script src="/app.js" defer></script>
@@ -44,7 +45,8 @@
         "name": "MooJot vs MeowJot (เหมียวจด): a free, open-source alternative",
         "description": "A side-by-side comparison of MooJot and MeowJot, two Thai expense trackers that read bank transfer slips.",
         "inLanguage": ["th", "en"],
-        "dateModified": "2026-11-23",
+        "dateModified": "2026-11-24",
+        "primaryImageOfPage": "https://moojot.trajectonomics.com/img/og.jpg",
         "isPartOf": { "@id": "https://moojot.trajectonomics.com/#website" },
         "about": { "@id": "https://moojot.trajectonomics.com/#app" },
         "breadcrumb": { "@id": "https://moojot.trajectonomics.com/meowjot-alternative#breadcrumb" }
@@ -127,7 +129,8 @@
 
   <main>
     <section class="hero hero-sub" aria-labelledby="hero-title">
-      <div class="wrap narrow">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
         <nav class="crumbs" aria-label="Breadcrumb">
           <a href="/">MooJot</a> <span aria-hidden="true">›</span> <span>MooJot vs MeowJot</span>
         </nav>
@@ -149,6 +152,14 @@
         </div>
         <p class="meta"><span class="js-release-meta"><span lang="th">ไฟล์ APK · Android 7.0 ขึ้นไป (64 บิต)</span><span lang="en">APK file · Android 7.0 or newer, 64-bit</span></span></p>
         <p class="meta"><span lang="th">ข้อมูลเหมียวจดตรวจเมื่อ 23 พ.ย. 2569</span><span lang="en">MeowJot details checked 23 Nov 2026</span></p>
+        </div>
+
+        <div class="hero-art">
+          <div class="phone phone-hero">
+            <img src="/img/shot-budget.webp" width="600" height="1298" alt="MooJot's budget screen: a gauge of what's left this month and how much you can spend per day" fetchpriority="high">
+          </div>
+          <img class="moo-hero js-moo" src="/img/moo-still.webp" data-animated="/img/moo-wave.webp" width="260" height="260" alt="Moo, the MooJot piggy, waving">
+        </div>
       </div>
       <svg class="hero-wave" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true"><path d="M0 64c180-40 360-56 540-36s360 76 540 72 270-44 360-60v80H0z"/></svg>
     </section>
@@ -284,12 +295,66 @@
       </div>
     </section>
 
-    <section class="section" aria-labelledby="fair-title">
+    <section class="section" aria-labelledby="free-title">
+      <div class="wrap">
+        <p class="eyebrow"><span lang="th">ของจริงในแอป</span><span lang="en">Inside MooJot</span></p>
+        <h2 id="free-title" class="section-title"><span lang="th">ทั้งหมดนี้ฟรีใน MooJot</span><span lang="en">All of this is free in MooJot</span></h2>
+        <p class="section-lead" lang="th">หน้าจอจริงจากแอป MooJot ป้ายสีเทาบอกว่าเหมียวจดให้ใช้ในแพ็กเกจไหน</p>
+        <p class="section-lead" lang="en">Real MooJot screens. The grey tag says which MeowJot plan has the same thing.</p>
+      </div>
+      <div class="shots shots-compare" tabindex="0" aria-label="MooJot screenshots">
+        <figure class="shot">
+          <div class="phone">
+            <img lang="th" src="/img/shot-private-th.webp" width="412" height="891" loading="lazy" alt="หน้าแนะนำของ MooJot: เงินของคุณ อยู่กับคุณ ไม่ต้องสมัคร ใช้งานออฟไลน์ได้ ส่งออก CSV หรือ JSON ได้ทุกเมื่อ">
+            <img lang="en" src="/img/shot-private-en.webp" width="412" height="891" loading="lazy" alt="MooJot's setup screen: your money stays with you, no account, works offline, export CSV or JSON any time">
+          </div>
+          <figcaption>
+            <span class="shot-title"><span lang="th">ไม่ต้องสมัคร ใช้ออฟไลน์ได้</span><span lang="en">No account, works offline</span></span>
+            <span class="shot-tag"><span lang="th">เหมียวจด: สมัครด้วยเบอร์มือถือ</span><span lang="en">MeowJot: needs sign-up</span></span>
+          </figcaption>
+        </figure>
+        <figure class="shot">
+          <div class="phone">
+            <img lang="th" src="/img/shot-scan-th.webp" width="412" height="891" loading="lazy" alt="หน้าแนะนำของ MooJot: มีสลิป? เดี๋ยวมูอ่านให้ ด้วย OCR ในเครื่อง">
+            <img lang="en" src="/img/shot-scan-en.webp" width="412" height="891" loading="lazy" alt="MooJot's setup screen: got slips? I'll read them, with on-device OCR">
+          </div>
+          <figcaption>
+            <span class="shot-title"><span lang="th">อ่านสลิปย้อนหลังได้ถึง 1 ปี</span><span lang="en">Reads slips up to a year back</span></span>
+            <span class="shot-tag"><span lang="th">เหมียวจด: 7 ถึง 30 วัน</span><span lang="en">MeowJot: 7 to 30 days</span></span>
+          </figcaption>
+        </figure>
+        <figure class="shot">
+          <div class="phone"><img src="/img/shot-home.webp" width="600" height="1298" loading="lazy" alt="MooJot's home screen: a timeline of the day's expenses, each with a category"></div>
+          <figcaption>
+            <span class="shot-title"><span lang="th">ดูย้อนหลังได้ไม่จำกัด</span><span lang="en">Unlimited history</span></span>
+            <span class="shot-tag"><span lang="th">เหมียวจด: ฟรีแค่ 1 เดือน</span><span lang="en">MeowJot: 1 month on free</span></span>
+          </figcaption>
+        </figure>
+        <figure class="shot">
+          <div class="phone"><img src="/img/shot-summary.webp" width="600" height="1298" loading="lazy" alt="MooJot's summary screen: a donut chart of spending by category"></div>
+          <figcaption>
+            <span class="shot-title"><span lang="th">สรุปตามหมวดหรือแท็ก</span><span lang="en">Summary by category or tag</span></span>
+            <span class="shot-tag"><span lang="th">เหมียวจด: แท็กใน Silver ขึ้นไป</span><span lang="en">MeowJot: tags on Silver+</span></span>
+          </figcaption>
+        </figure>
+        <figure class="shot">
+          <div class="phone"><img src="/img/shot-budget.webp" width="600" height="1298" loading="lazy" alt="MooJot's budget screen: a gauge showing how much is left and how much you can spend per day"></div>
+          <figcaption>
+            <span class="shot-title"><span lang="th">งบที่บอกว่าใช้ได้อีกวันละเท่าไหร่</span><span lang="en">Budgets with a daily allowance</span></span>
+            <span class="shot-tag"><span lang="th">เหมียวจด: Silver ขึ้นไป</span><span lang="en">MeowJot: Silver and up</span></span>
+          </figcaption>
+        </figure>
+      </div>
+      <p class="wrap fineprint"><span lang="th">ข้อมูลในภาพเป็นตัวอย่าง</span><span lang="en">Screenshots use sample data.</span></p>
+    </section>
+
+    <section class="section section-tint" aria-labelledby="fair-title">
       <div class="wrap">
         <p class="eyebrow"><span lang="th">พูดกันตรงๆ</span><span lang="en">To be fair</span></p>
         <h2 id="fair-title" class="section-title"><span lang="th">เลือกแบบไหนดี</span><span lang="en">Which one is for you?</span></h2>
         <div class="pick">
           <div class="pick-card pick-us">
+            <img class="pick-moo" src="/img/moo-still.webp" width="96" height="96" loading="lazy" alt="">
             <h3><span lang="th">เลือก MooJot ถ้า…</span><span lang="en">Pick MooJot if…</span></h3>
             <ul>
               <li><svg class="icon"><use href="#i-check"/></svg><span lang="th">อยากได้งบ แท็ก บัตรเครดิต และ CSV โดยไม่ต้องจ่ายรายปี</span><span lang="en">you want budgets, tags, credit cards and CSV without a yearly fee</span></li>
@@ -312,7 +377,7 @@
       </div>
     </section>
 
-    <section class="section section-tint" aria-labelledby="faq-title">
+    <section class="section" aria-labelledby="faq-title">
       <div class="wrap narrow">
         <p class="eyebrow"><span lang="th">คำถาม</span><span lang="en">FAQ</span></p>
         <h2 id="faq-title" class="section-title"><span lang="th">คำถามที่พบบ่อย</span><span lang="en">Questions</span></h2>
@@ -346,7 +411,7 @@
       </div>
     </section>
 
-    <section class="section" aria-labelledby="sources-title">
+    <section class="section section-tint" aria-labelledby="sources-title">
       <div class="wrap narrow sources">
         <h2 id="sources-title" class="sources-title"><span lang="th">แหล่งที่มา</span><span lang="en">Sources</span></h2>
         <p lang="th">ข้อมูลเหมียวจดอ่านจากหน้าเว็บทางการเมื่อ 23 พ.ย. 2569 ราคาเป็นราคารายปีตามหน้าแพ็กเกจ เจอข้อมูลไม่ตรงหรือเปลี่ยนไปแล้ว <a href="https://github.com/trajectonomics/moojot/issues/new/choose">แจ้งเราบน GitHub</a> แล้วเราจะแก้ให้</p>
