@@ -229,10 +229,12 @@ html[data-release="soon"] .js-download { opacity: 0.92; }
 .lane { padding: 22px; border-radius: var(--radius); background: var(--card); border: 1px solid var(--border); }
 .lane h3 { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 800; }
 .lane-done h3 { color: var(--ok); }
+.lane-soon h3 { color: var(--brand-text); }
 .lane-now h3 { color: var(--now); }
 .lane-later h3 { color: var(--muted); }
 .lane ul { margin: 12px 0 0; padding-left: 20px; color: var(--text-2); display: grid; gap: 6px; }
-.lane-now { border: 2px solid var(--brand); }
+.lane-soon { border: 2px solid var(--brand); }
+.lane-note { margin: 6px 0 0; font-size: 15px; color: var(--muted); }
 .roadmap-ask { margin-top: 20px; font-weight: 700; }
 .roadmap-ask a { display: inline-flex; align-items: center; gap: 6px; }
 .roadmap-ask .icon { width: 16px; height: 16px; }
@@ -285,10 +287,11 @@ html[data-release="soon"] .js-download { opacity: 0.92; }
   .steps { grid-template-columns: repeat(3, 1fr); }
   .features { grid-template-columns: repeat(2, 1fr); }
   .privacy-list { grid-template-columns: repeat(2, 1fr); gap: 24px 32px; }
-  .roadmap { grid-template-columns: repeat(3, 1fr); }
+  .roadmap { grid-template-columns: repeat(2, 1fr); }
   .install-extras { grid-template-columns: 1fr 1fr; }
 }
 @media (min-width: 960px) {
+  .roadmap { grid-template-columns: repeat(4, 1fr); }
   .hero { padding-top: 56px; }
   .hero-grid { grid-template-columns: 1.1fr 0.9fr; align-items: center; }
   .hero-art { width: 340px; }
