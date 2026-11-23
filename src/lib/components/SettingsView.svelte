@@ -26,6 +26,7 @@
     BellRing,
     Mail,
     Copy,
+    Gift,
   } from "@lucide/svelte";
   import { getVersion } from "@tauri-apps/api/app";
   import { openUrl } from "@tauri-apps/plugin-opener";
@@ -38,6 +39,8 @@
   import privacyMarkdown from "../../../docs/privacy-policy.md?raw";
   import termsMarkdownTh from "../../../docs/terms-of-service.th.md?raw";
   import privacyMarkdownTh from "../../../docs/privacy-policy.th.md?raw";
+  import WhatsNewItems from "./WhatsNewItems.svelte";
+  import { CHANGELOG } from "$lib/whatsNew";
   import { t } from "$lib/i18n";
   import type { AppTheme, HandMode } from "$lib/theme";
   import type { Account, AppSettings, Category, Tag } from "$lib/types";
@@ -49,6 +52,7 @@
     | "categories"
     | "calendar"
     | "data"
+    | "whatsnew"
     | "about"
     | "terms"
     | "privacy"
@@ -74,6 +78,8 @@
     reminderTime = "20:00",
     notificationsBlocked = false,
     onChangeReminder,
+    whatsNewUnseen = false,
+    onWhatsNewSeen,
     subPage = $bindable<SettingsSubPage>(null),
     onChangeTheme,
     onChangeHand,
@@ -119,6 +125,10 @@
     notificationsBlocked?: boolean;
     /** Returns why the reminder couldn't change, or null when it did. */
     onChangeReminder?: (enabled: boolean, time: string) => Promise<string | null>;
+    /** The installed version has release notes the person hasn't opened yet (#104): shows a dot. */
+    whatsNewUnseen?: boolean;
+    /** Called when the "What's new" page opens, so the app records the version as seen. */
+    onWhatsNewSeen?: () => void;
     subPage?: SettingsSubPage;
     onChangeTheme: (next: AppTheme) => void;
     onChangeHand: (next: HandMode) => void;
@@ -372,8 +382,14 @@
     if (subPage === "licenses") void untrack(loadNotices);
   });
 
+  $effect(() => {
+    if (subPage === "whatsnew") untrack(() => onWhatsNewSeen?.());
+  });
+
   const subPageTitle = $derived.by(() => {
     switch (subPage) {
+      case "whatsnew":
+        return t(lang, "whatsNew");
       case "appearance":
         return lang === "th" ? "ธีมและภาษา" : "Appearance & Theme";
       case "slips":
@@ -510,6 +526,31 @@
             <Copy class="size-4" />
           </button>
         </div>
+
+        <!-- 0b. What's new (#104) -->
+        <button
+          type="button"
+          onclick={() => (subPage = "whatsnew")}
+          class="w-full px-4 py-3.5 flex items-center justify-between gap-3 text-left active:opacity-75"
+        >
+          <div class="flex items-center gap-3 min-w-0">
+            <span class="relative size-9 rounded-2xl bg-[var(--brand-soft)] text-[var(--brand)] flex items-center justify-center shrink-0">
+              <Gift class="size-4" />
+              {#if whatsNewUnseen}
+                <span
+                  role="img"
+                  aria-label={t(lang, "whatsNewNewDot")}
+                  class="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-[var(--brand)] ring-2 ring-[var(--bg-card)]"
+                ></span>
+              {/if}
+            </span>
+            <div class="min-w-0">
+              <div class="text-sm font-bold text-[var(--text-primary)]">{t(lang, "whatsNew")}</div>
+              <div class="text-xs text-[var(--text-muted)] truncate">{t(lang, "whatsNewHint")}</div>
+            </div>
+          </div>
+          <ChevronRight class="size-4 text-[var(--text-muted)] shrink-0" />
+        </button>
 
         <!-- 1. Appearance & Theme -->
         <button
@@ -676,7 +717,10 @@
 
         {#if appLockAvailable}
           <!-- 7b. App lock (opt-in, #79) -->
-          <label class="w-full px-4 py-3.5 flex items-center justify-between gap-3 text-left">
+          <label
+            id="settings-row-app-lock"
+            class="w-full px-4 py-3.5 flex items-center justify-between gap-3 text-left"
+          >
             <div class="flex items-center gap-3 min-w-0">
               <span class="size-9 rounded-2xl bg-[var(--brand-soft)] text-[var(--brand)] flex items-center justify-center shrink-0">
                 <Lock class="size-4" />
@@ -701,7 +745,7 @@
 
         {#if reminderAvailable}
           <!-- 7c. Daily reminder (opt-in, #80) -->
-          <div class="w-full px-4 py-3.5 space-y-3">
+          <div id="settings-row-reminder" class="w-full px-4 py-3.5 space-y-3">
             <label class="flex items-center justify-between gap-3 text-left">
               <div class="flex items-center gap-3 min-w-0">
                 <span class="size-9 rounded-2xl bg-[var(--brand-soft)] text-[var(--brand)] flex items-center justify-center shrink-0">
@@ -806,7 +850,11 @@
     </header>
 
     <div class="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pt-4 pb-28">
-      {#if subPage === "appearance"}
+      {#if subPage === "whatsnew"}
+        <section class="rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-4 shadow-xs">
+          <WhatsNewItems releases={CHANGELOG} {lang} showVersions />
+        </section>
+      {:else if subPage === "appearance"}
         <!-- Theme Picker -->
         <section class="rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-4 space-y-3 shadow-xs">
           <h3 class="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
