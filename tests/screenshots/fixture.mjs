@@ -337,6 +337,8 @@ function pageFixture(config) {
       requestNotificationPermission: () => {},
       configureReminder: () => {},
       markJotted: () => {},
+      updateWidget: () => {},
+      takeWidgetAction: () => "",
     };
   }
   window.__TAURI_INTERNALS__ = {

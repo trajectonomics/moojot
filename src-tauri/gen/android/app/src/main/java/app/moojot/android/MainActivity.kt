@@ -27,6 +27,8 @@ class MainActivity : TauriActivity() {
     private var bridgeWebView: WebView? = null
     private val ioExecutor = Executors.newSingleThreadExecutor()
     private var pendingShareIntent: Intent? = null
+    /** "add" or "scan" from a widget button (#81), until the web app takes it. */
+    @Volatile private var pendingWidgetAction: String? = null
     private var lastBackPressMs: Long = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,6 +38,7 @@ class MainActivity : TauriActivity() {
         )
         super.onCreate(savedInstanceState)
         handleIncomingShareIntent(intent)
+        handleWidgetIntent(intent)
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -71,6 +74,21 @@ class MainActivity : TauriActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleIncomingShareIntent(intent)
+        handleWidgetIntent(intent)
+    }
+
+    /**
+     * A widget button opened the app (#81). The web app asks for the action when it starts
+     * (takeWidgetAction) and, when it is already running, hears moojot:widget-action.
+     */
+    private fun handleWidgetIntent(intent: Intent?) {
+        val action = when (intent?.action) {
+            MooWidget.ACTION_ADD -> "add"
+            MooWidget.ACTION_SCAN -> "scan"
+            else -> return
+        }
+        pendingWidgetAction = action
+        emitEvent("moojot:widget-action", JSONObject().put("action", action).toString())
     }
 
     override fun onWebViewCreate(webView: WebView) {
@@ -185,6 +203,20 @@ class MainActivity : TauriActivity() {
         fun setRecentsHidden(hidden: Boolean) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
             runOnUiThread { setRecentsScreenshotEnabled(!hidden) }
+        }
+
+        // ---- Home-screen widget (#81), see MooWidget.kt ----
+        @JavascriptInterface
+        fun updateWidget(snapshotJson: String) {
+            MooWidget.save(this@MainActivity, snapshotJson)
+        }
+
+        /** The widget button that opened the app, once: "add", "scan" or "". */
+        @JavascriptInterface
+        fun takeWidgetAction(): String {
+            val action = pendingWidgetAction ?: ""
+            pendingWidgetAction = null
+            return action
         }
 
         // ---- Daily reminder (#80), see DailyReminder.kt ----

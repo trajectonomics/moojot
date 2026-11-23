@@ -42,6 +42,11 @@ declare global {
       configureReminder?(enabled: boolean, hour: number, minute: number, title: string, body: string): void;
       /** Something was recorded on this local date (YYYY-MM-DD): no reminder that day. */
       markJotted?(localDate: string): void;
+      // Home-screen widget (#81), see MooWidget.kt
+      /** Stores the widget snapshot ($lib/widget) and redraws the widgets. */
+      updateWidget?(snapshotJson: string): void;
+      /** The widget button that opened the app, once: "add", "scan" or "". */
+      takeWidgetAction?(): string;
     };
   }
 }

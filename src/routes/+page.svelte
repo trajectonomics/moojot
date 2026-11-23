@@ -16,6 +16,7 @@
     Repeat,
     PenLine,
   } from "@lucide/svelte";
+  import { untrack } from "svelte";
   import CategoryIcon from "$lib/components/CategoryIcon.svelte";
   import EmptyMonthArt from "$lib/components/EmptyMonthArt.svelte";
   import MooMascot, { type MascotMood } from "$lib/components/MooMascot.svelte";
@@ -50,6 +51,7 @@
   } from "$lib/api";
   import { formatBaht } from "$lib/format";
   import { localDateKey, reminderConfig } from "$lib/reminder";
+  import { parseWidgetAction, widgetSnapshot, type WidgetAction } from "$lib/widget";
   import { monthPickerOffsets } from "$lib/monthPicker";
   import {
     clampMonthStartDay,
@@ -604,6 +606,61 @@
   function withReminder(next: AppSettings): AppSettings {
     return { ...next, reminderEnabled: settings.reminderEnabled, reminderTime: settings.reminderTime };
   }
+
+  // ---- Home-screen widget (#81) ----
+  // Re-sends this period's numbers whenever Home data, the language, the theme or the lock change.
+  // The widget always shows this period with no account filter, so another view fetches it.
+  $effect(() => {
+    if (!settingsReady) return;
+    const options = {
+      lang,
+      theme,
+      hideAmounts: settings.appLockEnabled,
+      baht: (satang: number) => `฿${formatBaht(satang)}`,
+    };
+    const current = periodOffset === 0 && filterAccountIds.length === 0 ? home : null;
+    void syncWidget(current, options);
+  });
+
+  async function syncWidget(current: HomePayload | null, options: Parameters<typeof widgetSnapshot>[2]) {
+    const bridge = window.MooJotAndroid;
+    if (!bridge?.updateWidget) return;
+    try {
+      const data = current ?? (await api.getHomeData(0));
+      bridge.updateWidget(JSON.stringify(widgetSnapshot(data, localDateKey(new Date()), options)));
+    } catch (error) {
+      console.error("widget sync", error);
+    }
+  }
+
+  // A widget button opened the app: "+ Jot" opens a new record, "Scan" scans slips. It waits
+  // until the app is open (after the lock, if it is on) and the welcome tour is closed.
+  let pendingWidgetAction = $state<WidgetAction | null>(null);
+  $effect(() => {
+    const take = () => {
+      const action = parseWidgetAction(window.MooJotAndroid?.takeWidgetAction?.());
+      if (action) pendingWidgetAction = action;
+    };
+    take();
+    window.addEventListener("moojot:widget-action", take);
+    return () => window.removeEventListener("moojot:widget-action", take);
+  });
+  $effect(() => {
+    if (lockState !== "open" || showOnboarding || !pendingWidgetAction) return;
+    const action = pendingWidgetAction;
+    pendingWidgetAction = null;
+    untrack(() => {
+      activeTab = "home";
+      if (action === "add") {
+        editingRecord = null;
+        recordLightboxOpen = false;
+        showFabMenu = false;
+        showRecordSheet = true;
+      } else {
+        void triggerSlipScan();
+      }
+    });
+  });
 
   // Post the recurring records that have come due, so Home shows them.
   async function postDueRecurring(): Promise<number> {
