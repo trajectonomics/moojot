@@ -196,6 +196,10 @@ export interface AppSettings {
   englishOcrEngine: "mlkit_latin" | "akson_only";
   /** Opt-in fingerprint / phone-PIN lock (#79). Saved on its own, see changeAppLock. */
   appLockEnabled: boolean;
+  /** Opt-in daily reminder (#80). */
+  reminderEnabled: boolean;
+  /** Local time of day, "HH:MM". */
+  reminderTime: string;
 }
 
 export interface RecordInput {

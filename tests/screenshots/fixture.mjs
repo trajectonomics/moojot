@@ -21,6 +21,7 @@ export const TIMEZONE = "Asia/Bangkok";
  *   granted or not. Scans it is asked to start are recorded in `window.__moojotScans`.
  * @param {boolean} [options.appLock] The app lock (#79) is on. Android's unlock prompt answers
  *   "cancelled", so the app stays on its lock card. Needs `android`.
+ * @param {boolean} [options.reminder] The daily reminder (#80) is on, at 20:30.
  */
 export function fixtureScript(options = {}) {
   const config = {
@@ -121,6 +122,7 @@ function pageFixture(config) {
     language: config.lang, monthStartDay: 1, weekStartDay: 1, defaultView: "monthly",
     allowSharedAlbum: false, ownerNames: [], aksonOcrApiKey: "", aksonOcrModel: "",
     englishOcrEngine: "mlkit_latin", appLockEnabled: Boolean(config.appLock),
+    reminderEnabled: Boolean(config.reminder), reminderTime: config.reminder ? "20:30" : "20:00",
   };
 
   // [day of March 2026, time, kind, amount in baht, category, account, payee, extra fields]
@@ -331,6 +333,10 @@ function pageFixture(config) {
       shareTextFile: () => false,
       pickStatementPdf: () => {},
       setRecentsHidden: () => {},
+      hasNotificationPermission: () => true,
+      requestNotificationPermission: () => {},
+      configureReminder: () => {},
+      markJotted: () => {},
     };
   }
   window.__TAURI_INTERNALS__ = {

@@ -23,6 +23,7 @@
     GitFork,
     ChartNoAxesColumn,
     Lock,
+    BellRing,
   } from "@lucide/svelte";
   import { getVersion } from "@tauri-apps/api/app";
   import { openUrl } from "@tauri-apps/plugin-opener";
@@ -64,6 +65,11 @@
     appLockAvailable = false,
     appLockEnabled = false,
     onChangeAppLock,
+    reminderAvailable = false,
+    reminderEnabled = false,
+    reminderTime = "20:00",
+    notificationsBlocked = false,
+    onChangeReminder,
     subPage = $bindable<SettingsSubPage>(null),
     onChangeTheme,
     onChangeHand,
@@ -99,6 +105,16 @@
     appLockEnabled?: boolean;
     /** Returns why the switch couldn't change, or null when it did (or the person cancelled). */
     onChangeAppLock?: (on: boolean) => Promise<string | null>;
+    /** The reminder needs Android's alarm and notifications, so it only shows in the app. */
+    reminderAvailable?: boolean;
+    /** Opt-in daily reminder (#80). */
+    reminderEnabled?: boolean;
+    /** "HH:MM" */
+    reminderTime?: string;
+    /** The reminder is on but Android notifications are off for MooJot. */
+    notificationsBlocked?: boolean;
+    /** Returns why the reminder couldn't change, or null when it did. */
+    onChangeReminder?: (enabled: boolean, time: string) => Promise<string | null>;
     subPage?: SettingsSubPage;
     onChangeTheme: (next: AppTheme) => void;
     onChangeHand: (next: HandMode) => void;
@@ -148,6 +164,22 @@
       appLockBusy = false;
       // The switch follows the saved value, whatever the prompt said.
       input.checked = appLockEnabled;
+    }
+  }
+
+  let reminderBusy = $state(false);
+  let reminderError = $state<string | null>(null);
+
+  async function saveReminder(enabled: boolean, time: string, input?: HTMLInputElement) {
+    if (!onChangeReminder || reminderBusy) return;
+    reminderBusy = true;
+    reminderError = null;
+    try {
+      reminderError = await onChangeReminder(enabled, time);
+    } finally {
+      reminderBusy = false;
+      // The switch follows the saved value, whatever happened.
+      if (input) input.checked = reminderEnabled;
     }
   }
 
@@ -614,6 +646,50 @@
               class="size-5 shrink-0 accent-[var(--brand)]"
             />
           </label>
+        {/if}
+
+        {#if reminderAvailable}
+          <!-- 7c. Daily reminder (opt-in, #80) -->
+          <div class="w-full px-4 py-3.5 space-y-3">
+            <label class="flex items-center justify-between gap-3 text-left">
+              <div class="flex items-center gap-3 min-w-0">
+                <span class="size-9 rounded-2xl bg-[var(--brand-soft)] text-[var(--brand)] flex items-center justify-center shrink-0">
+                  <BellRing class="size-4" />
+                </span>
+                <div class="min-w-0">
+                  <div class="text-sm font-bold text-[var(--text-primary)]">{t(lang, "dailyReminder")}</div>
+                  <div class="text-xs text-[var(--text-muted)]">{t(lang, "dailyReminderHint")}</div>
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                checked={reminderEnabled}
+                disabled={reminderBusy}
+                onchange={(e) => saveReminder(e.currentTarget.checked, reminderTime, e.currentTarget)}
+                class="size-5 shrink-0 accent-[var(--brand)]"
+              />
+            </label>
+            {#if reminderEnabled}
+              <label class="ml-12 flex items-center justify-between gap-3">
+                <span class="text-xs font-semibold text-[var(--text-secondary)]">{t(lang, "reminderTime")}</span>
+                <input
+                  type="time"
+                  value={reminderTime}
+                  disabled={reminderBusy}
+                  onchange={(e) => {
+                    const next = e.currentTarget.value;
+                    if (/^\d{2}:\d{2}$/.test(next)) void saveReminder(true, next);
+                  }}
+                  class="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card-sub)] px-3 py-1.5 text-sm font-bold text-[var(--text-primary)]"
+                />
+              </label>
+            {/if}
+            {#if reminderError || (reminderEnabled && notificationsBlocked)}
+              <div class="ml-12 text-xs font-semibold text-[var(--brand)]" role="status">
+                {reminderError ?? t(lang, "reminderNoPermission")}
+              </div>
+            {/if}
+          </div>
         {/if}
 
         <!-- 8. About -->

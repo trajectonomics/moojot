@@ -35,6 +35,13 @@ declare global {
       pickStatementPdf(): void;
       /** Android 13+: leave the app's screen out of the Recents thumbnail (app lock, #79). */
       setRecentsHidden?(hidden: boolean): void;
+      // Daily reminder (#80), see DailyReminder.kt
+      hasNotificationPermission?(): boolean;
+      /** Answers with the moojot:notification-permission event: { granted }. */
+      requestNotificationPermission?(): void;
+      configureReminder?(enabled: boolean, hour: number, minute: number, title: string, body: string): void;
+      /** Something was recorded on this local date (YYYY-MM-DD): no reminder that day. */
+      markJotted?(localDate: string): void;
     };
   }
 }

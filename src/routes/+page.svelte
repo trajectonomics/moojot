@@ -49,6 +49,7 @@
     triggerAndroidDownloadOrShare,
   } from "$lib/api";
   import { formatBaht } from "$lib/format";
+  import { localDateKey, reminderConfig } from "$lib/reminder";
   import { monthPickerOffsets } from "$lib/monthPicker";
   import {
     clampMonthStartDay,
@@ -114,7 +115,11 @@
     aksonOcrModel: "AksonOCR-preview",
     englishOcrEngine: "mlkit_latin",
     appLockEnabled: false,
+    reminderEnabled: false,
+    reminderTime: "20:00",
   });
+  // The saved settings have been read once (the reminder sync waits for this).
+  let settingsReady = $state(false);
 
   // Opt-in app lock (#79), see $lib/appLock. On Android the app starts "checking" (a plain cover)
   // until the saved setting is read, so records never show before the prompt.
@@ -549,6 +554,57 @@
     return () => document.removeEventListener("visibilitychange", onLockVisibility);
   });
 
+  // ---- Daily reminder (#80) ----
+  // Keep Android's copy (DailyReminder.kt) in step with the saved setting and the language.
+  $effect(() => {
+    if (!settingsReady) return;
+    const c = reminderConfig(settings);
+    window.MooJotAndroid?.configureReminder?.(c.enabled, c.hour, c.minute, c.title, c.body);
+  });
+
+  /** Something was jotted or scanned today: the reminder stays quiet until tomorrow. */
+  function noteJotted() {
+    window.MooJotAndroid?.markJotted?.(localDateKey(new Date()));
+  }
+
+  /** Android 13+ asks for notification permission; older versions already allow it. */
+  function ensureNotificationPermission(): Promise<boolean> {
+    const bridge = window.MooJotAndroid;
+    if (!bridge?.requestNotificationPermission) return Promise.resolve(false);
+    if (bridge.hasNotificationPermission?.()) return Promise.resolve(true);
+    return new Promise((resolve) => {
+      const onAnswer = (ev: Event) => {
+        window.removeEventListener("moojot:notification-permission", onAnswer);
+        resolve(Boolean((ev as CustomEvent<{ granted?: boolean }>).detail?.granted));
+      };
+      window.addEventListener("moojot:notification-permission", onAnswer);
+      bridge.requestNotificationPermission?.();
+    });
+  }
+
+  /** The My Moo reminder switch and time. Returns why it couldn't change, or null. */
+  async function changeReminder(enabled: boolean, time: string): Promise<string | null> {
+    if (enabled && !(await ensureNotificationPermission())) return t(lang, "reminderNoPermission");
+    try {
+      // On top of the stored settings, never on top of a stale copy.
+      const current = await api.getSettings();
+      await api.updateSettings({ ...current, reminderEnabled: enabled, reminderTime: time });
+    } catch (error) {
+      console.error("save daily reminder", error);
+      return t(lang, "error");
+    }
+    if (enabled !== settings.reminderEnabled) {
+      track("setting_changed", { setting: "daily_reminder", value: enabled ? "on" : "off" });
+    }
+    settings = { ...settings, reminderEnabled: enabled, reminderTime: time };
+    return null;
+  }
+
+  /** Settings screens keep their own draft; the reminder is saved separately, so keep it. */
+  function withReminder(next: AppSettings): AppSettings {
+    return { ...next, reminderEnabled: settings.reminderEnabled, reminderTime: settings.reminderTime };
+  }
+
   // Post the recurring records that have come due, so Home shows them.
   async function postDueRecurring(): Promise<number> {
     try {
@@ -568,6 +624,7 @@
       api.getTags(),
     ]);
     settings = s;
+    settingsReady = true;
     accounts = accs;
     categories = cats;
     tags = tgs;
@@ -591,6 +648,7 @@
   async function handleCandidates(candidates: SlipScanCandidate[], trigger: "photo" | "shared") {
     try {
       const report: SlipScanReport = await api.importSlipCandidates(candidates);
+      noteJotted();
       track("slip_scan_finished", { trigger, imported: report.imported, duplicates: report.duplicates });
       scanBanner =
         lang === "th"
@@ -854,6 +912,7 @@
             }
           }
           if (detail?.done) {
+            noteJotted();
             track("slip_scan_finished", { trigger: "album", ...scanTotals });
             const covered = monthKeysFromSince(scanSinceSec);
             if (covered.length > 0) {
@@ -922,6 +981,7 @@
 
   async function handleSaveRecord(input: RecordInput) {
     await api.saveRecord(input);
+    if (!input.id) noteJotted();
     track("record_saved", { kind: input.kind, is_new: !input.id, recurring: Boolean(input.recurringFrequency) });
     showRecordSheet = false;
     recordLightboxOpen = false;
@@ -1008,6 +1068,7 @@
       pdfPrompt = null;
       pdfPassword = "";
       track("statement_imported", { imported: report.imported, duplicates: report.duplicates });
+      if (report.imported > 0) noteJotted();
       await refreshPeriodData();
       activeTab = "home";
       scanBanner =
@@ -1498,6 +1559,11 @@
       appLockAvailable={hasAndroidBridge()}
       appLockEnabled={settings.appLockEnabled}
       onChangeAppLock={changeAppLock}
+      reminderAvailable={hasAndroidBridge()}
+      reminderEnabled={settings.reminderEnabled}
+      reminderTime={settings.reminderTime}
+      notificationsBlocked={settings.reminderEnabled && window.MooJotAndroid?.hasNotificationPermission?.() === false}
+      onChangeReminder={changeReminder}
       bind:subPage={settingsSubPage}
       onReplayOnboarding={() => openOnboarding(false)}
       onChangeTheme={(nextTheme) => {
@@ -1510,7 +1576,7 @@
       }}
       onChangeShareStats={(on) => changeShareStats(on, "settings")}
       onSaveSettings={async (draft) => {
-        const next = withAppLock(draft);
+        const next = withReminder(withAppLock(draft));
         await api.updateSettings(next);
         if (next.language !== settings.language) {
           track("setting_changed", { setting: "language", value: next.language });
@@ -1948,7 +2014,7 @@
     onChangeTheme={(next) => (theme = next)}
     onChangeHand={(next) => (hand = next)}
     onSaveSettings={async (draft) => {
-      const next = withAppLock(draft);
+      const next = withReminder(withAppLock(draft));
       await api.updateSettings(next);
       settings = next;
       await refreshPeriodData();

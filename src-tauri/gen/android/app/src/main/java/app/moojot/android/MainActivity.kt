@@ -187,6 +187,35 @@ class MainActivity : TauriActivity() {
             runOnUiThread { setRecentsScreenshotEnabled(!hidden) }
         }
 
+        // ---- Daily reminder (#80), see DailyReminder.kt ----
+        @JavascriptInterface
+        fun hasNotificationPermission(): Boolean = DailyReminder.hasNotificationPermission(this@MainActivity)
+
+        /** Android 13+ asks; older versions allow notifications already. Answers with moojot:notification-permission. */
+        @JavascriptInterface
+        fun requestNotificationPermission() {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || DailyReminder.hasNotificationPermission(this@MainActivity)) {
+                emitEvent("moojot:notification-permission", JSONObject().put("granted", true).toString())
+                return
+            }
+            runOnUiThread {
+                requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS)) { _ ->
+                    val payload = JSONObject().put("granted", DailyReminder.hasNotificationPermission(this@MainActivity))
+                    emitEvent("moojot:notification-permission", payload.toString())
+                }
+            }
+        }
+
+        @JavascriptInterface
+        fun configureReminder(enabled: Boolean, hour: Int, minute: Int, title: String, body: String) {
+            DailyReminder.configure(this@MainActivity, enabled, hour, minute, title, body)
+        }
+
+        @JavascriptInterface
+        fun markJotted(localDate: String) {
+            DailyReminder.markJotted(this@MainActivity, localDate)
+        }
+
         @JavascriptInterface
         fun hasGalleryPermission(): Boolean = hasGalleryAccess()
 

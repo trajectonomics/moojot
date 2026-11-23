@@ -133,6 +133,8 @@ export const scenes = [
   { name: "settings", run: openSettings },
   // On Android My Moo also has the app lock switch (#79).
   { name: "settings-app-lock", fixture: { android: "granted" }, run: openSettings },
+  // On Android My Moo also has the daily reminder (#80), here switched on.
+  { name: "settings-reminder", fixture: { android: "granted", reminder: true }, run: openSettings },
   { name: "settings-dark", fixture: DARK, run: openSettings },
   {
     name: "settings-appearance",
