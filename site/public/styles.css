@@ -122,6 +122,9 @@ html[data-inapp] .inapp-note { display: block; }
 .cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
 .meta { margin-top: 12px; font-size: 14px; color: var(--hero-text-2); }
 .meta a { color: inherit; font-weight: 600; text-decoration: underline; }
+.meta-video { margin-top: 16px; font-size: 16px; }
+.video-link { display: inline-flex; align-items: center; gap: 8px; color: inherit; font-weight: 800; text-decoration: underline; text-underline-offset: 3px; }
+.video-link .icon { width: 22px; height: 22px; }
 .meta-stores { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .store-pill { padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; font-size: 13px; font-weight: 700; opacity: 0.85; }
 html[data-ios] .ios-pill { opacity: 1; background: rgba(255, 255, 255, 0.2); }
@@ -195,6 +198,7 @@ html[data-release="soon"] .js-download { opacity: 0.92; }
 .step p { margin-top: 8px; color: var(--text-2); }
 .step .btn { margin-top: 16px; }
 .step-tip { font-size: 15px; padding: 10px 12px; border-radius: 12px; background: var(--card-sub); }
+.btn-video { margin-top: 20px; color: var(--brand-text); }
 .install-extras { margin-top: 24px; display: grid; gap: 8px; color: var(--text-2); font-size: 15px; }
 
 .shots {
