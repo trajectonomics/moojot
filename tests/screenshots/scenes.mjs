@@ -48,6 +48,17 @@ export const scenes = [
     fixture: { data: "empty" },
     ready: 'svg[aria-label="No records yet"]',
   },
+  // The one-time "send feedback" card under the hero (#90), in both themes and languages.
+  {
+    name: "home-feedback-card-thai",
+    fixture: { ...THAI, feedbackCard: true },
+    run: (page) => page.waitForText("มูเป็นยังไงบ้าง บอกเราได้ใน 1 นาที", "p"),
+  },
+  {
+    name: "home-feedback-card-dark",
+    fixture: { ...DARK, feedbackCard: true },
+    run: (page) => page.waitForText("How's Moo doing? Tell us in a minute.", "p"),
+  },
   {
     name: "home-scrolled",
     run: async (page) => {
