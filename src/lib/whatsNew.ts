@@ -3,7 +3,7 @@
 // plain Node. The changelog texts live here (not in i18n.ts) for the same reason.
 
 export type WhatsNewLang = "en" | "th";
-export type WhatsNewIcon = "lock" | "bell-ring" | "smartphone" | "mail";
+export type WhatsNewIcon = "lock" | "bell-ring" | "smartphone" | "mail" | "bell";
 export type WhatsNewAction = "app-lock" | "reminder" | "widget-help" | "feedback";
 
 export interface WhatsNewItem {
@@ -24,6 +24,21 @@ export interface WhatsNewRelease {
 
 /** Newest first. Add an entry for every release: a unit test fails when the newest one is older than package.json. */
 export const CHANGELOG: WhatsNewRelease[] = [
+  {
+    version: "1.4.0",
+    date: "2026-11-24",
+    items: [
+      {
+        id: "news",
+        icon: "bell",
+        title: { en: "News stays on Home", th: "ข่าวอัปเดตอยู่บนหน้าหลัก" },
+        body: {
+          en: "The latest news waits on Home until you close it. Tap the bell in My Moo to read every update again.",
+          th: "ข่าวล่าสุดจะอยู่บนหน้าหลักจนกว่าคุณจะปิด แตะกระดิ่งในมูของฉันเพื่ออ่านทุกอัปเดตได้อีกครั้ง",
+        },
+      },
+    ],
+  },
   {
     version: "1.3.0",
     date: "2026-11-24",
@@ -99,7 +114,8 @@ export function compareVersions(a: string, b: string): number {
 
 /**
  * The releases to show after an update: newer than `lastSeen`, and not newer than `current`.
- * With nothing recorded yet (an install from before this feature), only the current release.
+ * With nothing recorded yet, the install is from before 1.3.0, when these notes started, so
+ * every release up to `current` is new to it (an update from 1.2.x to 1.4.0 shows 1.4.0 and 1.3.0).
  * A brand-new install sees nothing: there is nothing "new" to it.
  */
 export function releasesToShow(input: {
@@ -111,7 +127,7 @@ export function releasesToShow(input: {
   const { lastSeen, current, freshInstall, releases = CHANGELOG } = input;
   if (freshInstall) return [];
   if (lastSeen === null) {
-    return releases.filter((release) => compareVersions(release.version, current) === 0);
+    return releases.filter((release) => compareVersions(release.version, current) <= 0);
   }
   return releases.filter(
     (release) =>
@@ -125,21 +141,24 @@ export function latestRelease(current: string, releases: WhatsNewRelease[] = CHA
 }
 
 /**
- * The release the Home banner announces: the newest one for the installed version, until the
- * person closes the banner for it. Opening the notes or turning a feature on does not hide it,
- * so they can come back to it. A newer release brings the banner back.
+ * The releases the Home banner announces, newest first: every one up to the installed version
+ * that is newer than the version whose banner the person closed (all of them when they never
+ * closed one, as after an update from 1.2.x). Empty means no banner. Opening the notes or
+ * turning a feature on does not hide it, so they can come back to it; a newer release brings
+ * it back.
  */
-export function bannerRelease(input: {
+export function bannerReleases(input: {
   current: string | null;
   hiddenFor: string | null;
   releases?: WhatsNewRelease[];
-}): WhatsNewRelease | null {
+}): WhatsNewRelease[] {
   const { current, hiddenFor, releases = CHANGELOG } = input;
-  if (current === null) return null;
-  const latest = latestRelease(current, releases);
-  if (!latest) return null;
-  if (hiddenFor !== null && compareVersions(hiddenFor, latest.version) >= 0) return null;
-  return latest;
+  if (current === null) return [];
+  return releases.filter(
+    (release) =>
+      compareVersions(release.version, current) <= 0 &&
+      (hiddenFor === null || compareVersions(release.version, hiddenFor) > 0),
+  );
 }
 
 // ---- Remembering the last version the person has seen ----

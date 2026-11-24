@@ -4,7 +4,7 @@ import { test } from "node:test";
 
 import {
   CHANGELOG,
-  bannerRelease,
+  bannerReleases,
   compareVersions,
   latestRelease,
   loadBannerHidden,
@@ -30,10 +30,20 @@ test("an update from 1.2.1 shows the 1.3.0 notes", () => {
   assert.deepEqual(versions(shown), ["1.3.0"]);
 });
 
-test("nothing recorded on an older install shows only the current release", () => {
-  const shown = releasesToShow({ lastSeen: null, current: "1.3.0", freshInstall: false });
-  assert.deepEqual(versions(shown), ["1.3.0"]);
-  assert.deepEqual(releasesToShow({ lastSeen: null, current: "1.2.1", freshInstall: false }), []);
+test("nothing recorded (an update from 1.2.x) shows every release up to the installed one", () => {
+  const releases = [
+    { version: "1.5.0", date: "2027-02-01", items: [] },
+    { version: "1.4.0", date: "2026-11-24", items: [] },
+    { version: "1.3.0", date: "2026-11-24", items: [] },
+  ];
+  const shown = releasesToShow({ lastSeen: null, current: "1.4.0", freshInstall: false, releases });
+  assert.deepEqual(versions(shown), ["1.4.0", "1.3.0"]);
+  assert.deepEqual(releasesToShow({ lastSeen: null, current: "1.2.1", freshInstall: false, releases }), []);
+});
+
+test("an update from 1.3.0 to 1.4.0 shows only the 1.4.0 notes", () => {
+  const shown = releasesToShow({ lastSeen: "1.3.0", current: "1.4.0", freshInstall: false });
+  assert.deepEqual(versions(shown), ["1.4.0"]);
 });
 
 test("a fresh install shows nothing", () => {
@@ -92,28 +102,31 @@ test("without a browser, the seen version loads as null and saving does not thro
   assert.doesNotThrow(() => saveWhatsNewSeen("1.3.0"));
 });
 
-test("the banner shows the newest release for the installed version until it is closed", () => {
+test("the banner shows every release up to the installed one that is newer than the closed one", () => {
   const releases = [
-    { version: "1.4.0", date: "2027-01-01", items: [] },
+    { version: "1.5.0", date: "2027-02-01", items: [] },
+    { version: "1.4.0", date: "2026-11-24", items: [] },
     { version: "1.3.0", date: "2026-11-24", items: [] },
-    { version: "1.2.0", date: "2026-09-01", items: [] },
   ];
-  assert.equal(latestRelease("1.3.0", releases)?.version, "1.3.0");
-  assert.equal(latestRelease("1.3.5", releases)?.version, "1.3.0");
-  assert.equal(latestRelease("1.1.0", releases), null);
+  assert.equal(latestRelease("1.4.0", releases)?.version, "1.4.0");
+  assert.equal(latestRelease("1.4.5", releases)?.version, "1.4.0");
+  assert.equal(latestRelease("1.2.0", releases), null);
 
-  assert.equal(bannerRelease({ current: "1.3.0", hiddenFor: null, releases })?.version, "1.3.0");
-  assert.equal(bannerRelease({ current: "1.3.0", hiddenFor: "1.3.0", releases }), null);
-  // Closing an older release's banner does not hide a newer one.
-  assert.equal(bannerRelease({ current: "1.4.0", hiddenFor: "1.3.0", releases })?.version, "1.4.0");
+  // Never closed (an update from 1.2.x): everything up to the installed version.
+  assert.deepEqual(versions(bannerReleases({ current: "1.4.0", hiddenFor: null, releases })), ["1.4.0", "1.3.0"]);
+  // Closed for 1.3.0: only what came after.
+  assert.deepEqual(versions(bannerReleases({ current: "1.4.0", hiddenFor: "1.3.0", releases })), ["1.4.0"]);
+  // Closed for the installed version: no banner, until a newer release.
+  assert.deepEqual(bannerReleases({ current: "1.4.0", hiddenFor: "1.4.0", releases }), []);
+  assert.deepEqual(versions(bannerReleases({ current: "1.5.0", hiddenFor: "1.4.0", releases })), ["1.5.0"]);
   // No app version (a plain browser) or no notes for it: no banner.
-  assert.equal(bannerRelease({ current: null, hiddenFor: null, releases }), null);
-  assert.equal(bannerRelease({ current: "1.1.0", hiddenFor: null, releases }), null);
+  assert.deepEqual(bannerReleases({ current: null, hiddenFor: null, releases }), []);
+  assert.deepEqual(bannerReleases({ current: "1.2.0", hiddenFor: null, releases }), []);
 });
 
 test("seeing the notes does not hide the banner: only closing it does", () => {
   // The banner reads its own key, not the "seen" version that the sheet and the page record.
-  assert.equal(bannerRelease({ current: CHANGELOG[0].version, hiddenFor: null })?.version, CHANGELOG[0].version);
+  assert.equal(bannerReleases({ current: CHANGELOG[0].version, hiddenFor: null })[0]?.version, CHANGELOG[0].version);
 });
 
 test("without a browser, the closed banner loads as null and saving does not throw", () => {

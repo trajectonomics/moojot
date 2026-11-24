@@ -62,7 +62,7 @@
   } from "$lib/feedback";
   import { openFeedbackMail } from "$lib/feedbackClient";
   import {
-    bannerRelease,
+    bannerReleases,
     loadBannerHidden,
     loadWhatsNewSeen,
     saveBannerHidden,
@@ -145,8 +145,9 @@
   // The banner under the hero that keeps the latest release's news on Home until it is closed,
   // so someone who tapped "Turn on" in the sheet can come back to the rest.
   let whatsNewBannerHidden = $state<string | null>(loadBannerHidden());
+  // Newest first; it can span several releases (an update from 1.2.x shows 1.4.0 and 1.3.0).
   const whatsNewBanner = $derived(
-    showOnboarding ? null : bannerRelease({ current: appVersion, hiddenFor: whatsNewBannerHidden }),
+    showOnboarding ? [] : bannerReleases({ current: appVersion, hiddenFor: whatsNewBannerHidden }),
   );
 
   function hideWhatsNewBanner(version: string) {
@@ -223,7 +224,7 @@
     !showOnboarding &&
       whatsNewLaunch !== null &&
       whatsNewLaunch.length === 0 &&
-      whatsNewBanner === null &&
+      whatsNewBanner.length === 0 &&
       shouldShowFeedbackCard(feedbackCard, localDateKey(new Date())),
   );
 
@@ -1464,8 +1465,8 @@
         </div>
       </div>
 
-      {#if whatsNewBanner}
-        {@const bannerVersion = whatsNewBanner.version}
+      {#if whatsNewBanner.length > 0}
+        {@const bannerVersion = whatsNewBanner[0].version}
         <div
           id="whats-new-banner"
           class="mx-4 mt-4 flex items-center gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] py-2 pl-3 pr-1 shadow-xs"
@@ -1478,7 +1479,10 @@
               {t(lang, "whatsNewTitle").replace("{version}", bannerVersion)}
             </p>
             <p class="line-clamp-2 text-xs leading-snug text-[var(--text-muted)]">
-              {whatsNewBanner.items.map((item) => item.title[lang]).join(" · ")}
+              {whatsNewBanner
+                .flatMap((release) => release.items)
+                .map((item) => item.title[lang])
+                .join(" · ")}
             </p>
           </div>
           <button
