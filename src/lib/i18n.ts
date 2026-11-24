@@ -250,7 +250,6 @@ const en = {
   feedbackNotNow: "Not now",
   // What's new (#104)
   whatsNew: "What's new",
-  whatsNewHint: "See what changed in each update",
   whatsNewTitle: "What's new in MooJot {version}",
   whatsNewTurnOn: "Turn on",
   whatsNewHowToAdd: "How to add",
@@ -258,6 +257,8 @@ const en = {
   whatsNewGotIt: "Got it",
   whatsNewWidgetSteps: "Long-press your home screen → Widgets → MooJot",
   whatsNewNewDot: "New",
+  whatsNewSeeAll: "See all",
+  whatsNewHideBanner: "Hide this news",
 
   // Misc
   loading: "Loading...",
@@ -518,7 +519,6 @@ const th: Record<I18nKey, string> = {
   feedbackNotNow: "ไว้ทีหลัง",
   // What's new (#104)
   whatsNew: "มีอะไรใหม่",
-  whatsNewHint: "ดูว่าแต่ละเวอร์ชันมีอะไรเปลี่ยนไป",
   whatsNewTitle: "มีอะไรใหม่ใน MooJot {version}",
   whatsNewTurnOn: "เปิดใช้",
   whatsNewHowToAdd: "วิธีเพิ่ม",
@@ -526,6 +526,8 @@ const th: Record<I18nKey, string> = {
   whatsNewGotIt: "เข้าใจแล้ว",
   whatsNewWidgetSteps: "กดค้างที่หน้าจอหลัก → วิดเจ็ต → MooJot",
   whatsNewNewDot: "ใหม่",
+  whatsNewSeeAll: "ดูทั้งหมด",
+  whatsNewHideBanner: "ซ่อนข่าวนี้",
 
   // Misc
   loading: "กำลังโหลด...",

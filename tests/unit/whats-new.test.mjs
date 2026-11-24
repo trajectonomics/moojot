@@ -4,9 +4,13 @@ import { test } from "node:test";
 
 import {
   CHANGELOG,
+  bannerRelease,
   compareVersions,
+  latestRelease,
+  loadBannerHidden,
   loadWhatsNewSeen,
   releasesToShow,
+  saveBannerHidden,
   saveWhatsNewSeen,
 } from "../../src/lib/whatsNew.ts";
 
@@ -86,4 +90,33 @@ test("every item has English and Thai text", () => {
 test("without a browser, the seen version loads as null and saving does not throw", () => {
   assert.equal(loadWhatsNewSeen(), null);
   assert.doesNotThrow(() => saveWhatsNewSeen("1.3.0"));
+});
+
+test("the banner shows the newest release for the installed version until it is closed", () => {
+  const releases = [
+    { version: "1.4.0", date: "2027-01-01", items: [] },
+    { version: "1.3.0", date: "2026-11-24", items: [] },
+    { version: "1.2.0", date: "2026-09-01", items: [] },
+  ];
+  assert.equal(latestRelease("1.3.0", releases)?.version, "1.3.0");
+  assert.equal(latestRelease("1.3.5", releases)?.version, "1.3.0");
+  assert.equal(latestRelease("1.1.0", releases), null);
+
+  assert.equal(bannerRelease({ current: "1.3.0", hiddenFor: null, releases })?.version, "1.3.0");
+  assert.equal(bannerRelease({ current: "1.3.0", hiddenFor: "1.3.0", releases }), null);
+  // Closing an older release's banner does not hide a newer one.
+  assert.equal(bannerRelease({ current: "1.4.0", hiddenFor: "1.3.0", releases })?.version, "1.4.0");
+  // No app version (a plain browser) or no notes for it: no banner.
+  assert.equal(bannerRelease({ current: null, hiddenFor: null, releases }), null);
+  assert.equal(bannerRelease({ current: "1.1.0", hiddenFor: null, releases }), null);
+});
+
+test("seeing the notes does not hide the banner: only closing it does", () => {
+  // The banner reads its own key, not the "seen" version that the sheet and the page record.
+  assert.equal(bannerRelease({ current: CHANGELOG[0].version, hiddenFor: null })?.version, CHANGELOG[0].version);
+});
+
+test("without a browser, the closed banner loads as null and saving does not throw", () => {
+  assert.equal(loadBannerHidden(), null);
+  assert.doesNotThrow(() => saveBannerHidden("1.3.0"));
 });
