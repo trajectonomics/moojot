@@ -59,23 +59,24 @@ export const scenes = [
     fixture: { ...DARK, feedbackCard: true },
     run: (page) => page.waitForText("How's Moo doing? Tell us in a minute.", "p"),
   },
-  // "What's new" after an update from 1.2.1 to 1.3.0 (#104). With the Android bridge, so the
-  // "Turn on" buttons show; the sheet also hides the feedback card on this launch.
+  // "What's new" after an update from 1.2.x to 1.4.0 (#104, #112): 1.2.x recorded no seen
+  // version, so the sheet shows 1.4.0 and 1.3.0. With the Android bridge, so the "Turn on"
+  // buttons show; the sheet also hides the feedback card on this launch.
   {
     name: "home-whats-new",
-    fixture: { android: "granted", appVersion: "1.3.0", whatsNewSeen: "1.2.1" },
+    fixture: { android: "granted", appVersion: "1.4.0", whatsNewSeen: null },
     ready: "#whats-new-title",
   },
   {
     name: "home-whats-new-thai-dark",
-    fixture: { ...DARK, ...THAI, android: "granted", appVersion: "1.3.0", whatsNewSeen: "1.2.1" },
+    fixture: { ...DARK, ...THAI, android: "granted", appVersion: "1.4.0", whatsNewSeen: null },
     ready: "#whats-new-title",
   },
-  // The news banner under the hero: 1.3.0's notes were already seen, so no sheet, but the
-  // banner stays until it is closed.
+  // The news banner under the hero: the notes were already seen, so no sheet, but the banner
+  // (never closed, so 1.4.0's and 1.3.0's news) stays until it is closed.
   {
     name: "home-whats-new-banner",
-    fixture: { appVersion: "1.3.0" },
+    fixture: { appVersion: "1.4.0" },
     ready: "#whats-new-banner",
   },
   {
@@ -179,7 +180,7 @@ export const scenes = [
   // so Home shows no sheet. With the Android bridge, so the "Turn on" buttons show here too.
   {
     name: "settings-whats-new",
-    fixture: { android: "granted", appVersion: "1.3.0" },
+    fixture: { android: "granted", appVersion: "1.4.0" },
     run: async (page) => {
       await openSettings(page);
       await page.click("#settings-whats-new");
