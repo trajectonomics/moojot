@@ -71,6 +71,13 @@ export const scenes = [
     fixture: { ...DARK, ...THAI, android: "granted", appVersion: "1.3.0", whatsNewSeen: "1.2.1" },
     ready: "#whats-new-title",
   },
+  // The news banner under the hero: 1.3.0's notes were already seen, so no sheet, but the
+  // banner stays until it is closed.
+  {
+    name: "home-whats-new-banner",
+    fixture: { appVersion: "1.3.0" },
+    ready: "#whats-new-banner",
+  },
   {
     name: "home-scrolled",
     run: async (page) => {
@@ -168,13 +175,14 @@ export const scenes = [
     },
   },
   { name: "settings-dark", fixture: DARK, run: openSettings },
-  // The "What's new" page in My Moo (#104). The version is already seen, so Home shows no sheet.
+  // The "What's new" page in My Moo (#104), opened from the bell. The version is already seen,
+  // so Home shows no sheet. With the Android bridge, so the "Turn on" buttons show here too.
   {
     name: "settings-whats-new",
-    fixture: { appVersion: "1.3.0" },
+    fixture: { android: "granted", appVersion: "1.3.0" },
     run: async (page) => {
       await openSettings(page);
-      await page.clickText("What's new", "button *");
+      await page.click("#settings-whats-new");
       await page.waitForText("Fingerprint app lock", "div");
     },
   },

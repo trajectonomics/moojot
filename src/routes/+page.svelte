@@ -16,6 +16,7 @@
     Repeat,
     PenLine,
     Mail,
+    Gift,
   } from "@lucide/svelte";
   import { tick, untrack } from "svelte";
   import CategoryIcon from "$lib/components/CategoryIcon.svelte";
@@ -61,7 +62,10 @@
   } from "$lib/feedback";
   import { openFeedbackMail } from "$lib/feedbackClient";
   import {
+    bannerRelease,
+    loadBannerHidden,
     loadWhatsNewSeen,
+    saveBannerHidden,
     releasesToShow,
     saveWhatsNewSeen,
     type WhatsNewAction,
@@ -138,6 +142,23 @@
     saveWhatsNewSeen(appVersion);
   }
 
+  // The banner under the hero that keeps the latest release's news on Home until it is closed,
+  // so someone who tapped "Turn on" in the sheet can come back to the rest.
+  let whatsNewBannerHidden = $state<string | null>(loadBannerHidden());
+  const whatsNewBanner = $derived(
+    showOnboarding ? null : bannerRelease({ current: appVersion, hiddenFor: whatsNewBannerHidden }),
+  );
+
+  function hideWhatsNewBanner(version: string) {
+    whatsNewBannerHidden = version;
+    saveBannerHidden(version);
+  }
+
+  function openWhatsNewPage() {
+    activeTab = "settings";
+    settingsSubPage = "whatsnew";
+  }
+
   $effect(() => {
     void (async () => {
       let version: string | null = null;
@@ -150,8 +171,11 @@
       whatsNewLaunch = version
         ? releasesToShow({ lastSeen: whatsNewSeen, current: version, freshInstall: whatsNewFreshInstall })
         : [];
-      // A fresh install starts "up to date".
-      if (version && whatsNewFreshInstall && whatsNewSeen === null) markWhatsNewSeen();
+      // A fresh install starts "up to date", with no news banner for the release it came with.
+      if (version && whatsNewFreshInstall && whatsNewSeen === null) {
+        markWhatsNewSeen();
+        if (whatsNewBannerHidden === null) hideWhatsNewBanner(version);
+      }
     })();
   });
 
@@ -194,10 +218,12 @@
   let feedbackCard = $state<FeedbackCardState>(loadFeedbackCard(localDateKey(new Date())));
   // The card waits for a later launch when "What's new" shows on this one (#104), and until we
   // know whether it will (the app version is read a moment after launch).
+  // It also waits while the news banner is up, so Home shows one card at a time.
   const showFeedbackCard = $derived(
     !showOnboarding &&
       whatsNewLaunch !== null &&
       whatsNewLaunch.length === 0 &&
+      whatsNewBanner === null &&
       shouldShowFeedbackCard(feedbackCard, localDateKey(new Date())),
   );
 
@@ -1438,6 +1464,41 @@
         </div>
       </div>
 
+      {#if whatsNewBanner}
+        {@const bannerVersion = whatsNewBanner.version}
+        <div
+          id="whats-new-banner"
+          class="mx-4 mt-4 flex items-center gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] py-2 pl-3 pr-1 shadow-xs"
+        >
+          <span class="flex size-9 shrink-0 items-center justify-center rounded-2xl bg-[var(--brand-soft)] text-[var(--brand)]">
+            <Gift class="size-4" />
+          </span>
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-xs font-bold leading-snug text-[var(--text-primary)]">
+              {t(lang, "whatsNewTitle").replace("{version}", bannerVersion)}
+            </p>
+            <p class="line-clamp-2 text-xs leading-snug text-[var(--text-muted)]">
+              {whatsNewBanner.items.map((item) => item.title[lang]).join(" · ")}
+            </p>
+          </div>
+          <button
+            type="button"
+            onclick={openWhatsNewPage}
+            class="shrink-0 rounded-full border border-[var(--brand)] px-3 py-1.5 text-xs font-extrabold text-[var(--brand-text)] active:bg-[var(--brand-soft)]"
+          >
+            {t(lang, "whatsNewSeeAll")}
+          </button>
+          <button
+            type="button"
+            onclick={() => hideWhatsNewBanner(bannerVersion)}
+            aria-label={t(lang, "whatsNewHideBanner")}
+            class="flex size-11 shrink-0 items-center justify-center rounded-full text-[var(--text-muted)] active:opacity-75"
+          >
+            <X class="size-4" />
+          </button>
+        </div>
+      {/if}
+
       {#if showFeedbackCard}
         <div
           class="mx-4 mt-4 flex items-center gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] py-2 pl-3 pr-1 shadow-xs"
@@ -1786,6 +1847,7 @@
       bind:subPage={settingsSubPage}
       {whatsNewUnseen}
       onWhatsNewSeen={markWhatsNewSeen}
+      onWhatsNewAction={whatsNewAction}
       onReplayOnboarding={() => openOnboarding(false)}
       onChangeTheme={(nextTheme) => {
         if (nextTheme !== theme) track("setting_changed", { setting: "theme", value: nextTheme });

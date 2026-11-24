@@ -26,7 +26,7 @@
     BellRing,
     Mail,
     Copy,
-    Gift,
+    Bell,
   } from "@lucide/svelte";
   import { getVersion } from "@tauri-apps/api/app";
   import { openUrl } from "@tauri-apps/plugin-opener";
@@ -40,7 +40,7 @@
   import termsMarkdownTh from "../../../docs/terms-of-service.th.md?raw";
   import privacyMarkdownTh from "../../../docs/privacy-policy.th.md?raw";
   import WhatsNewItems from "./WhatsNewItems.svelte";
-  import { CHANGELOG } from "$lib/whatsNew";
+  import { CHANGELOG, type WhatsNewAction } from "$lib/whatsNew";
   import { t } from "$lib/i18n";
   import type { AppTheme, HandMode } from "$lib/theme";
   import type { Account, AppSettings, Category, Tag } from "$lib/types";
@@ -80,6 +80,7 @@
     onChangeReminder,
     whatsNewUnseen = false,
     onWhatsNewSeen,
+    onWhatsNewAction,
     subPage = $bindable<SettingsSubPage>(null),
     onChangeTheme,
     onChangeHand,
@@ -129,6 +130,8 @@
     whatsNewUnseen?: boolean;
     /** Called when the "What's new" page opens, so the app records the version as seen. */
     onWhatsNewSeen?: () => void;
+    /** "Turn on" and "Send" on the "What's new" page; without it the page is read-only. */
+    onWhatsNewAction?: (action: Exclude<WhatsNewAction, "widget-help">) => void;
     subPage?: SettingsSubPage;
     onChangeTheme: (next: AppTheme) => void;
     onChangeHand: (next: HandMode) => void;
@@ -471,6 +474,19 @@
             </p>
           </div>
         </div>
+        <!-- What's new (#104): the bell keeps every release's news one tap away -->
+        <button
+          type="button"
+          id="settings-whats-new"
+          onclick={() => (subPage = "whatsnew")}
+          aria-label={whatsNewUnseen ? `${t(lang, "whatsNew")} (${t(lang, "whatsNewNewDot")})` : t(lang, "whatsNew")}
+          class="relative flex size-11 shrink-0 items-center justify-center rounded-full bg-white/20 text-white active:bg-white/30"
+        >
+          <Bell class="size-5" />
+          {#if whatsNewUnseen}
+            <span class="absolute right-2 top-2 size-2.5 rounded-full bg-white ring-2 ring-[var(--brand)]"></span>
+          {/if}
+        </button>
       </div>
     </header>
 
@@ -526,31 +542,6 @@
             <Copy class="size-4" />
           </button>
         </div>
-
-        <!-- 0b. What's new (#104) -->
-        <button
-          type="button"
-          onclick={() => (subPage = "whatsnew")}
-          class="w-full px-4 py-3.5 flex items-center justify-between gap-3 text-left active:opacity-75"
-        >
-          <div class="flex items-center gap-3 min-w-0">
-            <span class="relative size-9 rounded-2xl bg-[var(--brand-soft)] text-[var(--brand)] flex items-center justify-center shrink-0">
-              <Gift class="size-4" />
-              {#if whatsNewUnseen}
-                <span
-                  role="img"
-                  aria-label={t(lang, "whatsNewNewDot")}
-                  class="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-[var(--brand)] ring-2 ring-[var(--bg-card)]"
-                ></span>
-              {/if}
-            </span>
-            <div class="min-w-0">
-              <div class="text-sm font-bold text-[var(--text-primary)]">{t(lang, "whatsNew")}</div>
-              <div class="text-xs text-[var(--text-muted)] truncate">{t(lang, "whatsNewHint")}</div>
-            </div>
-          </div>
-          <ChevronRight class="size-4 text-[var(--text-muted)] shrink-0" />
-        </button>
 
         <!-- 1. Appearance & Theme -->
         <button
@@ -852,7 +843,14 @@
     <div class="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pt-4 pb-28">
       {#if subPage === "whatsnew"}
         <section class="rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-4 shadow-xs">
-          <WhatsNewItems releases={CHANGELOG} {lang} showVersions />
+          <WhatsNewItems
+            releases={CHANGELOG}
+            {lang}
+            showVersions
+            onAction={onWhatsNewAction}
+            {appLockAvailable}
+            {reminderAvailable}
+          />
         </section>
       {:else if subPage === "appearance"}
         <!-- Theme Picker -->

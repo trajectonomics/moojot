@@ -119,6 +119,29 @@ export function releasesToShow(input: {
   );
 }
 
+/** The newest release that is not newer than the installed version, or null when there is none. */
+export function latestRelease(current: string, releases: WhatsNewRelease[] = CHANGELOG): WhatsNewRelease | null {
+  return releases.find((release) => compareVersions(release.version, current) <= 0) ?? null;
+}
+
+/**
+ * The release the Home banner announces: the newest one for the installed version, until the
+ * person closes the banner for it. Opening the notes or turning a feature on does not hide it,
+ * so they can come back to it. A newer release brings the banner back.
+ */
+export function bannerRelease(input: {
+  current: string | null;
+  hiddenFor: string | null;
+  releases?: WhatsNewRelease[];
+}): WhatsNewRelease | null {
+  const { current, hiddenFor, releases = CHANGELOG } = input;
+  if (current === null) return null;
+  const latest = latestRelease(current, releases);
+  if (!latest) return null;
+  if (hiddenFor !== null && compareVersions(hiddenFor, latest.version) >= 0) return null;
+  return latest;
+}
+
 // ---- Remembering the last version the person has seen ----
 
 const KEY = "moojot_whats_new_seen";
@@ -137,6 +160,29 @@ export function loadWhatsNewSeen(): string | null {
 export function saveWhatsNewSeen(version: string): void {
   try {
     window.localStorage.setItem(KEY, version);
+  } catch {
+    // ignore storage restrictions
+  }
+}
+
+// ---- Remembering the release whose Home banner was closed ----
+
+const BANNER_KEY = "moojot_whats_new_banner_hidden";
+
+/** The version whose Home banner the person closed, or null when they have not closed one. */
+export function loadBannerHidden(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(BANNER_KEY);
+    return raw && /^\d+(\.\d+)*/.test(raw) ? raw : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveBannerHidden(version: string): void {
+  try {
+    window.localStorage.setItem(BANNER_KEY, version);
   } catch {
     // ignore storage restrictions
   }
